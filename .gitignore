@@ -1,69 +1,55 @@
-# Prerequisites
-*.d
+﻿# === Visual Studio ===
+.vs/
+*.sln
+*.suo
+*.user
+*.userosscache
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.vcxproj.vspscc
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# === CMake ===
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeUserPresets.json
+CMakePresets.json
+CMakeLists.txt        # <--- Bỏ qua CMakeLists.txt
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
+# === Biên dịch ===
+*.exe
+*.exe.manifest
 *.pdb
-
-# Compiled Dynamic libraries
+*.ilk
+*.obj
+*.o
+*.out
+*.app
+*.a
 *.so
 *.dylib
 *.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
 *.lib
+*.exp
+*.idb
 
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
-build/
-Build/
-build-*/
-
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
-
-# Temporary files
-*.tmp
-*.log
-*.bak
+# === IDE ===
+.idea/
+.vscode/
+*.code-workspace
 *.swp
+*.swo
+*~
 
-# vcpkg
-vcpkg_installed/
+# === Hệ điều hành ===
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
+# === Thư mục riêng tư ===
+assets/
+*.log
+*.tmp
