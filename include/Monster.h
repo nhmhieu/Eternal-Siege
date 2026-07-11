@@ -7,10 +7,14 @@
 class Monster : public Entity{ 
 
     private : 
+    
         float attackRange ; 
         float speed ; 
         Entity* currentTarget ; 
         float targetTimer ; 
+
+        //bien sprite de ve quai vat
+        sf :: CircleShape sprite ; 
 
 
 
@@ -25,4 +29,7 @@ class Monster : public Entity{
         //ham cho quai di chuyen den target hien tai
         void moveToward(float deltaTime, Entity* target) ; 
         void update(float deltaTime, const std :: vector<Entity*>& allTargets) ; 
+
+        ///Ham ve quai vat ra man hinh
+        void draw(sf :: RenderWindow& window) override ; 
 } ;

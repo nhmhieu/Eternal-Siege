@@ -1,7 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 
-class Player {
+class Player{
 private:
     sf::CircleShape sprite;
     float speed;

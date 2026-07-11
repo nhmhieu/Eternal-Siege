@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <SFML/Graphics.hpp>
+
 class Entity{
 
     protected : 
@@ -22,4 +24,9 @@ class Entity{
 
         virtual void takeDamage(float damage) ; 
         bool isDead() const ; 
+
+
+        //ham ve Entity ra man hinh 
+        virtual void draw(sf :: RenderWindow& window) = 0 ; ///(Ham thuan ao bat buoc cac Entity ton tai phai co cach ve ra man hinh)
+         
 } ;

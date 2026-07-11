@@ -9,6 +9,10 @@ Game::Game()
     stateMachine.changeState(std::make_unique<GameplayState>());
 }
 
+Game :: ~Game(){
+    
+}
+
 void Game::run() {
 
     while (window.isOpen()) {

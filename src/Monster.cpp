@@ -14,6 +14,11 @@ Monster::Monster(float x, float y, float health, float maxHealth)
 
 }
 
+Monster :: ~Monster(){
+    delete currentTarget ; 
+}
+
+//Cac ham tim target gan nhat cho quai vat di chuyen tien den target
 void Monster :: updateTarget(const std :: vector<Entity*>& allTargets){
     Entity* closest = nullptr ; 
     float minDistanceSquared = std::numeric_limits<float>::max(); // Giá trị lớn nhất có thể
@@ -83,4 +88,8 @@ void Monster :: update(float deltaTime, const std :: vector<Entity*>& allTargets
 
         moveToward(deltaTime, currentTarget) ; 
     }
+}
+
+void Monster :: draw(sf :: RenderWindow& window){
+
 }
