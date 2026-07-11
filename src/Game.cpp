@@ -1,13 +1,16 @@
 #include "Game.h"
 #include "DummyState.h"
+#include "GameplayState.h"
 
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
-    stateMachine.changeState(std::make_unique<DummyState>());
+    //state dang chay hien tai la dummy state
+    stateMachine.changeState(std::make_unique<GameplayState>());
 }
 
 void Game::run() {
+
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>())
