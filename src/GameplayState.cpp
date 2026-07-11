@@ -1,6 +1,18 @@
 #include "GameplayState.h"
 #include <iostream>
 
+GameplayState::GameplayState() {
+    monsters.push_back(new Monster(100.0f, 100.0f, 100.0f, 100.0f));
+    monsters.push_back(new Monster(200.0f, 300.0f, 100.0f, 100.0f));
+}
+
+GameplayState::~GameplayState() {
+    for (auto* monster : monsters) {
+        delete monster;
+    }
+    monsters.clear();
+}
+
 void GameplayState::onEnter() {
     std::cout << "Giai doan: Buoc vao man choi Gameplay!\n";
 }
@@ -23,6 +35,11 @@ void GameplayState::update(float dt) {
     // Không cần truyền window nếu dùng WASD, nhưng cần nếu dùng cơ chế di chuyển theo chuột
     // Ở đây tạm thời để trống hoặc bạn có thể chỉnh sửa lại tham số tùy ý.
     // Để lấy được tương tác chuột chính xác, ta cập nhật player dựa trên trạng thái phím/chuột.
+
+    player.update(dt);
+    for (auto* monster : monsters) {
+        monster->update(dt, tempEntity) ;
+    }
 }
 
 // Hàm update cải tiến nhận thêm tham chiếu window để phục vụ việc lấy tọa độ chuột
@@ -32,8 +49,11 @@ void GameplayState::render(sf::RenderWindow& window) {
     // hoặc truyền thẳng window vào hàm render này để cập nhật tọa độ chuột trước khi vẽ.
     
     // Ví dụ cập nhật nhanh tọa độ trực tiếp:
-    this->player.update(0.016f, window); // Giả lập dt = 1/60s nếu chưa truyền trực tiếp qua hệ thống
+    this->player.update(0.016f); // Giả lập dt = 1/60s nếu chưa truyền trực tiếp qua hệ thống
     
+    for(auto monster : monsters){
+        monster->draw(window) ; 
+    }
     // Vẽ nhân vật
     this->player.render(window);
 }

@@ -11,6 +11,6 @@ public:
     ~Player() = default;
 
     void handleInput();
-    void update(float dt, const sf::RenderWindow& window);
+    void update(float dt); 
     void render(sf::RenderWindow& window);
 };

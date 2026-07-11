@@ -13,7 +13,7 @@ void Player::handleInput() {
     // Không cần xử lý trong handleInput nếu dùng Real-time Input (sf::Keyboard::isKeyPressed)
 }
 
-void Player::update(float dt, const sf::RenderWindow& window) {
+void Player::update(float dt) { //tai sao ham nay lai can bien const sf::RenderWindow& window
     // --- CƠ CHẾ 1: DI CHUYỂN BẰNG PHÍM WASD ---
     sf::Vector2f movement(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= 1.f;

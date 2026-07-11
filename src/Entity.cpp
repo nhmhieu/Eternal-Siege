@@ -7,10 +7,6 @@ Entity :: Entity(){
     maxHealth = 0 ; 
 }
 
-Entity :: ~Entity(){
-
-}
-
 Entity :: Entity(float x, float y, float health, float maxHealth){
     this->x = x ;
     this->y = y ;

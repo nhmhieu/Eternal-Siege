@@ -12,16 +12,18 @@ class Entity{
         float maxHealth ;  
 
     public : 
+
+        //constructor va destructor
         Entity() ;
         Entity(float x, float y, float health, float maxHealth) ;
-        virtual ~Entity() ; 
+        virtual ~Entity() = default ; //ham ao default khong can viet logic ham
 
         //getter 
         float getX() const {return x ;} 
         float getY() const {return y ; } 
         float getHealth() const {return health ;} ;
 
-
+        //Ham tinh toan va xu li logic game
         virtual void takeDamage(float damage) ; 
         bool isDead() const ; 
 

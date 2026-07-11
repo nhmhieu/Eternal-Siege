@@ -1,14 +1,22 @@
 #pragma once
+
+#include <iostream>
+#include <vector>
+
 #include "State.h"
 #include "Player.h"
+#include "Monster.h"
+#include "Entity.h"
 
 class GameplayState : public State {
 private:
     Player player;
+    std :: vector<Monster*> monsters ;
+    std :: vector<Entity*> tempEntity ; 
 
 public:
-    GameplayState() = default;
-    ~GameplayState() override = default;
+    GameplayState() ;
+    ~GameplayState() override ;
 
     void onEnter() override;
     void onExit() override;

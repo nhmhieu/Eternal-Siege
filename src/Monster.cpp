@@ -6,14 +6,30 @@
 /// constructor mac dinh
 Monster::Monster() : Monster(0, 0, 10, 10) {
     // Không cần làm gì thêm ở đây
+
 }
 
 // Constructor co tham so
 Monster::Monster(float x, float y, float health, float maxHealth) 
-    : Entity(x, y, health, maxHealth), attackRange(50.0f), speed(100.0f), currentTarget(nullptr), targetTimer(0.0f) {
-
+    : Entity(x, y, health, maxHealth), 
+      attackRange(50.0f), 
+      speed(100.0f), 
+      currentTarget(nullptr), 
+      targetTimer(0.0f) 
+{
+    // 1. Thiết lập hình dáng cho quái vật
+    // Thay vì gọi là sprite, chúng ta dùng body (sf::CircleShape)
+    sprite.setRadius(20.0f);
+    sprite.setFillColor(sf::Color::Red);
+    
+    // 2. Thiết lập tâm để dễ dàng định vị
+    sprite.setOrigin(sf::Vector2f(20.0f, 20.0f)); 
+    
+    // 3. Đặt vị trí ban đầu
+    sprite.setPosition(sf::Vector2f(x, y));
 }
 
+//Ham huy va giai phong con tro currentTarget
 Monster :: ~Monster(){
     delete currentTarget ; 
 }
@@ -91,5 +107,5 @@ void Monster :: update(float deltaTime, const std :: vector<Entity*>& allTargets
 }
 
 void Monster :: draw(sf :: RenderWindow& window){
-
+    window.draw(this->sprite) ; 
 }
