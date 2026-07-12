@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "DummyState.h"
 #include "GameplayState.h"
+#include "GameContext.h"
 
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
@@ -22,6 +23,7 @@ void Game::run() {
             stateMachine.handleEvent(*event);
         }
         float dt = clock.restart().asSeconds();
+
         stateMachine.update(dt);
         window.clear();
         stateMachine.render(window);
