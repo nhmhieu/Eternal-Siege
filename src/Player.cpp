@@ -11,49 +11,65 @@ Player::Player() {
 }
 
 void Player::handleInput() {
-    // Không cần xử lý trong handleInput nếu dùng Real-time Input (sf::Keyboard::isKeyPressed)
-}
-
-void Player::update(const GameContext& context) {
-    // --- CƠ CHẾ 1: DI CHUYỂN BẰNG PHÍM WASD ---
+    // handleInput LÀM NHIỆM VỤ ĐỌC PHÍM (Ý định của người chơi)
     sf::Vector2f movement(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) movement.y += 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) movement.x -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) movement.x += 1.f;
 
-    // Chuẩn hóa vector di chuyển để không bị đi chéo nhanh hơn đi thẳng
+    // Chuẩn hóa vector di chuyển
     if (movement.x != 0.f || movement.y != 0.f) {
         float length = std::sqrt(movement.x * movement.x + movement.y * movement.y);
         movement /= length;
+    }
+    
+    // Lưu kết quả vào biến direction của Entity để update dùng
+    this->direction = movement; 
+
+    // --- 2. XỬ LÝ TẤN CÔNG (THÊM ĐOẠN NÀY VÀO) ---
+    // Kiểm tra: Nếu chuột trái ĐANG ĐƯỢC BẤM và hiện tại ĐANG KHÔNG TẤN CÔNG
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !this->isAttacking) {
+        this->isAttacking = true;
+        this->attackClock.restart(); // Bấm giờ để bắt đầu tính thời gian đòn đánh tồn tại
         
-        // TÍNH TOÁN VÀ CẬP NHẬT TỌA ĐỘ VÀO BIẾN LOGIC GỐC (ENTITY)
-        this->x += movement.x * this->speed * context.deltaTime;
-        this->y += movement.y * this->speed * context.deltaTime;
+        std::cout << "Player vung don tan cong!\n"; // Dòng in ra để bạn test xem bấm chuột ăn chưa
     }
 
-    // --- CƠ CHẾ 2: DI CHUYỂN THEO CON TRỎ CHUỘT (Nếu dùng thì cần truyền window vào context) ---
-    /*
-    if (context.window != nullptr) { // Giả sử sau này bạn bỏ window vào struct GameContext
-        sf::Vector2i mousePos = sf::Mouse::getPosition(*(context.window));
-        sf::Vector2f targetPos = context.window->mapPixelToCoords(mousePos);
-        
-        sf::Vector2f direction = targetPos - sf::Vector2f(this->x, this->y);
-        float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-        
-        if (distance > 5.f) { 
-            direction /= distance;
-            this->x += direction.x * this->speed * context.deltaTime;
-            this->y += direction.y * this->speed * context.deltaTime;
-        }
-    }
-    */
+}
 
-    // --- BƯỚC ĐỒNG BỘ CUỐI CÙNG: Đưa tọa độ logic ép vào Sprite hiển thị ---
-    // Thay vì dùng sprite.move(), ta dùng setPosition để đảm bảo Hình ảnh và Logic khớp khít 100%
+void Player::update(const GameContext& context) {
+    // update CHỈ LÀM NHIỆM VỤ TÍNH VẬT LÝ (Dựa vào direction đã có)
+    if (this->direction.x != 0.f || this->direction.y != 0.f) {
+        this->x += this->direction.x * this->speed * context.deltaTime;
+        this->y += this->direction.y * this->speed * context.deltaTime;
+    }
+
+    // Đồng bộ vào Sprite
     this->sprite.setPosition(sf::Vector2f(this->x, this->y));
+    this->updateStatus() ;
 }
 
 void Player::draw(sf::RenderWindow& window) {
     window.draw(this->sprite);
+
+
+    // 2. Kiểm tra điều kiện: Nếu đang tấn công thì vẽ ô Hitbox Debug
+    if (this->isAttacking) {
+        // Gọi hàm toán học lấy vùng FloatRect (Chuẩn SFML 3.0) mà bạn đã làm
+        sf::FloatRect attackBox = this->getAttackHitbox();
+
+        // Tạo hình chữ nhật trực quan để hiển thị
+        sf::RectangleShape debugRect;
+        debugRect.setPosition(attackBox.position);
+        debugRect.setSize(attackBox.size);
+
+        // Định dạng màu sắc để dễ nhìn thấy trên màn hình
+        debugRect.setFillColor(sf::Color(255, 0, 0, 100)); // Màu đỏ bán trong suốt (Alpha = 100)
+        debugRect.setOutlineColor(sf::Color::Red);         // Viền đỏ đậm
+        debugRect.setOutlineThickness(1.2f);               // Độ dày viền
+
+        // Vẽ cái ô này lên cửa sổ
+        window.draw(debugRect);
+    }
 }

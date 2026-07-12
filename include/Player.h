@@ -8,7 +8,7 @@ class GameContext ;
 class Player : public Entity{
 private:
 
-    sf::CircleShape sprite;
+    // sf::CircleShape sprite;
     float speed;
 
 public:

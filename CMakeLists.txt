@@ -16,7 +16,8 @@ file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 
 # Khởi tạo file thực thi đầu ra
 # Khởi tạo file thực thi đầu ra (đã sửa đường dẫn thành src/main.cpp)
-add_executable(${PROJECT_NAME} src/main.cpp ${SRC_FILES})
+add_executable(${PROJECT_NAME} src/main.cpp ${SRC_FILES}
+    include/AttackComponent.h)
 
 # SỬA TẠI ĐÂY: Liên kết target theo chuẩn namespace của SFML 3 (SFML::<Component>)
 target_link_libraries(${PROJECT_NAME} SFML::Graphics SFML::Window SFML::System SFML::Audio)

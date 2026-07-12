@@ -61,16 +61,17 @@ void GameplayState::update(float dt) {
 
     context.deltaTime = dt ; 
 
-    // 1. Xem Player thực tế có đang di chuyển không
-    std::cout << "Player Real Pos: " << player.getX() << ", " << player.getY() << std::endl;
+    // 1.----------- Xem Player thực tế có đang di chuyển không
+    // std::cout << "Player Real Pos: " << player.getX() << ", " << player.getY() << std::endl;
 
-    // 2. Xem Player lưu trong Context có trùng tọa độ không
-    if (!context.allEntity.empty()) {
-        std::cout << "Context Player Pos: " << context.allEntity[0]->getX() << ", " << context.allEntity[0]->getY() << std::endl;
-    }
+    // 2.------------ Xem Player lưu trong Context có trùng tọa độ không
+    // if (!context.allEntity.empty()) {
+    //     std::cout << "Context Player Pos: " << context.allEntity[0]->getX() << ", " << context.allEntity[0]->getY() << std::endl;
+    // }
 
-    // 3. Xem deltaTime có lớn hơn 0 không
-    std::cout << "DeltaTime: " << dt << std::endl;
+    //---------- 3. Xem deltaTime có lớn hơn 0 không
+    // std::cout << "DeltaTime: " << dt << std::endl;
+    player.handleInput() ; 
 
     player.update(context);
 

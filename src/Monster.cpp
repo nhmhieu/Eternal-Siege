@@ -83,7 +83,7 @@ void Monster :: moveToward(float deltaTime, Entity* target){
 
 
     if(distance <= attackRange){
-        std :: cout << "Quai dang tan cong !" << std :: endl ; 
+        // std :: cout << "Quai dang tan cong !" << std :: endl ; 
 
     }
 

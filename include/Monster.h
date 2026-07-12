@@ -15,7 +15,7 @@ class Monster : public Entity{
         float targetTimer ; 
 
         //bien sprite de ve quai vat
-        sf :: CircleShape sprite ; 
+        // sf :: CircleShape sprite ; 
 
 
 
