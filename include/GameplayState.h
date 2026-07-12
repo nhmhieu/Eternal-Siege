@@ -8,11 +8,14 @@
 #include "Monster.h"
 #include "Entity.h"
 
+class GameContext ; //foward declaration cho GameContext
+
 class GameplayState : public State {
 private:
     Player player;
     std :: vector<Monster*> monsters ;
-    std :: vector<Entity*> tempEntity ; 
+    GameContext context ; 
+
 
 public:
     GameplayState() ;

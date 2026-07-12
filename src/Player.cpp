@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "GameContext.h"
 #include <cmath>
 
 Player::Player() {
@@ -13,7 +14,7 @@ void Player::handleInput() {
     // Không cần xử lý trong handleInput nếu dùng Real-time Input (sf::Keyboard::isKeyPressed)
 }
 
-void Player::update(float dt) { //tai sao ham nay lai can bien const sf::RenderWindow& window
+void Player::update(const GameContext& context) {
     // --- CƠ CHẾ 1: DI CHUYỂN BẰNG PHÍM WASD ---
     sf::Vector2f movement(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= 1.f;
@@ -23,28 +24,36 @@ void Player::update(float dt) { //tai sao ham nay lai can bien const sf::RenderW
 
     // Chuẩn hóa vector di chuyển để không bị đi chéo nhanh hơn đi thẳng
     if (movement.x != 0.f || movement.y != 0.f) {
-        // Tự tính toán chuẩn hóa độ dài vector thủ công (Hạn chế dùng hàm thư viện ngoài)
         float length = std::sqrt(movement.x * movement.x + movement.y * movement.y);
         movement /= length;
-        this->sprite.move(movement * this->speed * dt);
+        
+        // TÍNH TOÁN VÀ CẬP NHẬT TỌA ĐỘ VÀO BIẾN LOGIC GỐC (ENTITY)
+        this->x += movement.x * this->speed * context.deltaTime;
+        this->y += movement.y * this->speed * context.deltaTime;
     }
 
-    // --- CƠ CHẾ 2: DI CHUYỂN THEO CON TRỎ CHUỘT (Bỏ comment đoạn dưới nếu muốn dùng) ---
-    
-    // sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-    // sf::Vector2f targetPos = window.mapPixelToCoords(mousePos);
-    // sf::Vector2f playerPos = this->sprite.getPosition();
-    
-    // sf::Vector2f direction = targetPos - playerPos;
-    // float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-    
-    // if (distance > 5.f) { // Tránh hiện tượng rung lắc khi đến sát con trỏ
-    //     direction /= distance;
-    //     this->sprite.move(direction * this->speed * dt);
-    // }
-    
+    // --- CƠ CHẾ 2: DI CHUYỂN THEO CON TRỎ CHUỘT (Nếu dùng thì cần truyền window vào context) ---
+    /*
+    if (context.window != nullptr) { // Giả sử sau này bạn bỏ window vào struct GameContext
+        sf::Vector2i mousePos = sf::Mouse::getPosition(*(context.window));
+        sf::Vector2f targetPos = context.window->mapPixelToCoords(mousePos);
+        
+        sf::Vector2f direction = targetPos - sf::Vector2f(this->x, this->y);
+        float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        
+        if (distance > 5.f) { 
+            direction /= distance;
+            this->x += direction.x * this->speed * context.deltaTime;
+            this->y += direction.y * this->speed * context.deltaTime;
+        }
+    }
+    */
+
+    // --- BƯỚC ĐỒNG BỘ CUỐI CÙNG: Đưa tọa độ logic ép vào Sprite hiển thị ---
+    // Thay vì dùng sprite.move(), ta dùng setPosition để đảm bảo Hình ảnh và Logic khớp khít 100%
+    this->sprite.setPosition(sf::Vector2f(this->x, this->y));
 }
 
-void Player::render(sf::RenderWindow& window) {
+void Player::draw(sf::RenderWindow& window) {
     window.draw(this->sprite);
 }

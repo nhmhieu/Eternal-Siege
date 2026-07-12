@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 
+class GameContext ; 
+
 class Entity{
 
     protected : 
@@ -29,6 +31,7 @@ class Entity{
 
 
         //ham ve Entity ra man hinh 
-        virtual void draw(sf :: RenderWindow& window) = 0 ; ///(Ham thuan ao bat buoc cac Entity ton tai phai co cach ve ra man hinh)
+        virtual void draw(sf :: RenderWindow& window) = 0 ; //(Ham thuan ao bat buoc cac Entity ton tai phai co cach ve ra man hinh)
+        virtual void update(const GameContext& context) = 0 ;  //Ham update vi tri/sprite trong frame hien tai 
          
 } ;

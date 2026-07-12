@@ -1,4 +1,6 @@
 #include "Monster.h" 
+#include "GameContext.h"
+
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -31,7 +33,7 @@ Monster::Monster(float x, float y, float health, float maxHealth)
 
 //Ham huy va giai phong con tro currentTarget
 Monster :: ~Monster(){
-    delete currentTarget ; 
+    // delete currentTarget ; 
 }
 
 //Cac ham tim target gan nhat cho quai vat di chuyen tien den target
@@ -69,6 +71,15 @@ void Monster :: moveToward(float deltaTime, Entity* target){
     float distanceSquared = dx * dx + dy * dy ;
     float distance = sqrt(distanceSquared) ; 
 
+    // --- IN RA ĐỂ KIỂM TRA QUÁI CÓ NHẬN DIỆN ĐƯỢC KHOẢNG CÁCH KHÔNG ---
+    // std::cout << "Quai dang o: " << this->x << "," << this->y 
+    //           << " | Target o: " << target->getX() << "," << target->getY() 
+    //           << " | Distance: " << distance << std::endl;
+
+    // if(distance <= attackRange){
+    //     std :: cout << "Quai dang tan cong !" << std :: endl ; 
+    // }
+
 
 
     if(distance <= attackRange){
@@ -77,21 +88,26 @@ void Monster :: moveToward(float deltaTime, Entity* target){
     }
 
     else{
-        float moveX = (dx / distance )  * speed * deltaTime ; 
-        float moveY = (dy / distance ) * speed * deltaTime ; 
-
+        
         if (distance > 0.0001f) {
+
+            float moveX = (dx / distance )  * speed * deltaTime ; 
+            float moveY = (dy / distance ) * speed * deltaTime ; 
             this->x += moveX ; 
             this->y += moveY ;
         }
+        this->sprite.setPosition(sf::Vector2f(this->x, this->y));
     }   
+
 }
 
-void Monster :: update(float deltaTime, const std :: vector<Entity*>& allTargets) {
+void Monster :: update(const GameContext& context) {
 
-    targetTimer += deltaTime ; 
+    targetTimer += context.deltaTime ; 
     if(targetTimer >= 0.5f){
-        updateTarget(allTargets) ;
+        std::cout << "Quai dang quet tim muc tieu... So luong Entity nhan duoc: " << context.allEntity.size() << std::endl;
+
+        updateTarget(context.allEntity) ;
         targetTimer = 0 ; 
     }
 
@@ -102,8 +118,15 @@ void Monster :: update(float deltaTime, const std :: vector<Entity*>& allTargets
             return ; 
         }
 
-        moveToward(deltaTime, currentTarget) ; 
+        moveToward(context.deltaTime, currentTarget) ; 
+    } else{
+        std::cout << "Quai khong co mục tieu (currentTarget == nullptr)!" << std::endl;
+    
+
     }
+
+    this->sprite.setPosition(sf::Vector2f(this->x, this->y));
+
 }
 
 void Monster :: draw(sf :: RenderWindow& window){

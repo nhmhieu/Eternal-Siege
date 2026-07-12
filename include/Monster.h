@@ -3,6 +3,7 @@
 #include "Entity.h" 
 #include <iostream>
 #include <vector>
+#include "GameContext.h"
 
 class Monster : public Entity{ 
 
@@ -28,7 +29,7 @@ class Monster : public Entity{
         void updateTarget(const std :: vector<Entity*>& allTargets) ;
         //ham cho quai di chuyen den target hien tai
         void moveToward(float deltaTime, Entity* target) ; 
-        void update(float deltaTime, const std :: vector<Entity*>& allTargets) ; 
+        void update(const GameContext& context) override ; 
 
         ///Ham ve quai vat ra man hinh
         void draw(sf :: RenderWindow& window) override ; 

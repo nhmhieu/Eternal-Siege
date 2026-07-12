@@ -1,8 +1,13 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 
-class Player{
+#include <SFML/Graphics.hpp>
+#include "Entity.h"
+
+class GameContext ; 
+
+class Player : public Entity{
 private:
+
     sf::CircleShape sprite;
     float speed;
 
@@ -11,6 +16,6 @@ public:
     ~Player() = default;
 
     void handleInput();
-    void update(float dt); 
-    void render(sf::RenderWindow& window);
+    void update(const GameContext& context) override ; 
+    void draw(sf::RenderWindow& window) override;
 };

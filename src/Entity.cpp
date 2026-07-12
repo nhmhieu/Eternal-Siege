@@ -20,5 +20,5 @@ void Entity :: takeDamage(float damage){
 }
 
 bool Entity :: isDead() const{
-    return true ; 
+    return false ; 
 }
