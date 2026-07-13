@@ -7,7 +7,7 @@ Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
     //state dang chay hien tai la dummy state
-    stateMachine.changeState(std::make_unique<GameplayState>());
+    stateMachine.changeState(std::make_unique<GameplayState>(window));
 }
 
 Game :: ~Game(){

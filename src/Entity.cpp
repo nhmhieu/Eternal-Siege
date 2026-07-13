@@ -38,8 +38,8 @@ sf::FloatRect Entity::getAttackHitbox() const {
     // 3. Tính toán tâm của thực thể (Sử dụng currentBounds.position và currentBounds.size)
     sf::Vector2f center = currentBounds.position + (currentBounds.size / 2.f);
     
-    // 4. Đẩy tâm của hitbox ra phía trước dựa theo hướng 'direction' và khoảng cách 'range'
-    sf::Vector2f attackCenter = center + (direction * range);
+    // 4. Đẩy tâm của hitbox ra phía trước dựa theo hướng 'attackDirection' và khoảng cách 'range'
+    sf::Vector2f attackCenter = center + (attackDirection * range);
     
     // 5. Tạo ra FloatRect mới: Nhận vào (Vị trí góc trên bên trái, Kích thước)
     sf::Vector2f attackPosition = attackCenter - (hitboxSize / 2.f);

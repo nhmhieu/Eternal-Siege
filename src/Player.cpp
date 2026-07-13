@@ -1,6 +1,11 @@
 #include "Player.h"
 #include "GameContext.h"
+
+#include <iostream>
 #include <cmath>
+
+using namespace std ;
+
 
 Player::Player() {
     this->sprite.setRadius(25.f);
@@ -71,5 +76,8 @@ void Player::draw(sf::RenderWindow& window) {
 
         // Vẽ cái ô này lên cửa sổ
         window.draw(debugRect);
+
+        //Kiem tra huong cua don danh
+        cout << "Attack direction : " << this->attackDirection.x << " " << this->attackDirection.y << endl ; 
     }
 }

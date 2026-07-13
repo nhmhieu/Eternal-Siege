@@ -1,6 +1,10 @@
 #pragma once 
 
 #include <SFML/Graphics.hpp>
+#include <iostream>
+
+using namespace std ;
+
 
 class GameContext ; 
 
@@ -14,6 +18,7 @@ class Entity{
         float maxHealth ;  
         sf :: CircleShape sprite ; 
         sf :: Vector2f direction = {0.f, 1.f} ;//mac dinh nhin xuong duoi
+        sf :: Vector2f attackDirection = {0.f, 0.f} ; 
 
         //cac attribute de thuc hien tan cong
         sf :: Clock attackClock ; 
@@ -32,7 +37,17 @@ class Entity{
         float getX() const {return x ;} 
         float getY() const {return y ; } 
         float getHealth() const {return health ;} ;
-        
+        sf :: Vector2f getAttackDirection() const {return attackDirection ;} 
+
+
+        //setter 
+        void setX(float x){this->x = x ;}  
+        void setY(float y){this->y = y ;} 
+        void setDirection(sf :: Vector2f direction){this->direction = direction ;}
+        void setAttackDirection(sf :: Vector2f attackDir){this->attackDirection = attackDir ; 
+        cout << "Ham attackSetDirection duoc goi, x = " << attackDirection.x << ", y = " << attackDirection.y  << endl ;}
+
+
         //Ham tinh toan va xu li logic game
         virtual void takeDamage(float damage) ; 
         bool isDead() const ; 

@@ -1,8 +1,13 @@
 #include "GameplayState.h"
 
 #include <iostream>
+#include <cmath>
 
-GameplayState::GameplayState() {
+// GameplayState :: GameplayState() {}
+
+GameplayState::GameplayState(sf :: RenderWindow& window) 
+    : window(window)
+{
     // 1. Đẩy player vào trước để context sẵn sàng có dữ liệu
     context.allEntity.push_back(&(this->player)); 
 
@@ -37,6 +42,32 @@ void GameplayState::handleEvent(const sf::Event& event) {
         if (keyPressed->code == sf::Keyboard::Key::P) {
             std::cout << "Tam dung Game (Pause)!\n";
             // Bạn có thể push State Pause vào StateMachine ở đây nếu cần
+        }
+    }
+
+    //neu chuot duoc bam
+    if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+        //kiem tra xem phai chuot trai khong 
+        if (mousePressed->button == sf::Mouse::Button::Left) {
+            sf::Vector2i mousePixel = mousePressed->position;
+            sf::Vector2f mouseWorld = this->window.mapPixelToCoords(mousePixel); 
+
+            sf::Vector2f playerPos(player.getX(), player.getY()); 
+            
+            // 1. Đây mới chỉ là vector khoảng cách thô (Gia tri lon nhu 764, 457)
+            sf::Vector2f attackDir = mouseWorld - playerPos; 
+
+            // 2. 🎯 BẮT BUỘC PHẢI CHUẨN HÓA ĐỂ BIẾN THÀNH HƯỚNG CÓ ĐỘ DÀI = 1
+            float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
+            if (length != 0.f) {
+                attackDir.x /= length; // Ép x về khoảng -1 đến 1
+                attackDir.y /= length; // Ép y về khoảng -1 đến 1
+            } else {
+                attackDir = sf::Vector2f(1.f, 0.f); // Hướng mặc định sang phải nếu click trùng tâm
+            }
+
+            // 3. Nạp cái vector đã chuẩn hóa này vào player
+            player.setAttackDirection(attackDir); 
         }
     }
 }

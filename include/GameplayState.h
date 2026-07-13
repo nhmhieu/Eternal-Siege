@@ -16,9 +16,14 @@ private:
     std :: vector<Monster*> monsters ;
     GameContext context ; 
 
+    //bien theo doi vi tri cua chuot
+    sf::Vector2f mousePos ; 
+    sf :: RenderWindow& window ; 
+
 
 public:
-    GameplayState() ;
+
+    GameplayState(sf :: RenderWindow& window) ;
     ~GameplayState() override ;
 
     void onEnter() override;
