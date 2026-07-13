@@ -1,0 +1,79 @@
+#include <iostream>
+#include <filesystem>
+#include "IntroState.h"
+#include "MenuState.h"
+#include "StateMachine.h"
+
+IntroState::IntroState(StateMachine& machine)
+	: machine(machine), displayTime(3.0f), isDone(false)
+{
+    background.setSize(sf::Vector2f(1280.0f, 720.0f));
+    background.setFillColor(sf::Color::Blue);
+}
+
+void IntroState::onEnter() {
+    std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
+    std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
+
+    if (font.openFromFile("assets/Montserrat-Italic.ttf")) {
+        std::cout << "=> NAP FONT THANH CONG!" << std::endl;
+        gameTitle = std::make_unique<sf::Text>(font);
+        gameTitle->setString("From nowhere of the universe");
+        gameTitle->setCharacterSize(20);
+        gameTitle->setFillColor(sf::Color::White);
+
+        sf::FloatRect textBounds = gameTitle->getLocalBounds();
+        gameTitle->setOrigin({ textBounds.position.x + textBounds.size.x / 2.0f,
+                              textBounds.position.y + textBounds.size.y / 2.0f });
+        gameTitle->setPosition({ 640.0f, 360.0f });
+        
+    }
+    else {
+  
+        std::cout << "KHONG THE NAP FONT!" << std::endl;
+        gameTitle.reset();
+    }
+
+    displayTime = 3.0f;
+    isDone = false;
+}
+
+void IntroState::onExit() {
+    std::cout << "--- DANG ROI INTRO STATE ---" << std::endl;
+}
+
+void IntroState::handleEvent(const sf::Event& event) {
+    if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
+        if (keyPressed->code == sf::Keyboard::Key::Space ||
+            keyPressed->code == sf::Keyboard::Key::Escape) {
+            isDone = true;
+        }
+    }
+}
+
+void IntroState::update(float dt) {
+    if (isDone) return;
+
+    displayTime -= dt;
+
+    if (displayTime <= 0.0f) {
+        isDone = true;
+    }
+
+    if (isDone) {
+        std::cout << "Chuyen sang MenuState!" << std::endl;
+        auto nextState = std::make_unique<MenuState>(machine);
+        machine.changeState(std::move(nextState));
+        return;
+    }
+}
+
+void IntroState::render(sf::RenderWindow& window) {
+    // 1. Vẽ hình chữ nhật nền xanh trước
+    window.draw(background);
+
+    // 2. Vẽ dòng chữ đè lên trên nền (Nhớ kiểm tra pointer để tránh crash nếu nạp font lỗi)
+    if (gameTitle) {
+        window.draw(*gameTitle);
+    }
+}
