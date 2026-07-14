@@ -2,6 +2,7 @@
 
 #include "Entity.h" 
 #include "GameContext.h"
+#include "Weapon.h"
 
 Entity :: Entity(){
     x = 0 ;
@@ -64,6 +65,7 @@ void Entity :: updateStatus(){
 
         if(attackClock.getElapsedTime().asSeconds() > attackDuration){
             isAttacking = false ; 
+            currentWeapon->clearHitList() ;
         }
 
     }

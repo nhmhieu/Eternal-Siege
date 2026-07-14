@@ -13,7 +13,7 @@ GameplayState::GameplayState(sf :: RenderWindow& window)
     context.allEntity.push_back(&(this->player)); 
     context.players.push_back(&(this->player)) ;  
 
-    Sword* s = new Sword(100, 100) ; 
+    Sword* s = new Sword(100, 150) ; 
     player.setCurrentWeapon(s) ; 
 
     //tao quai vat tam thoi
@@ -107,6 +107,7 @@ void GameplayState::update(float dt) {
 
     //Ham nay cap nhat vi tri moi cua player theo thoi gian thuc va ve hinh len man hinh
     player.update(context);
+    
 
     for (auto* monster : monsters) {
         monster->update(context) ;
@@ -128,6 +129,16 @@ void GameplayState::render(sf::RenderWindow& window) {
     for(auto monster : monsters){
         monster->draw(window) ; 
     }
+
+    //ve hop debug
+    if (player.getIsAttacking() && player.getCurrentWeapon() != nullptr) {
+        player.getCurrentWeapon()->drawDebug(
+            window, 
+            { player.getX(), player.getY() }, 
+            player.getAttackDirection()
+        );
+    }
+
     // Vẽ nhân vật
     this->player.draw(window);
 }

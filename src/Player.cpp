@@ -53,6 +53,7 @@ void Player::update(const GameContext& context) {
     //Dong bo vi tri vao sprite 
     this->sprite.setPosition(sf::Vector2f(this->x, this->y));
     this->updateStatus() ;
+    
 }
 
 void Player::draw(sf::RenderWindow& window) {

@@ -39,6 +39,14 @@ class Entity{
         float attackDuration = 0.2f ; 
         float attackPower = 10.f ; 
 
+        //tao hurtBox cho quai 
+        float hurtBoxWidth = 32.f;  // Cấu hình nhỏ hơn kích thước ảnh gốc (ví dụ ảnh 48x48 thì hộp va chạm chỉ nên là 32)
+        float hurtBoxHeight = 32.f;
+        
+        // Nếu bạn muốn căn chỉnh tâm của hộp va chạm so với tọa độ (x,y) của nhân vật
+        float hurtBoxOffsetX = 8.f;  // Dịch vào trong để căn giữa
+        float hurtBoxOffsetY = 8.f;
+
     public : 
 
         //constructor va destructor
@@ -82,9 +90,9 @@ class Entity{
         virtual sf :: FloatRect getCollisionBox() const {
             return sprite.getGlobalBounds() ; 
         }
-        virtual sf :: FloatRect getHurtBox() const {
-            return sprite.getGlobalBounds() ; 
-        }
+        // virtual sf :: FloatRect getHurtBox() const {
+        //     return sprite.getGlobalBounds() ; 
+        // }
         virtual sf :: FloatRect getAttackHitbox() const ; 
         
         bool getIsAttacking() const {return isAttacking ;} 
@@ -97,5 +105,14 @@ class Entity{
 
         //Ham nhan sat thuong 
         // virtual void takeDamage(int amount) ; 
+
+        //ham tinh hurtBox moi 
+        virtual sf::FloatRect getHurtBox() const {
+        // SFML 3: Trả về FloatRect sử dụng position và size rõ ràng
+        return sf::FloatRect(
+            { this->x + hurtBoxOffsetX, this->y + hurtBoxOffsetY },
+            { this->hurtBoxWidth, this->hurtBoxHeight }
+        );
+    }
 
     } ;
