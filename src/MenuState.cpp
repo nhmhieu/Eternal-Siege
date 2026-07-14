@@ -1,62 +1,87 @@
 #include "MenuState.h"
 #include <iostream>
+#include <fstream>
+#include <vector>
 
+// Constructor bây giờ rất sạch sẽ, không gọi font rỗng nữa
 MenuState::MenuState(StateMachine& machine)
-    : stateMachine(machine), initialized(false), titleText(font), startText(font), exitText(font) {
+    : stateMachine(machine), initialized(false) {
 }
 
+static std::vector<char> fontBuffer;
+
 void MenuState::onEnter() {
-    // Sửa đường dẫn tuyệt đối tạm thời để đảm bảo nạp font chạy được luôn trên máy bạn
-    if (!font.openFromFile("assets/Montserrat-Italic.ttf")) {
-        std::cerr << "Failed to load font trong MenuState!" << std::endl;
+    std::string path = "assets/Montserrat-Italic.ttf";
+
+    // 1. Dùng luồng C++ đọc file dưới dạng nhị phân
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        std::cerr << "C++ khong the mo file font!" << std::endl;
         initialized = false;
         return;
     }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    fontBuffer.resize(size);
+    if (!file.read(fontBuffer.data(), size)) {
+        std::cerr << "Khong the doc du lieu font vao buffer!" << std::endl;
+        initialized = false;
+        return;
+    }
+
+    // 2. Ép SFML nạp font trực tiếp từ vùng nhớ bộ đệm vừa đọc
+    if (!font.openFromMemory(fontBuffer.data(), fontBuffer.size())) {
+        std::cerr << "SFML van tu choi nap font tu Memory!" << std::endl;
+        initialized = false;
+        return;
+    }
+
     initialized = true;
+    std::cout << "=> KHONG CO GI NGAN CAN DUOC NUA! NAP FONT THANH CONG!" << std::endl;
 
-    titleText.setString("ETERNAL SIEGE");
-    titleText.setCharacterSize(68);
-    titleText.setFillColor(sf::Color::Yellow);
-    titleText.setPosition({ 300.f, 150.f });
+    // BƯỚC 2: Font đã nạp xong, giờ mới an toàn tạo các đối tượng sf::Text
+    titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 68);
+    titleText->setFillColor(sf::Color::Yellow);
+    titleText->setPosition({ 300.f, 150.f });
 
+    startText = std::make_unique<sf::Text>(font, "BAT DAU", 30);
+    startText->setFillColor(sf::Color::White);
+    startText->setPosition({ 595.f, 360.f });
+
+    exitText = std::make_unique<sf::Text>(font, "THOAT", 30);
+    exitText->setFillColor(sf::Color::White);
+    exitText->setPosition({ 605.f, 460.f });
+
+    // Các nút bấm hình chữ nhật không cần font
     startButton.setSize(sf::Vector2f(200.f, 60.f));
     startButton.setFillColor(sf::Color(50, 150, 50));
     startButton.setPosition({ 540.f, 350.f });
 
-    startText.setString("BAT DAU");
-    startText.setCharacterSize(30);
-    startText.setFillColor(sf::Color::White);
-    startText.setPosition({ 595.f, 360.f });
-
     exitButton.setSize(sf::Vector2f(200.f, 60.f));
     exitButton.setFillColor(sf::Color(150, 50, 50));
     exitButton.setPosition({ 540.f, 450.f });
-
-    exitText.setString("THOAT");
-    exitText.setCharacterSize(30);
-    exitText.setFillColor(sf::Color::White);
-    exitText.setPosition({ 605.f, 460.f });
 }
 
 void MenuState::onExit() {
-    // Đối tượng thông thường tự giải phóng khi MenuState bị hủy, không lo leak bộ nhớ
+    // Các unique_ptr sẽ tự động dọn dẹp một cách an toàn
 }
 
 void MenuState::handleEvent(const sf::Event& event) {
-    // Nếu chưa khởi tạo thành công thì không xử lý click nút để tránh lỗi logic
     if (!initialized) return;
 
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
             sf::Vector2i mousePos = mousePressed->position;
 
+            // Dùng dấu -> vì startButton giờ là biến thông thường
             if (startButton.getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 std::cout << "Start button clicked!" << std::endl;
             }
 
             if (exitButton.getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 std::cout << "Exit button clicked!" << std::endl;
-                // Thêm logic đóng cửa sổ nếu cần ở đây
             }
         }
     }
@@ -65,12 +90,12 @@ void MenuState::handleEvent(const sf::Event& event) {
 void MenuState::update(float dt) {}
 
 void MenuState::render(sf::RenderWindow& window) {
-    // Chốt chặn an toàn: Chỉ vẽ khi toàn bộ text và button đã được nạp thành công
     if (!initialized) return;
 
-    window.draw(titleText);
+    // Dùng dấu * để giải băm unique_ptr khi vẽ
+    window.draw(*titleText);
     window.draw(startButton);
-    window.draw(startText);
+    window.draw(*startText);
     window.draw(exitButton);
-    window.draw(exitText);
+    window.draw(*exitText);
 }

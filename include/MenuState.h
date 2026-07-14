@@ -2,7 +2,7 @@
 #include "State.h"
 #include "StateMachine.h"
 #include <SFML/Graphics.hpp>
-#include <memory>   // Thêm dòng này
+#include <memory>
 
 class MenuState : public State {
 private:
@@ -10,11 +10,14 @@ private:
     sf::Font font;
     bool initialized = false;
 
-    sf::Text titleText;
+    // Dùng unique_ptr cho các đối tượng cần Font
+    std::unique_ptr<sf::Text> titleText;
+    std::unique_ptr<sf::Text> startText;
+    std::unique_ptr<sf::Text> exitText;
+
+    // Biến thông thường cho các đối tượng không cần Font
     sf::RectangleShape startButton;
-    sf::Text startText;
     sf::RectangleShape exitButton;
-    sf::Text exitText;  
 
 public:
     MenuState(StateMachine& machine);

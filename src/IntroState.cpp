@@ -15,7 +15,11 @@ void IntroState::onEnter() {
     std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
     std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
 
-    if (font.openFromFile("assets/Montserrat-Italic.ttf")) {
+    if (!font.openFromFile(std::string("assets/Montserrat-Italic.ttf"))) {
+        std::cout << "KHONG THE NAP FONT!" << std::endl;
+        gameTitle.reset();
+    }
+    else {
         std::cout << "=> NAP FONT THANH CONG!" << std::endl;
         gameTitle = std::make_unique<sf::Text>(font);
         gameTitle->setString("From nowhere of the universe");
@@ -26,12 +30,6 @@ void IntroState::onEnter() {
         gameTitle->setOrigin({ textBounds.position.x + textBounds.size.x / 2.0f,
                               textBounds.position.y + textBounds.size.y / 2.0f });
         gameTitle->setPosition({ 640.0f, 360.0f });
-        
-    }
-    else {
-  
-        std::cout << "KHONG THE NAP FONT!" << std::endl;
-        gameTitle.reset();
     }
 
     displayTime = 3.0f;
