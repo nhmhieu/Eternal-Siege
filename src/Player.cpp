@@ -44,13 +44,13 @@ void Player::handleInput() {
 }
 
 void Player::update(const GameContext& context) {
-    // update CHỈ LÀM NHIỆM VỤ TÍNH VẬT LÝ (Dựa vào direction đã có)
+   
     if (this->direction.x != 0.f || this->direction.y != 0.f) {
         this->x += this->direction.x * this->speed * context.deltaTime;
         this->y += this->direction.y * this->speed * context.deltaTime;
     }
 
-    // Đồng bộ vào Sprite
+    //Dong bo vi tri vao sprite 
     this->sprite.setPosition(sf::Vector2f(this->x, this->y));
     this->updateStatus() ;
 }
@@ -60,24 +60,24 @@ void Player::draw(sf::RenderWindow& window) {
 
 
     // 2. Kiểm tra điều kiện: Nếu đang tấn công thì vẽ ô Hitbox Debug
-    if (this->isAttacking) {
-        // Gọi hàm toán học lấy vùng FloatRect (Chuẩn SFML 3.0) mà bạn đã làm
-        sf::FloatRect attackBox = this->getAttackHitbox();
+    // if (this->isAttacking) {
+    //     // Gọi hàm toán học lấy vùng FloatRect (Chuẩn SFML 3.0) mà bạn đã làm
+    //     sf::FloatRect attackBox = this->getAttackHitbox();
 
-        // Tạo hình chữ nhật trực quan để hiển thị
-        sf::RectangleShape debugRect;
-        debugRect.setPosition(attackBox.position);
-        debugRect.setSize(attackBox.size);
+    //     // Tạo hình chữ nhật trực quan để hiển thị
+    //     sf::RectangleShape debugRect;
+    //     debugRect.setPosition(attackBox.position);
+    //     debugRect.setSize(attackBox.size);
 
-        // Định dạng màu sắc để dễ nhìn thấy trên màn hình
-        debugRect.setFillColor(sf::Color(255, 0, 0, 100)); // Màu đỏ bán trong suốt (Alpha = 100)
-        debugRect.setOutlineColor(sf::Color::Red);         // Viền đỏ đậm
-        debugRect.setOutlineThickness(1.2f);               // Độ dày viền
+    //     // Định dạng màu sắc để dễ nhìn thấy trên màn hình
+    //     debugRect.setFillColor(sf::Color(255, 0, 0, 100)); // Màu đỏ bán trong suốt (Alpha = 100)
+    //     debugRect.setOutlineColor(sf::Color::Red);         // Viền đỏ đậm
+    //     debugRect.setOutlineThickness(1.2f);               // Độ dày viền
 
-        // Vẽ cái ô này lên cửa sổ
-        window.draw(debugRect);
+    //     // Vẽ cái ô này lên cửa sổ
+    //     window.draw(debugRect);
 
-        //Kiem tra huong cua don danh
-        cout << "Attack direction : " << this->attackDirection.x << " " << this->attackDirection.y << endl ; 
-    }
+    //     //Kiem tra huong cua don danh
+    //     cout << "Attack direction : " << this->attackDirection.x << " " << this->attackDirection.y << endl ; 
+    // }
 }

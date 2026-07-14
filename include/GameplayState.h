@@ -7,18 +7,28 @@
 #include "Player.h"
 #include "Monster.h"
 #include "Entity.h"
+#include "CombatManager.h"
 
 class GameContext ; //foward declaration cho GameContext
 
 class GameplayState : public State {
 private:
+    //Player ingame
     Player player;
-    std :: vector<Monster*> monsters ;
+
+    std :: vector<Entity *> monsters ;
+    std :: vector<Entity*> entities ; 
+
+
+    // cai nay le ra la cai chua moi thong tin cua game
     GameContext context ; 
 
     //bien theo doi vi tri cua chuot
     sf::Vector2f mousePos ; 
     sf :: RenderWindow& window ; 
+
+    //Xu li combat
+    CombatManager combatManager ; 
 
 
 public:

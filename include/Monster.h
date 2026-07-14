@@ -26,11 +26,13 @@ class Monster : public Entity{
 
 
         //ham update target cua quai vat 
-        void updateTarget(const std :: vector<Entity*>& allTargets) ;
+        void updateTarget(const std :: vector<Entity*>& allTargets) override ;
         //ham cho quai di chuyen den target hien tai
         void moveToward(float deltaTime, Entity* target) ; 
         void update(const GameContext& context) override ; 
 
         ///Ham ve quai vat ra man hinh
         void draw(sf :: RenderWindow& window) override ; 
+
+        
 } ;

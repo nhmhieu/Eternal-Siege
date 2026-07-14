@@ -10,16 +10,27 @@ Entity :: Entity(){
     maxHealth = 0 ; 
 }
 
-Entity :: Entity(float x, float y, float health, float maxHealth){
+// Định nghĩa và gán giá trị thông qua Initializer List (dấu hai chấm)
+Entity::Entity(float x, float y, float health, float maxHealth)
+    : x(x), y(y), health(health), maxHealth(maxHealth) 
+{
+    // Thân hàm có thể để trống hoàn toàn ở đây!
+}
+
+Entity :: Entity(float x, float y, float health, float maxHealth, Team team, Weapon* currentWeapon){
     this->x = x ;
     this->y = y ;
     this->health = health ;
     this->maxHealth = maxHealth ; 
+    this->team = team ; 
+    this->currentWeapon = currentWeapon ; 
 }
 
 void Entity :: takeDamage(float damage){
     health -= damage ;
     if(health <= 0) health = 0 ; 
+
+    std :: cout << "Mau cua quai hien tai : " << this->health << endl ; 
 }
 
 bool Entity :: isDead() const{

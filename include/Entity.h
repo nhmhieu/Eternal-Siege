@@ -8,13 +8,26 @@ using namespace std ;
 
 class GameContext ; 
 
+enum class Team{
+
+    Player, 
+    Enemy, 
+    Neutral 
+
+} ;
+
+class Weapon ; 
+
 class Entity{
 
     protected : 
-        
+
+        Weapon* currentWeapon = nullptr ; 
+
+        Team team ; 
         float x ;
         float y ;
-        float health ;
+        float health ; //mai mot de lai la int cho de tinh di
         float maxHealth ;  
         sf :: CircleShape sprite ; 
         sf :: Vector2f direction = {0.f, 1.f} ;//mac dinh nhin xuong duoi
@@ -30,7 +43,9 @@ class Entity{
 
         //constructor va destructor
         Entity() ;
-        Entity(float x, float y, float health, float maxHealth) ;
+        //constructor nay ghi tam de test cai constructor trong Monster chay
+        Entity(float x,float y,float health,float maxHealth) ; 
+        Entity(float x, float y, float health, float maxHealth, Team team, Weapon* currentWeapon) ;
         virtual ~Entity() = default ; //ham ao default khong can viet logic ham
 
         //getter 
@@ -38,6 +53,8 @@ class Entity{
         float getY() const {return y ; } 
         float getHealth() const {return health ;} ;
         sf :: Vector2f getAttackDirection() const {return attackDirection ;} 
+        Team getTeam() const{return this->team ;} 
+        Weapon* getCurrentWeapon() const {return this->currentWeapon;} 
 
 
         //setter 
@@ -46,7 +63,8 @@ class Entity{
         void setDirection(sf :: Vector2f direction){this->direction = direction ;}
         void setAttackDirection(sf :: Vector2f attackDir){this->attackDirection = attackDir ; 
         cout << "Ham attackSetDirection duoc goi, x = " << attackDirection.x << ", y = " << attackDirection.y  << endl ;}
-
+        // void setIsDead(bool status){this->isDead = status ;} 
+        void setCurrentWeapon(Weapon* weapon) {this->currentWeapon = weapon ;}
 
         //Ham tinh toan va xu li logic game
         virtual void takeDamage(float damage) ; 
@@ -73,4 +91,11 @@ class Entity{
         float getAttackPower() const {return attackPower ;} 
 
         void updateStatus() ; 
+
+        //Ham ao update muc tieu cho tru va quai
+        virtual void updateTarget(const std :: vector<Entity*>& targets) {}
+
+        //Ham nhan sat thuong 
+        // virtual void takeDamage(int amount) ; 
+
     } ;

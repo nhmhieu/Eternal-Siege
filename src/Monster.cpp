@@ -88,6 +88,7 @@ void Monster :: moveToward(float deltaTime, Entity* target){
     }
 
     else{
+        //Ham xu li de quai khong di chuyen de len player
         
         if (distance > 0.0001f) {
 
@@ -107,7 +108,8 @@ void Monster :: update(const GameContext& context) {
     if(targetTimer >= 0.5f){
         std::cout << "Quai dang quet tim muc tieu... So luong Entity nhan duoc: " << context.allEntity.size() << std::endl;
 
-        updateTarget(context.allEntity) ;
+        //quai chi nhin vao vector chua player de tan cong, va lien tuc tim muc tieu gan nhat
+        updateTarget(context.players) ;
         targetTimer = 0 ; 
     }
 
@@ -119,7 +121,8 @@ void Monster :: update(const GameContext& context) {
         }
 
         moveToward(context.deltaTime, currentTarget) ; 
-    } else{
+    } 
+    else{
         std::cout << "Quai khong co mục tieu (currentTarget == nullptr)!" << std::endl;
     
 
