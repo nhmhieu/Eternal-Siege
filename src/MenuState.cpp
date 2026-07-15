@@ -11,29 +11,7 @@ MenuState::MenuState(StateMachine& machine)
 static std::vector<char> fontBuffer;
 
 void MenuState::onEnter() {
-    std::string path = "assets/Montserrat-Italic.ttf";
-
-    // 1. Dùng luồng C++ đọc file dưới dạng nhị phân
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
-        std::cerr << "C++ khong the mo file font!" << std::endl;
-        initialized = false;
-        return;
-    }
-
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    fontBuffer.resize(size);
-    if (!file.read(fontBuffer.data(), size)) {
-        std::cerr << "Khong the doc du lieu font vao buffer!" << std::endl;
-        initialized = false;
-        return;
-    }
-
-    // 2. Ép SFML nạp font trực tiếp từ vùng nhớ bộ đệm vừa đọc
-    if (!font.openFromMemory(fontBuffer.data(), fontBuffer.size())) {
-        std::cerr << "SFML van tu choi nap font tu Memory!" << std::endl;
+    if (!font.openFromFile("assets/Montserrat-Italic.ttf")){
         initialized = false;
         return;
     }
