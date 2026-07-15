@@ -1,10 +1,10 @@
 #include "Game.h"
-#include "DummyState.h"
+#include "SetupState.h"
 
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
-    stateMachine.changeState(std::make_unique<DummyState>());
+    stateMachine.changeState(std::make_unique<SetupState>(stateMachine));
 }
 
 void Game::run() {
