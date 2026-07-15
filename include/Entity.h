@@ -1,118 +1,106 @@
-#pragma once 
+#pragma once
 
 #include <SFML/Graphics.hpp>
-#include <iostream>
+#include <vector>
+#include "Weapon.h" 
 
-using namespace std ;
+// ===============================
+// 1. ENUM
+// ===============================
+enum class Team {
+    Player,
+    Enemy,
+    Neutral
+};
 
+class GameContext;
 
-class GameContext ; 
+// ===============================
+// 2. LỚP ENTITY
+// ===============================
+class Entity {
+protected:
+    // ---------- CORE PROPERTIES ----------
+    sf::CircleShape sprite;
+    sf::Vector2f position;
+    float health;
+    float maxHealth;
+    Team team;
+    bool isAlive = true;   
 
-enum class Team{
+    // ---------- MOVEMENT ----------
+    sf::Vector2f direction = { 0.f, 1.f }; // Hướng di chuyển
+    float speed = 0.f;
 
-    Player, 
-    Enemy, 
-    Neutral 
+    // ---------- ATTACK ----------
+    sf::Vector2f attackDirection = { 0.f, 0.f };
+    bool isAttacking = false;
+    float attackDuration = 0.2f;
+    float attackPower = 10.f;
+    sf::Clock attackClock;
 
-} ;
+    // ---------- WEAPON ----------
+    Weapon* currentWeapon = nullptr;
 
-class Weapon ; 
+public:
+    // ===============================
+    // 3. CONSTRUCTORS & DESTRUCTOR
+    // ===============================
+    Entity();
+    Entity(float x, float y, float health, float maxHealth);
+    Entity(float x, float y, float health, float maxHealth, Team team, Weapon* weapon);
+    virtual ~Entity() = default;
 
-class Entity{
+    // ===============================
+    // 4. GETTERS & SETTERS
+    // ===============================
+    // Position
+    float getX() const { return position.x; }
+    float getY() const { return position.y; }
+    sf::Vector2f getPosition() const { return position; }
+    void setPosition(float x, float y) { position = { x, y }; sprite.setPosition(position); }
+    void setX(float x) { position.x = x; sprite.setPosition(position); }
+    void setY(float y) { position.y = y; sprite.setPosition(position); }
+    // Health
+    float getHealth() const { return health; }
+    float getMaxHealth() const { return maxHealth; }
+    bool isDead() const { return !isAlive; }  // ← ĐÃ SỬA LỖI
 
-    protected : 
+    // Team
+    Team getTeam() const { return team; }
 
-        Weapon* currentWeapon = nullptr ; 
+    // Movement
+    sf::Vector2f getDirection() const { return direction; }
+    void setDirection(sf::Vector2f dir) { direction = dir; }
 
-        Team team ; 
-        float x ;
-        float y ;
-        float health ; //mai mot de lai la int cho de tinh di
-        float maxHealth ;  
-        sf :: CircleShape sprite ; 
-        sf :: Vector2f direction = {0.f, 1.f} ;//mac dinh nhin xuong duoi
-        sf :: Vector2f attackDirection = {0.f, 0.f} ; 
+    // Attack
+    bool getIsAttacking() const { return isAttacking; }
+    void setIsAttacking(bool val) { isAttacking = val; if (val) attackClock.restart(); }
+    float getAttackPower() const { return attackPower; }
+    void setAttackPower(float power) { attackPower = power; }
+    sf::Vector2f getAttackDirection() const { return attackDirection; }
+    void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
 
-        //cac attribute de thuc hien tan cong
-        sf :: Clock attackClock ; 
-        bool isAttacking = false ; 
-        float attackDuration = 0.2f ; 
-        float attackPower = 10.f ; 
+    // Weapon
+    Weapon* getCurrentWeapon() const { return currentWeapon; }
+    void setCurrentWeapon(Weapon* weapon) { currentWeapon = weapon; }
 
-        //tao hurtBox cho quai 
-        float hurtBoxWidth = 32.f;  // Cấu hình nhỏ hơn kích thước ảnh gốc (ví dụ ảnh 48x48 thì hộp va chạm chỉ nên là 32)
-        float hurtBoxHeight = 32.f;
-        
-        // Nếu bạn muốn căn chỉnh tâm của hộp va chạm so với tọa độ (x,y) của nhân vật
-        float hurtBoxOffsetX = 8.f;  // Dịch vào trong để căn giữa
-        float hurtBoxOffsetY = 8.f;
+    // ===============================
+    // 5. CORE LOGIC
+    // ===============================
+    virtual void takeDamage(float damage);
+    virtual void update(const GameContext& context) = 0;
+    virtual void draw(sf::RenderWindow& window) = 0;
 
-    public : 
+    // ===============================
+    // 6. COLLISION & HITBOX HELPERS
+    // ===============================
+    virtual sf::FloatRect getCollisionBox() const;
+    virtual sf::FloatRect getHurtBox() const;
+    virtual sf::FloatRect getAttackHitbox() const;
 
-        //constructor va destructor
-        Entity() ;
-        //constructor nay ghi tam de test cai constructor trong Monster chay
-        Entity(float x,float y,float health,float maxHealth) ; 
-        Entity(float x, float y, float health, float maxHealth, Team team, Weapon* currentWeapon) ;
-        virtual ~Entity() = default ; //ham ao default khong can viet logic ham
-
-        //getter 
-        float getX() const {return x ;} 
-        float getY() const {return y ; } 
-        float getHealth() const {return health ;} ;
-        sf :: Vector2f getAttackDirection() const {return attackDirection ;} 
-        Team getTeam() const{return this->team ;} 
-        Weapon* getCurrentWeapon() const {return this->currentWeapon;} 
-
-
-        //setter 
-        void setX(float x){this->x = x ;}  
-        void setY(float y){this->y = y ;} 
-        void setDirection(sf :: Vector2f direction){this->direction = direction ;}
-        void setAttackDirection(sf :: Vector2f attackDir){this->attackDirection = attackDir ; 
-        cout << "Ham attackSetDirection duoc goi, x = " << attackDirection.x << ", y = " << attackDirection.y  << endl ;}
-        // void setIsDead(bool status){this->isDead = status ;} 
-        void setCurrentWeapon(Weapon* weapon) {this->currentWeapon = weapon ;}
-
-        //Ham tinh toan va xu li logic game
-        virtual void takeDamage(float damage) ; 
-        bool isDead() const ; 
-        
-        
-        //ham ve Entity ra man hinh 
-        virtual void draw(sf :: RenderWindow& window) = 0 ; //(Ham thuan ao bat buoc cac Entity ton tai phai co cach ve ra man hinh)
-        virtual void update(const GameContext& context) = 0 ;  //Ham update vi tri/sprite trong frame hien tai 
-        
-        
-        //Cac ham phuc vu cho viec tan cong quai
-
-        //-----Ham lay vung va cham nhan vat/vung nhan sat thuong dua vao sprite 
-        virtual sf :: FloatRect getCollisionBox() const {
-            return sprite.getGlobalBounds() ; 
-        }
-        // virtual sf :: FloatRect getHurtBox() const {
-        //     return sprite.getGlobalBounds() ; 
-        // }
-        virtual sf :: FloatRect getAttackHitbox() const ; 
-        
-        bool getIsAttacking() const {return isAttacking ;} 
-        float getAttackPower() const {return attackPower ;} 
-
-        void updateStatus() ; 
-
-        //Ham ao update muc tieu cho tru va quai
-        virtual void updateTarget(const std :: vector<Entity*>& targets) {}
-
-        //Ham nhan sat thuong 
-        // virtual void takeDamage(int amount) ; 
-
-        //ham tinh hurtBox moi 
-        virtual sf::FloatRect getHurtBox() const {
-        // SFML 3: Trả về FloatRect sử dụng position và size rõ ràng
-        return sf::FloatRect(
-            { this->x + hurtBoxOffsetX, this->y + hurtBoxOffsetY },
-            { this->hurtBoxWidth, this->hurtBoxHeight }
-        );
-    }
-
-    } ;
+    // ===============================
+    // 7. ATTACK STATE MANAGEMENT
+    // ===============================
+    void updateStatus(); // Cập nhật trạng thái tấn công
+};

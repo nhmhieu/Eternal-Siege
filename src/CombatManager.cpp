@@ -1,67 +1,36 @@
 #include "CombatManager.h"
+#include <iostream>
 
 void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<Entity*>& targets) {
+    if (!attacker || !weapon || !attacker->getIsAttacking()) return;
 
-    //edge case 
-    if(!attacker || !weapon ) return ; 
-    if (!attacker->getIsAttacking()) return;
-
-    // Thêm dòng này để kiểm tra vị trí Player
-// std::cout << "Vi tri Player LOGIC: (" << attacker->getX() << ", " << attacker->getY() << ")" << std::endl;
-
-    //Lay hitbox cua vu khi dang duoc attacker su dung hien tai
     sf::FloatRect attackArea = weapon->getHitbox(
-        {attacker->getX(), attacker->getY()}, 
+        { attacker->getX(), attacker->getY() },
         attacker->getAttackDirection()
     );
 
-// CHÈN VÀO NGAY DƯỚI DÒNG LẤY attackArea
-// std::cout << "--- HITBOX ATTACK AREA (SFML 3) ---" << std::endl;
-// std::cout << "Vi tri (X, Y): (" << attackArea.position.x << ", " << attackArea.position.y << ")" << std::endl;
-// std::cout << "Kich thuoc (W, H): (" << attackArea.size.x << ", " << attackArea.size.y << ")" << std::endl;
-// std::cout << "-----------------------------------" << std::endl;
+    for (auto* target : targets) {
+        if (!target || target->isDead()) continue;
+        if (target->getTeam() == attacker->getTeam()) continue;
 
-    std :: cout << "kiem tra entity voi hitbox" << endl ; 
-    if(targets.empty()) cout << "Targets dang trong !!!" << endl ; 
-    for (Entity* target : targets) {
+        if (!attackArea.findIntersection(target->getHurtBox()).has_value()) continue;
 
+        if (!weapon->isHitting({ attacker->getX(), attacker->getY() },
+            attacker->getAttackDirection(),
+            { target->getX(), target->getY() })) continue;
 
-        // IN THỬ HURTBOX CỦA QUÁI VẬT
-    // sf::FloatRect hurtBox = target->getHurtBox();
-    // std::cout << "--- QUAI VAT HURTBOX ---" << std::endl;
-    // std::cout << "Vi tri quai (X, Y): (" << hurtBox.position.x << ", " << hurtBox.position.y << ")" << std::endl;
-    // std::cout << "Kich thuoc quai (W, H): (" << hurtBox.size.x << ", " << hurtBox.size.y << ")" << std::endl;
-
-
-        if(target->getTeam() == attacker->getTeam()){
-            cout << "Target va attacker cung phe" << endl ;
-            continue; //bo qua neu cung phe 
-        }
- 
-        // 3. Kiểm tra va chạm (Broad-phase)
-        if (attackArea.findIntersection(target->getHurtBox()).has_value()){
-            // cout << "Va cham voi broad-phase" << endl ;
-            // 4. Kiểm tra va chạm chính xác (Narrow-phase - Hình quạt)
-            if (weapon->isHitting({attacker->getX(), attacker->getY()}, 
-                                  attacker->getAttackDirection(), 
-                                  {target->getX(), target->getY()})) {
-                
-                // 5. Nếu chưa trúng đòn này thì trừ máu
-                if(!weapon->isHit(target)){
-                    //tru mau o day
-                    target->takeDamage(attacker->getAttackPower());
-                    hitEntities.insert(target); // Đánh dấu đã trúng
-                    std :: cout << "Da danh trung quai !!!" << endl ;
-                    weapon->addHit(target) ;  
-                }
-            }
-        }
-        else{
-            // std :: cout << "Khong danh trung quai !!" << endl ; 
+        if (!weapon->isHit(target)) {
+            target->takeDamage(attacker->getAttackPower());
+            weapon->addHit(target);
+            std::cout << "Da danh trung quai!" << std::endl;
         }
     }
 }
 
 void CombatManager::resetAttack() {
     hitEntities.clear();
+}
+
+bool CombatManager::hasHit(Entity* target) const {
+    return hitEntities.find(target) != hitEntities.end();
 }

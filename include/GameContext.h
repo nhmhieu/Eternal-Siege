@@ -1,20 +1,17 @@
-#pragma once 
+#pragma once
 
-#include <iostream>
 #include <vector>
 #include "Entity.h"
 
+class GameContext {
+public:
+    float deltaTime = 0.f;
+    std::vector<Entity*> allEntity;
+    std::vector<Entity*> players;
+    std::vector<Entity*> enemies;
 
-class GameContext{
-
-    public : 
-        
-        float deltaTime ;
-        std::vector<Entity*> allEntity; // Để render và quản lý chung
-        std::vector<Entity*> players;     // Danh sách người chơi
-        std::vector<Entity*> enemies;     // Danh sách quái vật
-
-        GameContext() : deltaTime(0.0f) {} 
-        GameContext(float dt, const std :: vector<Entity*>& entities) : deltaTime(dt), allEntity(entities) {}
-
-} ;
+    GameContext() = default;
+    GameContext(float dt, const std::vector<Entity*>& entities)
+        : deltaTime(dt), allEntity(entities) {
+    }
+};

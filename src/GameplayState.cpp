@@ -1,144 +1,110 @@
 #include "GameplayState.h"
-#include "CombatManager.h"
 #include "Sword.h"
-
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
-// GameplayState :: GameplayState() {}
+GameplayState::GameplayState(sf::RenderWindow& window)
+    : window(window) {
+    // Thiết lập context
+    context.allEntity.push_back(&player);
+    context.players.push_back(&player);
 
-GameplayState::GameplayState(sf :: RenderWindow& window) 
-    : window(window)
-{
-    context.allEntity.push_back(&(this->player)); 
-    context.players.push_back(&(this->player)) ;  
+    // Gán vũ khí cho Player
+    Sword* sword = new Sword(20, 100);
+    player.setCurrentWeapon(sword);
 
-    Sword* s = new Sword(100, 150) ; 
-    player.setCurrentWeapon(s) ; 
+    // Tạo quái vật
+    Monster* m1 = new Monster(100, 100, 100, 100);
+    Monster* m2 = new Monster(300, 500, 100, 100);
+    monsters.push_back(m1);
+    monsters.push_back(m2);
 
-    //tao quai vat tam thoi
-    monsters.push_back(new Monster(100.0f, 100.0f, 100.0f, 100.0f));
-    monsters.push_back(new Monster(200.0f, 300.0f, 100.0f, 100.0f));
-    
-   
-    for (auto* monster : monsters) {
-        monster->updateTarget(context.allEntity);
+    for (auto* m : monsters) {
+        context.allEntity.push_back(m);
+        context.enemies.push_back(m);
+        m->updateTarget(context.players);
     }
+
+    std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
 }
 
 GameplayState::~GameplayState() {
-    //xoa quai va player 
-
-    for (auto* monster : monsters) {
-        delete monster;
-    }
+    for (auto* m : monsters) delete m;
     monsters.clear();
 }
 
 void GameplayState::onEnter() {
-    std::cout << "Giai doan: Buoc vao man choi Gameplay!\n";
+    std::cout << "GameplayState: Da vao man choi!" << std::endl;
 }
 
 void GameplayState::onExit() {
-    std::cout << "Giai doan: Thoat khoi man choi Gameplay!\n";
+    std::cout << "GameplayState: Da thoat!" << std::endl;
 }
 
 void GameplayState::handleEvent(const sf::Event& event) {
-
-    //xu li phim bam 
     if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
         if (keyPressed->code == sf::Keyboard::Key::P) {
-            std::cout << "Tam dung Game (Pause)!\n";
-           
+            std::cout << "Tam dung game!" << std::endl;
         }
     }
 
-    //neu chuot duoc bam
-    //Thuc hien tinh toan vi tri cua chuot roi nap vao attDir cua Player de player tan cong
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
-
         if (mousePressed->button == sf::Mouse::Button::Left) {
             sf::Vector2i mousePixel = mousePressed->position;
-            sf::Vector2f mouseWorld = this->window.mapPixelToCoords(mousePixel); 
+            sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
 
-            sf::Vector2f playerPos(player.getX(), player.getY()); 
-            
+            sf::Vector2f playerPos(player.getX(), player.getY());
+            sf::Vector2f attackDir = mouseWorld - playerPos;
 
-            sf::Vector2f attackDir = mouseWorld - playerPos; 
-
-        
             float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
-            if (length != 0.f) {
-                attackDir.x /= length; // Ép x về khoảng -1 đến 1
-                attackDir.y /= length; // Ép y về khoảng -1 đến 1
-            } else {
-                attackDir = sf::Vector2f(1.f, 0.f); //Huong mac dinh
-            }
+            if (length != 0.f) attackDir /= length;
+            else attackDir = sf::Vector2f(1.f, 0.f);
 
-           
-            player.setAttackDirection(attackDir); 
+            player.setAttackDirection(attackDir);
+            player.setIsAttacking(true);   // Sử dụng setter
         }
     }
 }
 
 void GameplayState::update(float dt) {
-    context.deltaTime = dt ; 
+    context.deltaTime = dt;
 
-    // 1.----------- Xem Player thực tế có đang di chuyển không
-    // std::cout << "Player Real Pos: " << player.getX() << ", " << player.getY() << std::endl;
+    // Cập nhật Player
+    player.handleInput();
+    player.update(context);
 
-    // 2.------------ Xem Player lưu trong Context có trùng tọa độ không
-    // if (!context.allEntity.empty()) {
-    //     std::cout << "Context Player Pos: " << context.allEntity[0]->getX() << ", " << context.allEntity[0]->getY() << std::endl;
-    // }
-
-    //---------- 3. Xem deltaTime có lớn hơn 0 không
-    // std::cout << "DeltaTime: " << dt << std::endl;
-
-
-    //Ham nay kiem tra isKeyPressed de player di chuyen
-    player.handleInput() ; 
-
-
-    //Neu Player dang tan cong thi xu li don tan cong
-    if(player.getIsAttacking()){
-        combatManager.processAttack(&player, player.getCurrentWeapon(), monsters) ; 
+    // Xử lý tấn công của Player
+    if (player.getIsAttacking()) {
+        std::vector<Entity*> targets;
+        for (auto* m : monsters) targets.push_back(m);
+        combatManager.processAttack(&player, player.getCurrentWeapon(), targets);
     }
 
-    //Ham nay cap nhat vi tri moi cua player theo thoi gian thuc va ve hinh len man hinh
-    player.update(context);
-    
+    // Cập nhật quái
+    for (auto* m : monsters) {
+        m->update(context);
+    }
 
-    for (auto* monster : monsters) {
-        monster->update(context) ;
-
-        if(monster->getHealth() == 0){
-            std :: cout << "Quai da chet " << endl ; 
-            
+    // Xóa quái chết
+    auto it = monsters.begin();
+    while (it != monsters.end()) {
+        if ((*it)->isDead()) {
+            delete* it;
+            it = monsters.erase(it);
+            std::cout << "Quai da bi tieu diet!" << std::endl;
+        }
+        else {
+            ++it;
         }
     }
+
+    // Cập nhật trạng thái tấn công của Player (tự tắt)
+    player.updateStatus();
 }
 
-// Hàm update cải tiến nhận thêm tham chiếu window để phục vụ việc lấy tọa độ chuột
 void GameplayState::render(sf::RenderWindow& window) {
-    // Cập nhật Player ngay trong vòng lặp chính (Dùng delta time đếm ngược từ Clock của Game)
-    // Lưu ý: Thông thường hàm update nhân vật sẽ nằm ở hàm update(dt), bạn có thể lưu con trỏ window 
-    // hoặc truyền thẳng window vào hàm render này để cập nhật tọa độ chuột trước khi vẽ.
-    
-    // Ví dụ cập nhật nhanh tọa độ trực tiếp:
-    for(auto monster : monsters){
-        monster->draw(window) ; 
+    player.draw(window);
+    for (auto* m : monsters) {
+        m->draw(window);
     }
-
-    //ve hop debug
-    if (player.getIsAttacking() && player.getCurrentWeapon() != nullptr) {
-        player.getCurrentWeapon()->drawDebug(
-            window, 
-            { player.getX(), player.getY() }, 
-            player.getAttackDirection()
-        );
-    }
-
-    // Vẽ nhân vật
-    this->player.draw(window);
 }

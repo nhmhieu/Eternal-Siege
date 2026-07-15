@@ -1,38 +1,30 @@
-#pragma once 
+#pragma once
 
-#include "Entity.h" 
-#include <iostream>
+#include "Entity.h"
 #include <vector>
-#include "GameContext.h"
 
-class Monster : public Entity{ 
+class GameContext;
 
-    private : 
-    
-        float attackRange ; 
-        float speed ; 
-        Entity* currentTarget ; 
-        float targetTimer ; 
+class Monster : public Entity {
+private:
+    float attackRange = 50.f;
+    float attackCooldown = 1.f;
+    float attackDamage = 10.f;
+    float speed = 100.f;
+    Entity* currentTarget = nullptr;
+    float targetTimer = 0.f;
+    float attackTimer = 0.f;
 
-        //bien sprite de ve quai vat
-        // sf :: CircleShape sprite ; 
+public:
+    Monster(float x, float y, float health = 100, float maxHealth = 100,
+        float range = 50.f, float cooldown = 1.f, float spd = 100.f, float dmg = 10.f);
+    ~Monster() override = default;
 
+    void updateTarget(const std::vector<Entity*>& targets);
+    void moveToward(float deltaTime);
 
+    void update(const GameContext& context) override;
+    void draw(sf::RenderWindow& window) override;
 
-    public : 
-        ~Monster() ;
-        Monster() ;
-        Monster(float x, float y, float health, float maxHealth) ;
-
-
-        //ham update target cua quai vat 
-        void updateTarget(const std :: vector<Entity*>& allTargets) override ;
-        //ham cho quai di chuyen den target hien tai
-        void moveToward(float deltaTime, Entity* target) ; 
-        void update(const GameContext& context) override ; 
-
-        ///Ham ve quai vat ra man hinh
-        void draw(sf :: RenderWindow& window) override ; 
-
-        
-} ;
+    Entity* getCurrentTarget() const { return currentTarget; }
+};
