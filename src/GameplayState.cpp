@@ -1,9 +1,12 @@
 #include "GameplayState.h"
 #include "Sword.h"
+#include "Ally.h"
+#include "WaveManager.h"
 #include <cmath>
+#include "Map.h"
 #include <iostream>
 
-GameplayState::GameplayState(sf::RenderWindow& window)
+GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vector2i>& allyPositions)
     : window(window) {
     // Thiết lập context
     context.allEntity.push_back(&player);
@@ -13,11 +16,21 @@ GameplayState::GameplayState(sf::RenderWindow& window)
     Sword* sword = new Sword(20, 100);
     player.setCurrentWeapon(sword);
 
+    // Tạo ally từ danh sách vị trí
+    for (const auto& pos : allyPositions) {
+        float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
+        float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
+        allies.emplace_back(x, y);
+        context.allEntity.push_back(&allies.back());
+        context.players.push_back(&allies.back());
+        std::cout << "Ally created at (" << x << ", " << y << ")" << std::endl;
+    }
+
     // Tạo quái vật
-    Monster* m1 = new Monster(100, 100, 100, 100);
-    Monster* m2 = new Monster(300, 500, 100, 100);
-    monsters.push_back(m1);
-    monsters.push_back(m2);
+    //Monster* m1 = new Monster(100, 100, 100, 100);
+    //Monster* m2 = new Monster(300, 500, 100, 100);
+    //monsters.push_back(m1);
+    //monsters.push_back(m2);
 
     for (auto* m : monsters) {
         context.allEntity.push_back(m);
@@ -80,6 +93,19 @@ void GameplayState::update(float dt) {
         combatManager.processAttack(&player, player.getCurrentWeapon(), targets);
     }
 
+    for (auto& ally : allies) {
+        ally.update(context);
+    }
+    // Cập nhật wavemanager
+    waveManager.update(context, monsters);
+
+    // Cập nhật context .enemies(cho ally tìm được quái)
+    context.enemies.clear();
+    for (auto* m : monsters) {
+        context.enemies.push_back(m);
+    }
+    
+
     // Cập nhật quái
     for (auto* m : monsters) {
         m->update(context);
@@ -104,6 +130,11 @@ void GameplayState::update(float dt) {
 
 void GameplayState::render(sf::RenderWindow& window) {
     player.draw(window);
+
+    for (auto& ally : allies) {
+        ally.draw(window);
+    }
+
     for (auto* m : monsters) {
         m->draw(window);
     }
