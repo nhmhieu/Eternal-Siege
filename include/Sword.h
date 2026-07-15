@@ -13,11 +13,19 @@ public:
 
     // Override lại hàm từ lớp cha
     sf::FloatRect getHitbox(sf::Vector2f entityCenter, sf::Vector2f attackDir) override {
-        // Code tính toán hitbox riêng cho Kiếm
-        sf::Vector2f size(40.f, 40.f);
-        sf::Vector2f pos = entityCenter + (attackDir * range) - (size / 2.f);
-        return sf::FloatRect(pos, size);
-    }
+    // 1. Độ rộng/cao của hộp quét (ví dụ: ngang 100px để bao phủ cả chiều dọc)
+    // Chiều dài của hộp (theo hướng chém) lúc này chính là tầm đánh (range = 150)
+    sf::Vector2f size(range, 100.f); 
+    
+    // 2. Chỉ dịch chuyển tâm của hộp đi một khoảng bằng NỬA tầm đánh (range / 2)
+    // Việc này giúp rìa sau của hộp luôn dính sát vào cơ thể Player, 
+    // còn rìa trước của hộp sẽ vươn xa tới đúng mốc 150px.
+    float pushDistance = range / 2.0f; 
+    
+    sf::Vector2f pos = entityCenter + (attackDir * pushDistance) - (size / 2.f);
+    
+    return sf::FloatRect(pos, size);
+}
 
     bool isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Vector2f targetPos) {
         // 1. Vector từ nhân vật đến quái
