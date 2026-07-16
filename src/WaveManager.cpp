@@ -9,6 +9,9 @@ WaveManager::WaveManager()
 
 
 void WaveManager::update(const GameContext& context, std::vector<Monster*>& monsterList) {
+    
+    if (gameCompleted) return;
+
     if (!waveActive) {
         waveDelayTimer += context.deltaTime;
         if (waveDelayTimer >= waveDelay) {
@@ -32,6 +35,12 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
             waveActive = false;
             currentWave++;
             std::cout << "Wave" << currentWave << " completed!" << std::endl;
+
+            // N?u ??t ?? s? ??t, ?ánh d?u hoàn thành
+            if (currentWave >= maxWaves) {
+                gameCompleted = true;
+                std::cout << "All waves completed! Game finished!" << std::endl;
+            } 
         }
     }
 }
@@ -53,4 +62,8 @@ bool WaveManager::isWaveActive() const {
 }
 void WaveManager::setSpawnInterval(float interval) {
     spawnInterval = interval;
+}
+
+bool WaveManager::isGameCompleted() const {
+    return gameCompleted;
 }

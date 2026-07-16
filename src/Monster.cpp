@@ -19,6 +19,13 @@ Monster::Monster(float x, float y, float health, float maxHealth,
 }
 
 void Monster::updateTarget(const std::vector<Entity*>& targets) {
+    if (targets.empty()) {
+        std::cout << "Monster: targets is empty" << std::endl;
+        currentTarget = nullptr;
+        return;
+    }
+    
+    
     Entity* closest = nullptr;
     float minDistSq = std::numeric_limits<float>::max();
 
@@ -36,7 +43,10 @@ void Monster::updateTarget(const std::vector<Entity*>& targets) {
 }
 
 void Monster::moveToward(float deltaTime) {
-    if (!currentTarget) return;
+    if (!currentTarget) {
+        std::cout << "Monster: no target!" << std::endl;
+        return;
+    }
 
     float dx = currentTarget->getX() - getX();
     float dy = currentTarget->getY() - getY();
@@ -62,6 +72,11 @@ void Monster::moveToward(float deltaTime) {
 }
 
 void Monster::update(const GameContext& context) {
+    // N?u m?c tiêu ch?t ho?c không có, tìm m?c tiêu m?i ngay
+    if (currentTarget == nullptr || currentTarget->isDead()) {
+        updateTarget(context.players);
+    }
+
     targetTimer += context.deltaTime;
     if (targetTimer >= 0.5f) {
         targetTimer = 0.f;

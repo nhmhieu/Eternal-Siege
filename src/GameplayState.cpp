@@ -17,7 +17,10 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
     player.setCurrentWeapon(sword);
 
     // Tạo ally từ danh sách vị trí
+    std::cout << "Number of ally positions: " << allyPositions.size() << std::endl;
+
     for (const auto& pos : allyPositions) {
+        std::cout << "Ally at (" << pos.x << ", " << pos.y << ")" << std::endl;
         float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
         float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
         allies.emplace_back(x, y);
@@ -93,8 +96,10 @@ void GameplayState::update(float dt) {
         combatManager.processAttack(&player, player.getCurrentWeapon(), targets);
     }
 
+    context.players.clear();
+    context.players.push_back(&player);
     for (auto& ally : allies) {
-        ally.update(context);
+        context.players.push_back(&ally);
     }
     // Cập nhật wavemanager
     waveManager.update(context, monsters);

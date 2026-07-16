@@ -3,12 +3,13 @@
 #include "GameplayState.h"
 #include "GameContext.h"
 
+
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
-    //state dang chay hien tai la dummy state
-    stateMachine.changeState(std::make_unique<GameplayState>(window));
+    stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window));
 }
+
 
 Game :: ~Game(){
     

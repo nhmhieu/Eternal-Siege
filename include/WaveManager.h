@@ -13,6 +13,8 @@ private:
 	bool waveActive;
 	float waveDelay;
 	float waveDelayTimer;
+	int maxWaves = 4;
+	bool gameCompleted = false;
 
 public:
 	WaveManager();
@@ -21,4 +23,7 @@ public:
 	void startWave();
 	bool isWaveActive() const;
 	void setSpawnInterval(float interval);
+	bool isGameCompleted() const {
+		return;
+	}
 };
