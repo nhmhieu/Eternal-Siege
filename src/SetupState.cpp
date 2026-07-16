@@ -3,25 +3,30 @@
 #include <iostream>
 
 SetupState::SetupState(StateMachine& machine, sf::RenderWindow& window)
-    : stateMachine(machine), window(window), map(15, 15){
+    : stateMachine(machine), window(window), map(15, 15)
+{
 }
 
 void SetupState::onEnter()
 {
-    if (!font.openFromFile("assets/fonts/arial.ttf"))
-    {
+    // 1. Load font
+    bool fontLoaded = font.openFromFile("assets/fonts/Font.ttf");
+    if (!fontLoaded) {
         std::cerr << "Failed to load font!" << std::endl;
+        // Không tạo text nếu font lỗi
+        startText.reset();
+    }
+    else {
+        // 2. Tạo text chỉ khi font thành công
+        startText = std::make_unique<sf::Text>(font, "BAT DAU", 30);
+        startText->setFillColor(sf::Color::White);
+        startText->setPosition(sf::Vector2f(595.f, 610.f));
     }
 
+    // 3. Các thành phần khác (không cần font)
     startButton.setSize(sf::Vector2f(200.f, 60.f));
     startButton.setFillColor(sf::Color::Green);
     startButton.setPosition(sf::Vector2f(540.f, 600.f));
-
-    startText.setFont(font);
-    startText.setString("BAT DAU");
-    startText.setCharacterSize(30);
-    startText.setFillColor(sf::Color::White);
-    startText.setPosition(sf::Vector2f(595.f, 610.f));
 
     canStart = false;
     selectedPositions.clear();
@@ -67,6 +72,6 @@ void SetupState::render(sf::RenderWindow& window)
     if (canStart)
     {
         window.draw(startButton);
-        window.draw(startText);
+        if (startText) window.draw(*startText);
     }
 }

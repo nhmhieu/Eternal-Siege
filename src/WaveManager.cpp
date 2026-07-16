@@ -1,10 +1,10 @@
-#include "WaveManager.h"
+﻿#include "WaveManager.h"
 #include "GameContext.h"
 #include <iostream>
 #include <cstdlib>
 
 WaveManager::WaveManager()
-    : spawnTimer(0.f), spawnInterval(1.5f), monstersPerWave(3), 
+    : totalMonstersSpawned(0), spawnTimer(0.f), spawnInterval(1.5f), monstersPerWave(3), 
       currentWave(0), waveActive(false), waveDelay(3.f), waveDelayTimer(0.f){ }
 
 
@@ -20,28 +20,30 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
         }
         return;
     }
-
-
-    spawnTimer += context.deltaTime;
-    if (spawnTimer >= spawnInterval) {
-        spawnTimer = 0.f;
-        if ((int)monsterList.size() < monstersPerWave) {
+    // 1. Sinh quái nếu chưa đủ
+    if ((int)monsterList.size() < monstersPerWave) {
+        spawnTimer += context.deltaTime;
+        if (spawnTimer >= spawnInterval) {
+            spawnTimer = 0.f;
             float x = 50.f + rand() % 1100;
             float y = 50.f + rand() % 600;
             monsterList.push_back(new Monster(x, y, 100.f, 100.f, 50.f, 1.f, 100.f, 10.f));
             std::cout << "Spawned monster! Total: " << monsterList.size() << std::endl;
         }
-        else {
-            waveActive = false;
-            currentWave++;
-            std::cout << "Wave" << currentWave << " completed!" << std::endl;
+        return;
 
-            // N?u ??t ?? s? ??t, ?�nh d?u ho�n th�nh
-            if (currentWave >= maxWaves) {
-                gameCompleted = true;
-                std::cout << "All waves completed! Game finished!" << std::endl;
-            } 
+    }
+
+    if (monsterList.empty()) {
+        waveActive = false;
+        currentWave++;
+        std::cout << "Wave " << currentWave << " completed!" << std::endl;
+
+        if (currentWave >= maxWaves) {
+            gameCompleted = true;
+            std::cout << "All waves completed! Game finished!" << std::endl;
         }
+
     }
 }
 
@@ -54,6 +56,7 @@ void WaveManager::draw(sf::RenderWindow& window, const std::vector<Monster*>& mo
 void WaveManager::startWave() {
     waveActive = true;
     spawnTimer = 0.f;
+    totalMonstersSpawned = 0;
     std::cout << "Wave" << currentWave + 1 << " started!" << std::endl;
 }
 
@@ -65,5 +68,5 @@ void WaveManager::setSpawnInterval(float interval) {
 }
 
 bool WaveManager::isGameCompleted() const {
-    return gameCompleted;
+    return currentWave >= maxWaves;
 }

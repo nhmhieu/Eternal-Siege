@@ -6,6 +6,7 @@ class GameContext;
 
 class WaveManager {
 private:
+	int totalMonstersSpawned;
 	float spawnTimer;
 	float spawnInterval;
 	int monstersPerWave;
@@ -23,7 +24,5 @@ public:
 	void startWave();
 	bool isWaveActive() const;
 	void setSpawnInterval(float interval);
-	bool isGameCompleted() const {
-		return;
-	}
+	bool isGameCompleted() const;
 };
