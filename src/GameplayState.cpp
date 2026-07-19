@@ -41,6 +41,12 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
         m->updateTarget(context.players);
     }
 
+    for(auto& ally : allies){
+        Sword* temp = new Sword(20, 100) ;  
+
+        ally.setCurrentWeapon(temp) ; 
+    }
+
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
 }
 
@@ -94,6 +100,7 @@ void GameplayState::update(float dt) {
         std::vector<Entity*> targets;
         for (auto* m : monsters) targets.push_back(m);
         combatManager.processAttack(&player, player.getCurrentWeapon(), targets);
+
     }
 
     context.players.clear();
@@ -114,6 +121,28 @@ void GameplayState::update(float dt) {
     // Cập nhật quái
     for (auto* m : monsters) {
         m->update(context);
+    }
+    
+    for(auto& ally : allies){
+        ally.update(context) ;
+
+        if(ally.getTarget()){
+            std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
+
+        }
+
+        // std :: cout << "Kiem tra ally co dang danh khong" << std :: endl ;
+
+        if(ally.getIsAttacking()){
+
+            combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
+            std :: cout << "Ally is attacking ! " ; 
+            std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
+        }
+
+        ally.updateStatus() ;
+        
+
     }
 
     // Xóa quái chết
@@ -136,8 +165,16 @@ void GameplayState::update(float dt) {
 void GameplayState::render(sf::RenderWindow& window) {
     player.draw(window);
 
+    if(player.getIsAttacking()){
+        player.getCurrentWeapon()->drawDebug(window, player.getPosition(), player.getAttackDirection()) ; 
+    }
+
     for (auto& ally : allies) {
         ally.draw(window);
+
+        if(ally.getIsAttacking()){
+            ally.getCurrentWeapon()->drawDebug(window, ally.getPosition(), ally.getAttackDirection()) ; 
+        }
     }
 
     for (auto* m : monsters) {

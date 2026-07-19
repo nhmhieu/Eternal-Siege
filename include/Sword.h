@@ -11,10 +11,24 @@ private:
 public:
     Sword(int dmg, float rng) : damage(dmg), range(rng) {}
 
+
     sf::FloatRect getHitbox(sf::Vector2f entityCenter, sf::Vector2f attackDir) override {
-        constexpr float hitboxSize = 40.f;
-        sf::Vector2f pos = entityCenter + (attackDir * range) - sf::Vector2f(hitboxSize / 2.f, hitboxSize / 2.f);
-        return sf::FloatRect(pos, sf::Vector2f(hitboxSize, hitboxSize));
+        // 1. Độ dày của nhát chém (kiếm chém thường quét 1 vùng rộng)
+        constexpr float thickness = 40.f; 
+
+        // 2. Kích thước Hitbox tự động co giãn theo hướng đánh
+        // Nếu đánh ngang (x=1, y=0) -> width dài, height ngắn
+        // Nếu đánh chéo (x=0.7, y=0.7) -> tạo ra 1 ô vuông bao bọc đường chéo
+        float width = std::abs(attackDir.x * range) + thickness;
+        float height = std::abs(attackDir.y * range) + thickness;
+
+        // 3. Tâm của nhát chém: Nằm ở CHÍNH GIỮA khoảng cách từ nhân vật đến mũi kiếm
+        sf::Vector2f hitboxCenter = entityCenter + (attackDir * (range / 2.f));
+
+        // 4. Tìm góc trên-trái (Top-Left) để nạp vào sf::FloatRect
+        sf::Vector2f pos = hitboxCenter - sf::Vector2f(width / 2.f, height / 2.f);
+
+        return sf::FloatRect(pos, sf::Vector2f(width, height));
     }
 
     bool isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Vector2f targetPos) override {

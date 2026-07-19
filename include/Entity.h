@@ -34,8 +34,8 @@ protected:
 
     // ---------- ATTACK ----------
     sf::Vector2f attackDirection = { 0.f, 0.f };
-    bool isAttacking = false;
-    float attackDuration = 0.2f;
+    bool isAttacking = false ;
+    float attackDuration = 1.0f;
     float attackPower = 10.f;
     sf::Clock attackClock;
 
@@ -80,7 +80,7 @@ public:
     void setAttackPower(float power) { attackPower = power; }
     sf::Vector2f getAttackDirection() const { return attackDirection; }
     void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
-
+    sf :: Clock getAttackClock() const {return this->attackClock ;}
     // Weapon
     Weapon* getCurrentWeapon() const { return currentWeapon; }
     void setCurrentWeapon(Weapon* weapon) { currentWeapon = weapon; }

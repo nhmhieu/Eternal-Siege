@@ -58,8 +58,8 @@ void Monster::moveToward(float deltaTime) {
         attackTimer += deltaTime;
         if (attackTimer >= attackCooldown) {
             attackTimer = 0.f;
-            currentTarget->takeDamage(attackDamage);
-            std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
+            // currentTarget->takeDamage(attackDamage);
+            // std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
         }
         return;
     }
@@ -72,7 +72,7 @@ void Monster::moveToward(float deltaTime) {
 }
 
 void Monster::update(const GameContext& context) {
-    // N?u m?c tiêu ch?t ho?c không có, tìm m?c tiêu m?i ngay
+    // N?u m?c tiï¿½u ch?t ho?c khï¿½ng cï¿½, tï¿½m m?c tiï¿½u m?i ngay
     if (currentTarget == nullptr || currentTarget->isDead()) {
         updateTarget(context.players);
     }
