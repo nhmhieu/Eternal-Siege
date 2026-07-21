@@ -39,6 +39,7 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
         context.allEntity.push_back(m);
         context.enemies.push_back(m);
         m->updateTarget(context.players);
+        m->setCurrentWeapon(sword) ; 
     }
 
     for(auto& ally : allies){
@@ -121,13 +122,27 @@ void GameplayState::update(float dt) {
     // Cập nhật quái
     for (auto* m : monsters) {
         m->update(context);
+
+        // if(m->getIsAttacking()){
+        //     combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
+        //     std :: cout << "Monster is attacking ! " << std :: endl ; 
+        // }
+        // else{
+        //     std :: cout << "Monster is not attacking" << std :: endl ; 
+        // }
+        // std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
+
+        // m->updateStatus() ;
+
     }
+
+    int count = 0 ; 
     
     for(auto& ally : allies){
         ally.update(context) ;
 
         if(ally.getTarget()){
-            std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
+            // std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
 
         }
 
@@ -136,14 +151,19 @@ void GameplayState::update(float dt) {
         if(ally.getIsAttacking()){
 
             combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
-            std :: cout << "Ally is attacking ! " ; 
-            std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
+            // std :: cout << "Ally is attacking ! " << count + 1 << std :: endl ; 
+            // std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
+        }
+        else{
+            // std :: cout << "Ally is not attacking : " << count << std :: endl ; 
         }
 
+        count++ ;
+
         ally.updateStatus() ;
-        
 
     }
+    
 
     // Xóa quái chết
     auto it = monsters.begin();
@@ -179,5 +199,9 @@ void GameplayState::render(sf::RenderWindow& window) {
 
     for (auto* m : monsters) {
         m->draw(window);
+
+        // if(m->getIsAttacking()){
+        //     m->getCurrentWeapon()->drawDebug(window, m->getPosition(), m->getAttackDirection()) ; 
+        // }
     }
 }

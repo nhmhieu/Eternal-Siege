@@ -56,8 +56,10 @@ void Monster::moveToward(float deltaTime) {
 
     if (distance <= attackRange) {
         attackTimer += deltaTime;
+        this->setIsAttacking(true) ; 
         if (attackTimer >= attackCooldown) {
             attackTimer = 0.f;
+            this->setIsAttacking(false) ;
             // currentTarget->takeDamage(attackDamage);
             // std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
         }

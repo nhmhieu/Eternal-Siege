@@ -16,12 +16,17 @@ Ally::Ally(float x, float y)
     
     this->target = nullptr ; //Muc tieu ban dau la null
     isAttacking = false ;
+    range = 100.f ; 
 }
 
 void Ally::update(const GameContext& context) {
+    //cap nhat target gan nhat hien co trong context
     updateTarget(context); 
 
+    //neu nhu co target va isAttacking dang bi tat
     if(target && !isAttacking){
+
+        //nap huong tan cong moi nhat va truyen vao attribute 
 
         // SỬA LỖI BIẾN: Đã đổi tất cả thành 'dir' cho đồng nhất
         sf::Vector2f dir = target->getPosition() - this->getPosition(); 
@@ -38,6 +43,7 @@ void Ally::update(const GameContext& context) {
         
         // 3. Đủ điều kiện mới bật lên TRUE và reset đồng hồ
         isAttacking = true; 
+        //bat dau dem attackClock
         attackClock.restart(); 
     }
     // Không cần hàm else { isAttacking = false; } ở đây nữa!
@@ -64,7 +70,7 @@ void Ally :: updateTarget(const GameContext& context){
     Entity* bestTarget = nullptr ; 
     float minDis = (this->range) * (this->range) ;
 
-    if(context.enemies.empty())std :: cout << "enemies dang trong !!" << std :: endl ;
+    // if(context.enemies.empty())std :: cout << "enemies dang trong !!" << std :: endl ;
     for(auto* entity : context.enemies){
 
         if(entity->isDead()){
