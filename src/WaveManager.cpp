@@ -1,5 +1,7 @@
 ﻿#include "WaveManager.h"
 #include "GameContext.h"
+#include "Weapon.h"
+#include "Sword.h"
 #include <iostream>
 #include <cstdlib>
 
@@ -27,7 +29,10 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
             spawnTimer = 0.f;
             float x = 50.f + rand() % 1100;
             float y = 50.f + rand() % 600;
-            monsterList.push_back(new Monster(x, y, 100.f, 100.f, 50.f, 1.f, 100.f, 10.f));
+            Monster* m = new Monster(x, y, 100.f, 100.f,50.f, 1.f, 100.f, 10.f) ; 
+            Sword* temp = new Sword(20, 100) ; 
+            m->setCurrentWeapon(temp) ;
+            monsterList.push_back(m);
             std::cout << "Spawned monster! Total: " << monsterList.size() << std::endl;
         }
         return;

@@ -36,10 +36,12 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
     //monsters.push_back(m2);
 
     for (auto* m : monsters) {
+        Sword* temp = new Sword(20, 100) ; 
+        m->setCurrentWeapon(temp) ; 
+
         context.allEntity.push_back(m);
         context.enemies.push_back(m);
         m->updateTarget(context.players);
-        m->setCurrentWeapon(sword) ; 
     }
 
     for(auto& ally : allies){
@@ -81,7 +83,7 @@ void GameplayState::handleEvent(const sf::Event& event) {
 
             float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
             if (length != 0.f) attackDir /= length;
-            else attackDir = sf::Vector2f(1.f, 0.f);
+            else attackDir = sf::Vector2f(0.f, 0.f);
 
             player.setAttackDirection(attackDir);
             player.setIsAttacking(true);   // Sử dụng setter
@@ -123,16 +125,16 @@ void GameplayState::update(float dt) {
     for (auto* m : monsters) {
         m->update(context);
 
-        // if(m->getIsAttacking()){
-        //     combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
-        //     std :: cout << "Monster is attacking ! " << std :: endl ; 
-        // }
-        // else{
-        //     std :: cout << "Monster is not attacking" << std :: endl ; 
-        // }
-        // std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
+        if(m->getIsAttacking()){
+            combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
+            std :: cout << "Monster is attacking ! " << std :: endl ; 
+        }
+        else{
+            // std :: cout << "Monster is not attacking" << std :: endl ; 
+        }
+        std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
 
-        // m->updateStatus() ;
+        m->updateStatus() ;
 
     }
 
@@ -170,7 +172,7 @@ void GameplayState::update(float dt) {
     while (it != monsters.end()) {
         if ((*it)->isDead()) {
             delete* it;
-            it = monsters.erase(it);
+            it = monsters.erase(it);  //tai vi tri it tra ve subArr da xoa di it
             std::cout << "Quai da bi tieu diet!" << std::endl;
         }
         else {
@@ -200,8 +202,13 @@ void GameplayState::render(sf::RenderWindow& window) {
     for (auto* m : monsters) {
         m->draw(window);
 
-        // if(m->getIsAttacking()){
-        //     m->getCurrentWeapon()->drawDebug(window, m->getPosition(), m->getAttackDirection()) ; 
-        // }
+        // std :: cout << "Dang chuan bi ve debug" << std :: endl ; 
+        if(!m->getCurrentWeapon()){
+            // std :: cout << "Quai khong co vu khi !!!" << std :: endl ; 
+        }
+
+        if(m->getIsAttacking()){
+            m->getCurrentWeapon()->drawDebug(window, m->getPosition(), m->getAttackDirection()) ; 
+        }
     }
 }

@@ -40,6 +40,11 @@ void Monster::updateTarget(const std::vector<Entity*>& targets) {
         }
     }
     currentTarget = closest;
+
+    sf :: Vector2f attackDir = currentTarget->getPosition() - this->getPosition() ; 
+    this->setAttackDirection(attackDir) ;  
+    
+
 }
 
 void Monster::moveToward(float deltaTime) {
