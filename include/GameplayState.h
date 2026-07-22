@@ -8,6 +8,9 @@
 #include "Ally.h"
 #include "WaveManager.h"
 #include "TextureManager.h"
+#include "Map.h"
+#include "Sword.h"
+#include <memory>
 
 class GameplayState : public State {
 private:
@@ -15,10 +18,12 @@ private:
     std::unique_ptr<Player> player;
     std::vector<Monster*> monsters;
     std::vector<std::unique_ptr<Ally>> allies;
+    Map map;
     WaveManager waveManager;
     GameContext context;
     sf::RenderWindow& window;
     CombatManager combatManager;
+    std::unique_ptr<Sword> sword;
 
 public:
     GameplayState(sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions ={});

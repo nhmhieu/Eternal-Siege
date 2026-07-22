@@ -14,6 +14,8 @@ private:
     Entity* currentTarget = nullptr;
     float targetTimer = 0.f;
     float attackTimer = 0.f;
+    sf::RectangleShape fallbackShape;
+    bool useFallback = true;  // Monster không có texture → luôn dùng fallback
 
 public:
     Monster(float x, float y, float health = 100, float maxHealth = 100,
@@ -23,8 +25,11 @@ public:
     void updateTarget(const std::vector<Entity*>& targets);
     void moveToward(float deltaTime);
 
-    void update(const GameContext& context) override;
-    void draw(sf::RenderWindow& window) override;
+     void update(const GameContext& context) override;
+     void draw(sf::RenderWindow& window) override;
 
-    Entity* getCurrentTarget() const { return currentTarget; }
+     sf::FloatRect getCollisionBox() const override;
+     sf::FloatRect getHurtBox() const override;
+
+     Entity* getCurrentTarget() const { return currentTarget; }
 };

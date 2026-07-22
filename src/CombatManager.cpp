@@ -26,11 +26,3 @@ void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<
         }
     }
 }
-
-void CombatManager::resetAttack() {
-    hitEntities.clear();
-}
-
-bool CombatManager::hasHit(Entity* target) const {
-    return hitEntities.find(target) != hitEntities.end();
-}

@@ -1,9 +1,5 @@
 #include "Entity.h"
-#include "GameContext.h"
-#include "Weapon.h"
 #include <iostream>
-#include <SFML/Graphics/Sprite.hpp>
-
 
 Entity::Entity()
     : position(0, 0), health(0), maxHealth(0), sprite(defaultTexture) {

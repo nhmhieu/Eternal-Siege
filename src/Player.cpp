@@ -5,26 +5,31 @@
 #include "TextureManager.h"
 
 
-Player::Player(TextureManager& textureManager) {
-
-    if (!textureManager.loadTexture("Ash", "assets/images/Ash.png")) {
-        std::cerr << "Failed to load Ash texture!" << std::endl;
-    }
-    sprite.setTexture(textureManager.getTexture("Ash"));
-    sprite.setPosition({ 400.f, 300.f });
-
-
+Player::Player(TextureManager& textureManager)
+    : Entity(400.f, 300.f, 100, 100), playerTexture(nullptr) {
     team = Team::Player;
-    health = 100;
-    maxHealth = 100;
-    isAlive = true;
-    speed = 300.f;
 
-    sprite.setScale({ 0.5f, 0.5f });
+    const float desiredSize = 80.f;
+
+    if (!textureManager.getTexture("Ash").getSize().x) {
+        std::cerr << "Failed to load Ash texture!" << std::endl;
+        useFallback = true;
+        fallbackShape.setFillColor(sf::Color::Blue);
+        fallbackShape.setSize(sf::Vector2f(desiredSize, desiredSize));
+        fallbackShape.setOrigin(sf::Vector2f(desiredSize / 2.f, desiredSize / 2.f));
+        fallbackShape.setPosition(sf::Vector2f(400.f, 300.f));
+    } else {
+        std::cout << "Ash texture loaded OK!" << std::endl;
+        useFallback = false;
+        playerTexture = &textureManager.getTexture("Ash");
+        playerShape.setSize(sf::Vector2f(desiredSize, desiredSize));
+        playerShape.setOrigin(sf::Vector2f(desiredSize / 2.f, desiredSize / 2.f));
+        playerShape.setTexture(playerTexture);
+        playerShape.setPosition(sf::Vector2f(400.f, 300.f));
+    }
 }
 
 void Player::handleInput() {
-    // Di chuyển WASD
     sf::Vector2f movement(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= 1.f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) movement.y += 1.f;
@@ -35,29 +40,38 @@ void Player::handleInput() {
         float length = std::sqrt(movement.x * movement.x + movement.y * movement.y);
         movement /= length;
     }
-    // Lưu hướng di chuyển (dùng setter nếu có)
     setDirection(movement);
 
-    // Tấn công bằng chuột trái
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !isAttacking) {
-        setIsAttacking(true);   // Sử dụng setter mới trong Entity.h
+        setIsAttacking(true);
     }
 }
 
 void Player::update(const GameContext& context) {
-    // Di chuyển theo hướng đã lưu
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
         float newX = getX() + dir.x * speed * context.deltaTime;
         float newY = getY() + dir.y * speed * context.deltaTime;
         setPosition(newX, newY);
-        sprite.setPosition(getPosition());
+        playerShape.setPosition(getPosition());
+        fallbackShape.setPosition(getPosition());
     }
-
-    // Cập nhật trạng thái tấn công (tự động tắt sau attackDuration)
-    updateStatus();
 }
 
 void Player::draw(sf::RenderWindow& window) {
-    window.draw(sprite);
+    if (useFallback) {
+        window.draw(fallbackShape);
+    } else {
+        window.draw(playerShape);
+    }
+}
+
+sf::FloatRect Player::getCollisionBox() const {
+    if (useFallback) return fallbackShape.getGlobalBounds();
+    return playerShape.getGlobalBounds();
+}
+
+sf::FloatRect Player::getHurtBox() const {
+    if (useFallback) return fallbackShape.getGlobalBounds();
+    return playerShape.getGlobalBounds();
 }

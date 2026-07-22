@@ -8,43 +8,36 @@
 #include "TextureManager.h"
 
 GameplayState::GameplayState(sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
-    : window(window), textureManager(textureManager) {
-    // Thiết lập context
+    : window(window), textureManager(textureManager), map(15, 15) {
+    textureManager.loadTexture("Ash", "assets/images/Ash.png");
+
     player = std::make_unique<Player>(textureManager);
     context.allEntity.push_back(player.get());
     context.players.push_back(player.get());
 
-    // Gán vũ khí cho Player
-    Sword* sword = new Sword(20, 100);
-    player->setCurrentWeapon(sword);
-
-    // Tạo ally từ danh sách vị trí
-    std::cout << "Number of ally positions: " << allyPositions.size() << std::endl;
+    sword = std::make_unique<Sword>(20, 100);
+    player->setCurrentWeapon(sword.get());
 
     std::vector<std::string> allyTextureNames = { "Damian", "Evangeline", "Junior", "Lucas" };
+    for (const auto& name : allyTextureNames) {
+        textureManager.loadTexture(name, "assets/images/" + name + ".png");
+    }
     int allyindex = 0;
 
     for (const auto& pos : allyPositions) {
-        std::cout << "Ally at (" << pos.x << ", " << pos.y << ")" << std::endl;
         float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
         float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
 
         std::string textureName = allyTextureNames[allyindex % allyTextureNames.size()];
-        
         
         auto ally = std::make_unique<Ally>(x, y, textureManager, textureName);
         context.allEntity.push_back(ally.get());
         context.players.push_back(ally.get());
         allies.push_back(std::move(ally));
         allyindex++;
-        std::cout << "Ally created at (" << x << ", " << y << ") with texture: " << textureName << std::endl;
     }
 
-    // Tạo quái vật
-    //Monster* m1 = new Monster(100, 100, 100, 100);
-    //Monster* m2 = new Monster(300, 500, 100, 100);
-    //monsters.push_back(m1);
-    //monsters.push_back(m2);
+    std::cout << "Total allies: " << allies.size() << std::endl;
 
     for (auto* m : monsters) {
         context.allEntity.push_back(m);
@@ -53,6 +46,7 @@ GameplayState::GameplayState(sf::RenderWindow& window, TextureManager& textureMa
     }
 
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
+    std::cout << "Ally count at init=" << allies.size() << std::endl;
 }
 
 GameplayState::~GameplayState() {
@@ -107,18 +101,30 @@ void GameplayState::update(float dt) {
         combatManager.processAttack(player.get(), player->getCurrentWeapon(), targets);
     }
 
+    player->updateStatus();
+
     context.players.clear();
     context.players.push_back(player.get());
     for (auto& allyPtr : allies) {
-        allyPtr->update(context);
+        context.players.push_back(allyPtr.get());
     }
-    // Cập nhật wavemanager
+
+    // Cập nhật wavemanager trước khi ally update
     waveManager.update(context, monsters);
 
-    // Cập nhật context .enemies(cho ally tìm được quái)
     context.enemies.clear();
+    context.allEntity.clear();
+    context.allEntity.push_back(player.get());
+    for (auto& allyPtr : allies) {
+        context.allEntity.push_back(allyPtr.get());
+    }
     for (auto* m : monsters) {
         context.enemies.push_back(m);
+        context.allEntity.push_back(m);
+    }
+
+    for (auto& allyPtr : allies) {
+        allyPtr->update(context);
     }
     
 
@@ -140,17 +146,21 @@ void GameplayState::update(float dt) {
         }
     }
 
-    // Cập nhật trạng thái tấn công của Player (tự tắt)
-    player->updateStatus();
 }
 
 void GameplayState::render(sf::RenderWindow& window) {
+    // Vẽ map/background trước (lấp đầy màn hình)
+    map.draw(window);
+
+    // Vẽ player
     player->draw(window);
 
+    // Vẽ ally
     for (auto& allyPtr : allies) {
         allyPtr->draw(window);
     }
 
+    // Vẽ monster
     for (auto* m : monsters) {
         m->draw(window);
     }

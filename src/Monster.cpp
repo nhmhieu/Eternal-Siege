@@ -11,8 +11,13 @@ Monster::Monster(float x, float y, float health, float maxHealth,
     attackCooldown(cooldown),
     attackDamage(dmg),
     speed(spd) {
-    sprite.setOrigin(sf::Vector2f(20.f, 20.f));
-    sprite.setPosition(sf::Vector2f(x, y));
+    // Tạo fallback shape (hình vuông màu đỏ) để monster luôn hiển thị
+    fallbackShape.setFillColor(sf::Color::Red);
+    fallbackShape.setSize(sf::Vector2f(30.f, 30.f));
+    fallbackShape.setOrigin(sf::Vector2f(15.f, 15.f));
+    fallbackShape.setPosition(sf::Vector2f(x, y));
+    
+    setPosition(x, y);
     team = Team::Enemy;
 }
 
@@ -66,11 +71,11 @@ void Monster::moveToward(float deltaTime) {
     float moveY = (dy / distance) * speed * deltaTime;
     setX(getX() + moveX);
     setY(getY() + moveY);
-    sprite.setPosition(position);
+    fallbackShape.setPosition(position);
 }
 
 void Monster::update(const GameContext& context) {
-    // N?u m?c ti�u ch?t ho?c kh�ng c�, t�m m?c ti�u m?i ngay
+    // N?u m?c tiêu ch?t ho?c không có, tìm m?c tiêu m?i ngay
     if (currentTarget == nullptr || currentTarget->isDead()) {
         updateTarget(context.players);
     }
@@ -92,5 +97,17 @@ void Monster::update(const GameContext& context) {
 }
 
 void Monster::draw(sf::RenderWindow& window) {
-    window.draw(sprite);
+    if (useFallback) {
+        window.draw(fallbackShape);
+    } else {
+        window.draw(sprite);
+    }
+}
+
+sf::FloatRect Monster::getCollisionBox() const {
+    return fallbackShape.getGlobalBounds();
+}
+
+sf::FloatRect Monster::getHurtBox() const {
+    return fallbackShape.getGlobalBounds();
 }

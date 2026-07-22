@@ -1,12 +1,12 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <unordered_map>
+#include <map>
 #include <string>
 
 class TextureManager
 {
 private:
-    std::unordered_map<std::string, sf::Texture> textures;
+    std::map<std::string, sf::Texture> textures;
 
 public:
     // Load một texture từ file
