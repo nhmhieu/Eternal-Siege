@@ -127,12 +127,12 @@ void GameplayState::update(float dt) {
 
         if(m->getIsAttacking()){
             combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
-            std :: cout << "Monster is attacking ! " << std :: endl ; 
+            // std :: cout << "Monster is attacking ! " << std :: endl ; 
         }
         else{
             // std :: cout << "Monster is not attacking" << std :: endl ; 
         }
-        std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
+        // std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
 
         m->updateStatus() ;
 
@@ -143,10 +143,10 @@ void GameplayState::update(float dt) {
     for(auto& ally : allies){
         ally.update(context) ;
 
-        if(ally.getTarget()){
-            // std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
+        // if(ally.getTarget()){
+        //     std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
 
-        }
+        // }
 
         // std :: cout << "Kiem tra ally co dang danh khong" << std :: endl ;
 
@@ -168,16 +168,40 @@ void GameplayState::update(float dt) {
     
 
     // Xóa quái chết
-    auto it = monsters.begin();
-    while (it != monsters.end()) {
-        if ((*it)->isDead()) {
-            delete* it;
-            it = monsters.erase(it);  //tai vi tri it tra ve subArr da xoa di it
-            std::cout << "Quai da bi tieu diet!" << std::endl;
+    auto p_monster = monsters.begin();
+    while (p_monster != monsters.end()) {
+        if ((*p_monster)->isDead() && !(*p_monster)->getIsDying()) {
+            (*p_monster)->startDying() ; //bat isDying = true va xu li animation chet
+            p_monster++ ; 
+            std :: cout << "Quai bat dau chet" << std :: endl ; 
+        }
+        else if((*p_monster)->isReadyToBeDelete()){
+            p_monster = monsters.erase(p_monster) ;
+            std :: cout << "Quai da chet va xoa quai khoi mang" << std :: endl ; 
         }
         else {
-            ++it;
+            ++p_monster;
         }
+    }
+
+    auto p_ally = allies.begin() ;
+    while(p_ally != allies.end()){
+
+        //neu ally nay da het mau ma chua bat isDying thi bat flag isDying va chay animation
+        if(p_ally->isDead() && !(p_ally->getIsDying())){
+            p_ally->startDying() ; 
+            p_ally++ ; 
+            std :: cout << "An ally has been slain, dying animation start !" << std :: endl ; 
+
+        }
+        else if(p_ally->isReadyToBeDelete()){
+            p_ally = allies.erase(p_ally) ; 
+            std :: cout << "Ally has died and removed from vector" << std :: endl ; 
+        }
+        else{ //ally chua chet thi duyet ally tiep theo
+            ++p_ally ; 
+        }
+
     }
 
     // Cập nhật trạng thái tấn công của Player (tự tắt)

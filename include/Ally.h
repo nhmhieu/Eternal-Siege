@@ -3,7 +3,6 @@
 
 class Ally : public Entity {
 private:
-	float attackRange;
 	float attackCoolDown;
 	//xoa cooldownTimer
 

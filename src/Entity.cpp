@@ -17,7 +17,7 @@ void Entity::takeDamage(float damage) {
     if (health <= 0) {
         health = 0;
         isAlive = false;
-        std::cout << "Entity died!" << std::endl;
+        std::cout << "Entity hp is 0 !" << std::endl;
     }
 }
 

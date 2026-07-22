@@ -97,6 +97,12 @@ void Monster::update(const GameContext& context) {
         currentTarget = nullptr;
     }
 
+    if(isDying){  //neu nhu flag dang chet duoc bat thi bat dau dem timer cho animation chet
+        updateDeadTimer(context) ;
+    }
+    if(isAttacking){
+        attackClock.restart() ; 
+    }
     updateStatus();
 }
 

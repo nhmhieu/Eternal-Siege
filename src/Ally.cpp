@@ -6,7 +6,7 @@
 #include <iostream>
 
 Ally::Ally(float x, float y)
-    : Entity(x, y, 50.f, 50.f), attackRange(100.f), attackCoolDown(1.f)
+    : Entity(x, y, 50.f, 50.f), range(100.f), attackCoolDown(1.f)
 {
     sprite.setRadius(20.f);
     sprite.setFillColor(sf::Color::Blue);
@@ -47,6 +47,10 @@ void Ally::update(const GameContext& context) {
         attackClock.restart(); 
     }
     // Không cần hàm else { isAttacking = false; } ở đây nữa!
+
+    if(isDying){
+        updateDeadTimer(context) ; 
+    }
 }
 
 void Ally::draw(sf::RenderWindow& window) {
@@ -67,15 +71,20 @@ bool Ally :: isInRange(Entity* target){
 //logic tim kiem va chon quai gan nhat lam muc tieu va danh den khi quai do chet 
 void Ally :: updateTarget(const GameContext& context){
 
+    if(target != nullptr && target->isDead()){
+        // std :: cout << "tracking dead target, setting target to null" << std :: endl ; 
+        this->target = nullptr ; 
+
+    }
+
     Entity* bestTarget = nullptr ; 
     float minDis = (this->range) * (this->range) ;
 
     // if(context.enemies.empty())std :: cout << "enemies dang trong !!" << std :: endl ;
     for(auto* entity : context.enemies){
 
-        if(entity->isDead()){
-            std :: cout << "tracking dead target" << std :: endl; 
-            continue;
+        if(entity == nullptr && entity->isDead()){
+            continue; 
         }
 
         float dis = getDistanceSquared(this->getPosition(), entity->getPosition()); 

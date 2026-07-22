@@ -22,7 +22,8 @@ void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<
         if (!weapon->isHit(target)) {
             target->takeDamage(attacker->getAttackPower());
             weapon->addHit(target);
-            std::cout << "Da danh trung quai!" << std::endl;
+            std :: cout << "Current health : " << target->getHealth() << std :: endl ; 
+            // std::cout << "Da danh trung quai!" << std::endl;
         }
     }
 }

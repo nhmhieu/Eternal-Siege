@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Weapon.h" 
+#include "GameContext.h"
 
 // ===============================
 // 1. ENUM
@@ -12,8 +13,6 @@ enum class Team {
     Enemy,
     Neutral
 };
-
-class GameContext;
 
 // ===============================
 // 2. LỚP ENTITY
@@ -38,9 +37,16 @@ protected:
     float attackDuration = 1.0f;
     float attackPower = 10.f;
     sf::Clock attackClock;
+    float attackTimer = 0.f ; 
 
     // ---------- WEAPON ----------
     Weapon* currentWeapon = nullptr;
+
+
+    //------------DEAD------------
+    bool isDying = false ; 
+    float deadTimer = 0.f ; 
+    float deadAnimationDuration = 0.5f ; 
 
 public:
     // ===============================
@@ -57,6 +63,7 @@ public:
     // Position
     float getX() const { return position.x; }
     float getY() const { return position.y; }
+    bool getIsDying() const {return isDying ;}
     sf::Vector2f getPosition() const { return position; }
     void setPosition(float x, float y) { position = { x, y }; sprite.setPosition(position); }
     void setX(float x) { position.x = x; sprite.setPosition(position); }
@@ -103,4 +110,18 @@ public:
     // 7. ATTACK STATE MANAGEMENT
     // ===============================
     void updateStatus(); // Cập nhật trạng thái tấn công
+
+
+    //DEAD AND EARSE ENTITY LOGIC 
+    void startDying(){this->isDying = true ;}
+    bool isReadyToBeDelete(){return isDying && deadTimer >= deadAnimationDuration ; }
+    void updateDeadTimer(const GameContext& context)
+    {
+        if(isDying){
+            this->deadTimer += context.deltaTime ;
+            //logic animation quai khi chet -----
+            return ;
+        }
+    }
+    void setIsDying(bool status){this->isDying = status ;}
 };
