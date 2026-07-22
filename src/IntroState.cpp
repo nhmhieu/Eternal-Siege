@@ -3,11 +3,13 @@
 #include "IntroState.h"
 #include "MenuState.h"
 #include "StateMachine.h"
+#include "TextureManager.h"
 
 
 
-IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window)
-	: machine(machine), window(window), displayTime(3.0f), isDone(false)
+
+IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
+	: machine(machine), window(window), textureManager(textureManager), displayTime(3.0f), isDone(false)
 {
     background.setSize(sf::Vector2f(1280.0f, 720.0f));
     background.setFillColor(sf::Color::Blue);
@@ -26,7 +28,7 @@ void IntroState::onEnter() {
         std::cout << "=> NAP FONT THANH CONG!" << std::endl;
         gameTitle = std::make_unique<sf::Text>(font);
         gameTitle->setString("From nowhere of the universe");
-        gameTitle->setCharacterSize(20);
+        gameTitle->setCharacterSize(50);
         gameTitle->setFillColor(sf::Color::White);
 
         sf::FloatRect textBounds = gameTitle->getLocalBounds();
@@ -71,7 +73,7 @@ void IntroState::update(float dt) {
 
     if (isDone) {
         std::cout << "Chuyen sang MenuState!" << std::endl;
-        auto nextState = std::make_unique<MenuState>(machine, window);
+        auto nextState = std::make_unique<MenuState>(machine, window, textureManager);
         machine.changeState(std::move(nextState));
         return;
     }

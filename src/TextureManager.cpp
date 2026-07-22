@@ -2,14 +2,14 @@
 #include <iostream>
 
 bool TextureManager::loadTexture(const std::string& name,
-    const std::string& filename)
+    const std::string& path)
 {
     sf::Texture texture;
 
-    if (!texture.loadFromFile(filename))
+    if (!texture.loadFromFile(path))
     {
         std::cout << "Failed to load texture: "
-            << filename << std::endl;
+            << path << std::endl;
         return false;
     }
 
@@ -22,7 +22,3 @@ sf::Texture& TextureManager::getTexture(const std::string& name)
     return textures.at(name);
 }
 
-bool TextureManager::hasTexture(const std::string& name) const
-{
-    return textures.find(name) != textures.end();
-}

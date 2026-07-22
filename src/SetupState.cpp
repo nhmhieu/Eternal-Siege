@@ -1,9 +1,10 @@
 ﻿#include "SetupState.h"
 #include "GameplayState.h"
+#include "TextureManager.h"
 #include <iostream>
 
-SetupState::SetupState(StateMachine& machine, sf::RenderWindow& window)
-    : stateMachine(machine), window(window), map(15, 15)
+SetupState::SetupState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
+    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15)
 {
 }
 
@@ -48,7 +49,7 @@ void SetupState::handleEvent(const sf::Event& event)
             if (canStart && startButton.getGlobalBounds().contains(sf::Vector2f(mousePos)))
             {
                 std::cout << "Bat dau game voi " << selectedPositions.size() << " tuong!" << std::endl;
-                stateMachine.changeState(std::make_unique<GameplayState>(window, selectedPositions));
+                stateMachine.changeState(std::make_unique<GameplayState>(window, textureManager, selectedPositions));
                 return;
             }
 

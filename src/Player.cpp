@@ -2,17 +2,25 @@
 #include "GameContext.h"
 #include <cmath>
 #include <iostream>
+#include "TextureManager.h"
 
-Player::Player() {
-    sprite.setRadius(25.f);
-    sprite.setFillColor(sf::Color::Cyan);
-    sprite.setOrigin({ 25.f, 25.f });
+
+Player::Player(TextureManager& textureManager) {
+
+    if (!textureManager.loadTexture("Ash", "assets/images/Ash.png")) {
+        std::cerr << "Failed to load Ash texture!" << std::endl;
+    }
+    sprite.setTexture(textureManager.getTexture("Ash"));
     sprite.setPosition({ 400.f, 300.f });
+
+
     team = Team::Player;
     health = 100;
     maxHealth = 100;
     isAlive = true;
     speed = 300.f;
+
+    sprite.setScale({ 0.5f, 0.5f });
 }
 
 void Player::handleInput() {
@@ -42,8 +50,7 @@ void Player::update(const GameContext& context) {
     if (dir.x != 0.f || dir.y != 0.f) {
         float newX = getX() + dir.x * speed * context.deltaTime;
         float newY = getY() + dir.y * speed * context.deltaTime;
-        setX(newX);
-        setY(newY);
+        setPosition(newX, newY);
         sprite.setPosition(getPosition());
     }
 

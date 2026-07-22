@@ -15,8 +15,5 @@ public:
 
     // Lấy texture đã load
     sf::Texture& getTexture(const std::string& name);
-
-    // Kiểm tra texture đã tồn tại chưa
-    bool hasTexture(const std::string& name) const;
 };
 

@@ -3,12 +3,15 @@
 #include "StateMachine.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include "TextureManager.h"
 class StateMachine;
 
 class IntroState : public State {
 private:
     StateMachine& machine;
     sf::RenderWindow& window;
+    TextureManager& textureManager;
+
     float displayTime;
     bool isDone;
     sf::RectangleShape background;
@@ -16,7 +19,7 @@ private:
     std::unique_ptr<sf::Text> gameTitle;
 
 public:
-    IntroState(StateMachine& machine, sf::RenderWindow& window);
+    IntroState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
     ~IntroState() override = default;
 
     void onEnter() override;

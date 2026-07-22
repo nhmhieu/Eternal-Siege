@@ -1,5 +1,5 @@
 #include "Game.h"
-#include "DummyState.h"
+#include "TextureManager.h"
 #include "GameplayState.h"
 #include "GameContext.h"
 #include "IntroState.h"
@@ -8,7 +8,7 @@
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
-    stateMachine.changeState(std::make_unique<IntroState>(stateMachine, window));
+    stateMachine.changeState(std::make_unique<IntroState>(stateMachine, window, textureManager));
 }
 
 

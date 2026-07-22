@@ -2,16 +2,19 @@
 #include "GameContext.h"
 #include <cmath>
 #include <iostream>
+#include "TextureManager.h"
 
-Ally::Ally(float x, float y)
-    : Entity(x, y, 50.f, 50.f), attackRange(100.f), attackCoolDown(1.f), cooldownTimer(0.f)
-{
-    sprite.setRadius(20.f);
-    sprite.setFillColor(sf::Color::Blue);
-    sprite.setOrigin(sf::Vector2f(20.f, 20.f));
+Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& textureName)
+    : Entity(x, y, 50, 50) {
+    if (!textureManager.loadTexture(textureName, "assets/images/" + textureName + ".png")) {
+        std::cerr << "Failed to load " << textureName << " texture!" << std::endl;
+    }
+    sprite.setTexture(textureManager.getTexture(textureName));
     sprite.setPosition(sf::Vector2f(x, y));
+    sprite.setScale({ 0.5f, 0.5f });
     team = Team::Player;
 }
+
 
 void Ally::update(const GameContext& context) {
     Entity* target = nullptr;

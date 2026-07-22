@@ -6,6 +6,7 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <vector>
+#include <TextureManager.h>
 
 class SetupState : public State
 {
@@ -13,6 +14,7 @@ private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
     Map map;
+    TextureManager& textureManager;
     std::vector<sf::Vector2i> selectedPositions;
     int maxAllies = 4;
     bool canStart = false;
@@ -22,7 +24,7 @@ private:
     sf::RectangleShape startButton;
 
 public:
-    SetupState(StateMachine& machine, sf::RenderWindow& window);
+    SetupState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
     ~SetupState() override = default;
 
     void onEnter() override;

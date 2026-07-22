@@ -7,19 +7,21 @@
 #include "GameContext.h"
 #include "Ally.h"
 #include "WaveManager.h"
+#include "TextureManager.h"
 
 class GameplayState : public State {
 private:
-    Player player;
+    TextureManager& textureManager;
+    std::unique_ptr<Player> player;
     std::vector<Monster*> monsters;
-    std::vector<Ally> allies;
+    std::vector<std::unique_ptr<Ally>> allies;
     WaveManager waveManager;
     GameContext context;
     sf::RenderWindow& window;
     CombatManager combatManager;
 
 public:
-    GameplayState(sf::RenderWindow& window, const std::vector<sf::Vector2i>& allyPositions ={});
+    GameplayState(sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions ={});
     ~GameplayState() override;
 
     void onEnter() override;

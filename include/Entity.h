@@ -1,9 +1,9 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Sprite.hpp>
 #include <vector>
 #include "Weapon.h" 
-
+#include <memory>
 // ===============================
 // 1. ENUM
 // ===============================
@@ -21,7 +21,8 @@ class GameContext;
 class Entity {
 protected:
     // ---------- CORE PROPERTIES ----------
-    sf::CircleShape sprite;
+    sf::Texture defaultTexture;
+    sf::Sprite sprite;   
     sf::Vector2f position;
     float health;
     float maxHealth;

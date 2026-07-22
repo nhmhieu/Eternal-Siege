@@ -1,16 +1,22 @@
 #include "Entity.h"
 #include "GameContext.h"
+#include "Weapon.h"
 #include <iostream>
+#include <SFML/Graphics/Sprite.hpp>
 
-Entity::Entity() : position(0, 0), health(0), maxHealth(0) {}
+
+Entity::Entity()
+    : position(0, 0), health(0), maxHealth(0), sprite(defaultTexture) {
+}
 
 Entity::Entity(float x, float y, float health, float maxHealth)
-    : position(x, y), health(health), maxHealth(maxHealth) {
+    : position(x, y), health(health), maxHealth(maxHealth), sprite(defaultTexture) {
 }
 
 Entity::Entity(float x, float y, float health, float maxHealth, Team team, Weapon* weapon)
-    : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(weapon) {
+    : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(weapon), sprite(defaultTexture) {
 }
+
 
 void Entity::takeDamage(float damage) {
     health -= damage;

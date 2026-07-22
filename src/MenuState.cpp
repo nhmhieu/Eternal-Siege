@@ -3,8 +3,8 @@
 #include <iostream>
 
 // Constructor bây giờ rất sạch sẽ, không gọi font rỗng nữa
-MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window)
-    : stateMachine(machine), window(window) {
+MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
+    : stateMachine(machine), window(window), textureManager(textureManager) {
 }
 
 
@@ -53,7 +53,7 @@ void MenuState::handleEvent(const sf::Event& event) {
             // Dùng dấu -> vì startButton giờ là biến thông thường
             if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 std::cout << "Start button clicked!" << std::endl;
-                stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window));
+                stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window, textureManager));
                 return;
             }
 

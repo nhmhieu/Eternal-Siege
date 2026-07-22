@@ -3,12 +3,15 @@
 #include "StateMachine.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include "TextureManager.h"
+
 
 class MenuState : public State {
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
     sf::Font font;
+    TextureManager& textureManager;
     
 
     // Dùng unique_ptr cho các đối tượng cần Font
@@ -21,7 +24,7 @@ private:
     std::unique_ptr<sf::RectangleShape> exitButton;
 
 public:
-    MenuState(StateMachine& machine, sf::RenderWindow& window);
+    MenuState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;

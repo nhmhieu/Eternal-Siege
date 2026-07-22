@@ -11,8 +11,6 @@ Monster::Monster(float x, float y, float health, float maxHealth,
     attackCooldown(cooldown),
     attackDamage(dmg),
     speed(spd) {
-    sprite.setRadius(20.f);
-    sprite.setFillColor(sf::Color::Red);
     sprite.setOrigin(sf::Vector2f(20.f, 20.f));
     sprite.setPosition(sf::Vector2f(x, y));
     team = Team::Enemy;
