@@ -73,6 +73,7 @@ void GameplayState::handleEvent(const sf::Event& event) {
         }
     }
 
+    //can toi uu lai cho nay chi tinh attackDir khi player that su co the tan cong (cooldownTimer <= 0)
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
             sf::Vector2i mousePixel = mousePressed->position;
@@ -86,7 +87,7 @@ void GameplayState::handleEvent(const sf::Event& event) {
             else attackDir = sf::Vector2f(0.f, 0.f);
 
             player.setAttackDirection(attackDir);
-            player.setIsAttacking(true);   // Sử dụng setter
+            // player.setIsAttacking(true);   // Sử dụng setter
         }
     }
 }
@@ -99,10 +100,13 @@ void GameplayState::update(float dt) {
     player.update(context);
 
     // Xử lý tấn công của Player
-    if (player.getIsAttacking()) {
-        std::vector<Entity*> targets;
-        for (auto* m : monsters) targets.push_back(m);
-        combatManager.processAttack(&player, player.getCurrentWeapon(), targets);
+    // if(player.canAttack()){
+    //     player.startAttacking() ;
+    // }
+    player.canAttack() ;
+    if (player.getIsAttacking() && player.canAttack()) {
+        std :: cout << "Player is Aattacking" << std :: endl ;
+        combatManager.processAttack(&player, player.getCurrentWeapon(), context.enemies);
 
     }
 
@@ -125,17 +129,15 @@ void GameplayState::update(float dt) {
     for (auto* m : monsters) {
         m->update(context);
 
+        if(m->canAttack()){
+            // std :: cout << "Quai bat dau tan cong !" << std :: endl ;
+            m->startAttacking() ; 
+        }
         if(m->getIsAttacking()){
             combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
-            // std :: cout << "Monster is attacking ! " << std :: endl ; 
-        }
-        else{
-            // std :: cout << "Monster is not attacking" << std :: endl ; 
-        }
-        // std :: cout << "Da chay duoc den truoc m->updateStatus" << std :: endl ; 
 
-        m->updateStatus() ;
-
+        }
+        
     }
 
     int count = 0 ; 
@@ -143,16 +145,14 @@ void GameplayState::update(float dt) {
     for(auto& ally : allies){
         ally.update(context) ;
 
-        // if(ally.getTarget()){
-        //     std::cout << "Ally [" << &ally << "] Target: [" << ally.getTarget() << "]" << std::endl;
-
-        // }
-
-        // std :: cout << "Kiem tra ally co dang danh khong" << std :: endl ;
+        if(ally.canAttack()){
+            ally.startAttacking() ; 
+        }
 
         if(ally.getIsAttacking()){
 
             combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
+            std :: cout << "Ally is attacking, target health :  " << ally.getHealth() << std :: endl ;
             // std :: cout << "Ally is attacking ! " << count + 1 << std :: endl ; 
             // std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
         }
@@ -211,7 +211,7 @@ void GameplayState::update(float dt) {
 void GameplayState::render(sf::RenderWindow& window) {
     player.draw(window);
 
-    if(player.getIsAttacking()){
+    if(player.getIsAttacking() && player.canAttack()){
         player.getCurrentWeapon()->drawDebug(window, player.getPosition(), player.getAttackDirection()) ; 
     }
 

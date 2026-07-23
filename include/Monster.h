@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include <vector>
+#include <iostream>
 
 class GameContext;
 
@@ -27,4 +28,15 @@ public:
     void draw(sf::RenderWindow& window) override;
 
     Entity* getCurrentTarget() const { return currentTarget; }
+
+    bool canAttack(){
+        // std :: cout << gap << std :: endl ;
+        bool isInRange = (attackRange >= gap) ; 
+        bool isReady = !isAttacking && coolDownTimer <= 0 ;
+
+        // if(!isInRange) std :: cout << "Khong trong tam danh" << std :: endl ; 
+        // if(!isReady) std :: cout << "Quai chua san sang tan cong " << std :: endl ; 
+        
+        return isInRange && isReady ; 
+    }
 };

@@ -44,13 +44,20 @@ void Ally::update(const GameContext& context) {
         // 3. Đủ điều kiện mới bật lên TRUE và reset đồng hồ
         isAttacking = true; 
         //bat dau dem attackClock
-        attackClock.restart(); 
+        // attackClock.restart(); 
     }
     // Không cần hàm else { isAttacking = false; } ở đây nữa!
 
     if(isDying){
         updateDeadTimer(context) ; 
     }
+
+    if(isAttacking){
+        updateAttackTimer(context) ; 
+    }
+
+    updateStatus() ;
+
 }
 
 void Ally::draw(sf::RenderWindow& window) {

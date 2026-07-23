@@ -13,6 +13,7 @@ Player::Player() {
     maxHealth = 100;
     isAlive = true;
     speed = 300.f;
+    attackCoolDown = 5.f ; 
 }
 
 void Player::handleInput() {
@@ -32,11 +33,17 @@ void Player::handleInput() {
 
     // Tấn công bằng chuột trái
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !isAttacking) {
-        setIsAttacking(true);   // Sử dụng setter mới trong Entity.h
+        if(canAttack()){
+            // std :: cout << "Cu click nay hop le " << std :: endl ;
+            isAttacking = true ;    // Sử dụng setter mới trong Entity.h
+
+        }
     }
 }
 
 void Player::update(const GameContext& context) {
+    if(coolDownTimer > 0.0f) 
+        coolDownTimer -= context.deltaTime ; 
     // Di chuyển theo hướng đã lưu
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
@@ -47,6 +54,13 @@ void Player::update(const GameContext& context) {
         sprite.setPosition(getPosition());
     }
 
+    if(isDying){
+        updateDeadTimer(context) ; 
+    }
+
+    if(isAttacking){
+        updateAttackTimer(context) ;
+    }
     // Cập nhật trạng thái tấn công (tự động tắt sau attackDuration)
     updateStatus();
 }

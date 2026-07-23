@@ -42,6 +42,10 @@ void Monster::updateTarget(const std::vector<Entity*>& targets) {
     currentTarget = closest;
 
     sf :: Vector2f attackDir = currentTarget->getPosition() - this->getPosition() ; 
+    float length = std :: sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y) ; 
+    if(length != 0.f){
+        attackDir /= length ; 
+    }
     this->setAttackDirection(attackDir) ;  
     
 
@@ -56,18 +60,19 @@ void Monster::moveToward(float deltaTime) {
     float dx = currentTarget->getX() - getX();
     float dy = currentTarget->getY() - getY();
     float distance = std::sqrt(dx * dx + dy * dy);
+    if(distance >= 0) gap = distance ;
 
-    if (distance <= 0.001f) return;
+    if (distance <= 1.f) return;
 
     if (distance <= attackRange) {
-        attackTimer += deltaTime;
-        this->setIsAttacking(true) ; 
-        if (attackTimer >= attackCooldown) {
-            attackTimer = 0.f;
-            this->setIsAttacking(false) ;
-            // currentTarget->takeDamage(attackDamage);
-            // std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
-        }
+        // attackTimer += deltaTime;
+        // this->setIsAttacking(true) ; 
+        // if (attackTimer >= attackCooldown) {
+        //     attackTimer = 0.f;
+        //     this->setIsAttacking(false) ;
+        //     // currentTarget->takeDamage(attackDamage);
+        //     // std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
+        // }
         return;
     }
 
@@ -79,6 +84,9 @@ void Monster::moveToward(float deltaTime) {
 }
 
 void Monster::update(const GameContext& context) {
+
+    if(coolDownTimer > 0.0f) 
+        coolDownTimer -= context.deltaTime ; 
     // N?u m?c ti�u ch?t ho?c kh�ng c�, t�m m?c ti�u m?i ngay
     if (currentTarget == nullptr || currentTarget->isDead()) {
         updateTarget(context.players);
@@ -101,8 +109,9 @@ void Monster::update(const GameContext& context) {
         updateDeadTimer(context) ;
     }
     if(isAttacking){
-        attackClock.restart() ; 
+        updateAttackTimer(context); 
     }
+
     updateStatus();
 }
 

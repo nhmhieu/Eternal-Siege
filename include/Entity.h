@@ -38,6 +38,9 @@ protected:
     float attackPower = 10.f;
     sf::Clock attackClock;
     float attackTimer = 0.f ; 
+    float attackCoolDown = 1.f  ;
+    float coolDownTimer = attackCoolDown ; 
+    float gap = 0 ;
 
     // ---------- WEAPON ----------
     Weapon* currentWeapon = nullptr;
@@ -124,4 +127,12 @@ public:
         }
     }
     void setIsDying(bool status){this->isDying = status ;}
+    void updateAttackTimer(const GameContext& context){
+        if(isAttacking){
+            attackTimer += context.deltaTime ; 
+
+        }
+    }
+
+    void startAttacking(){this->isAttacking = true ;}
 };

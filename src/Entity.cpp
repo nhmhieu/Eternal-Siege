@@ -41,9 +41,12 @@ sf::FloatRect Entity::getAttackHitbox() const {
 
 void Entity::updateStatus() {
     if (isAttacking) {
-        if (attackClock.getElapsedTime().asSeconds() > attackDuration) {
+        if (attackTimer >= attackDuration) {
             isAttacking = false;
             if (currentWeapon) currentWeapon->clearHitList();
+            coolDownTimer = attackCoolDown ; 
+            attackTimer = 0.f ; 
+
         }
     }
 }

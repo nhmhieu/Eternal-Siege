@@ -5,8 +5,6 @@ class Ally : public Entity {
 private:
 	float attackCoolDown;
 	//xoa cooldownTimer
-
-
 	sf :: Vector2f position ; 
 
 
@@ -15,13 +13,6 @@ private:
 
 public:
 
-	bool canAttackNow() {
-		return (target != nullptr && 
-				!isAttacking && 
-				attackClock.getElapsedTime().asSeconds() >= attackCoolDown);
-	}
-
-	void startAttack() { isAttacking = true; attackClock.restart(); }
 	void finishAttack() { isAttacking = false; }
 
 	Ally(float x, float y);
@@ -36,5 +27,16 @@ public:
 
 	bool isInRange(Entity* target) ; 
 
+
+	bool canAttack(){
+        // std :: cout << gap << std :: endl ;
+        bool isInRange = (range >= gap) ; 
+        bool isReady = !isAttacking && coolDownTimer <= 0 ;
+
+        // if(!isInRange) std :: cout << "Khong trong tam danh" << std :: endl ; 
+        // if(!isReady) std :: cout << "Quai chua san sang tan cong " << std :: endl ; 
+        
+        return isInRange && isReady ; 
+    }
 
 };
