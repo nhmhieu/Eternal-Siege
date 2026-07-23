@@ -7,8 +7,10 @@
 class MenuState : public State {
 private:
     StateMachine& stateMachine;
+    sf::RenderWindow& window;
     sf::Font font;
     bool initialized = false;
+    
 
     // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
@@ -16,11 +18,11 @@ private:
     std::unique_ptr<sf::Text> exitText;
 
     // Biến thông thường cho các đối tượng không cần Font
-    sf::RectangleShape startButton;
-    sf::RectangleShape exitButton;
+    std::unique_ptr<sf::RectangleShape> startButton;
+    std::unique_ptr<sf::RectangleShape> exitButton;
 
 public:
-    MenuState(StateMachine& machine);
+    MenuState(StateMachine& machine, sf::RenderWindow& window);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;

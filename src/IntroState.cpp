@@ -3,19 +3,24 @@
 #include "IntroState.h"
 #include "MenuState.h"
 #include "StateMachine.h"
+#include "WinState.h"
+#include "LoseState.h"
 
-IntroState::IntroState(StateMachine& machine)
-	: machine(machine), displayTime(3.0f), isDone(false)
+
+
+IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window)
+	: machine(machine), window(window), displayTime(3.0f), isDone(false)
 {
     background.setSize(sf::Vector2f(1280.0f, 720.0f));
-    background.setFillColor(sf::Color::Blue);
+    background.setFillColor(sf::Color::Black);
 }
 
 void IntroState::onEnter() {
     std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
     std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
 
-    if (!font.openFromFile(std::string("assets/Montserrat-Italic.ttf"))) {
+    std::string fontPath = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    if (!font.openFromFile(fontPath)) {
         std::cout << "KHONG THE NAP FONT!" << std::endl;
         gameTitle.reset();
     }
@@ -23,7 +28,7 @@ void IntroState::onEnter() {
         std::cout << "=> NAP FONT THANH CONG!" << std::endl;
         gameTitle = std::make_unique<sf::Text>(font);
         gameTitle->setString("From nowhere of the universe");
-        gameTitle->setCharacterSize(20);
+        gameTitle->setCharacterSize(50);
         gameTitle->setFillColor(sf::Color::White);
 
         sf::FloatRect textBounds = gameTitle->getLocalBounds();
@@ -34,6 +39,14 @@ void IntroState::onEnter() {
 
     displayTime = 3.0f;
     isDone = false;
+
+    std::string path = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    if (std::filesystem::exists(path)) {
+        std::cout << "File exists!" << std::endl;
+    }
+    else {
+        std::cout << "File does not exist!" << std::endl;
+    }
 }
 
 void IntroState::onExit() {
@@ -60,7 +73,7 @@ void IntroState::update(float dt) {
 
     if (isDone) {
         std::cout << "Chuyen sang MenuState!" << std::endl;
-        auto nextState = std::make_unique<MenuState>(machine);
+        auto nextState = std::make_unique<MenuState>(machine); // Chỗ WinState có thể chuyển thành bất kỳ State nào để test
         machine.changeState(std::move(nextState));
         return;
     }

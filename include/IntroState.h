@@ -1,5 +1,6 @@
 #pragma once
 #include "State.h"
+#include "StateMachine.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
 class StateMachine;
@@ -7,6 +8,7 @@ class StateMachine;
 class IntroState : public State {
 private:
     StateMachine& machine;
+    sf::RenderWindow& window;
     float displayTime;
     bool isDone;
     sf::RectangleShape background;
@@ -14,7 +16,8 @@ private:
     std::unique_ptr<sf::Text> gameTitle;
 
 public:
-    IntroState(StateMachine& machine);
+    IntroState(StateMachine& machine, sf::RenderWindow& window);
+    ~IntroState() override = default;
 
     void onEnter() override;
     void onExit() override;

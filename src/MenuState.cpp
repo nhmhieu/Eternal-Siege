@@ -1,24 +1,25 @@
 #include "MenuState.h"
+#include "SetupState.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 
 // Constructor bây giờ rất sạch sẽ, không gọi font rỗng nữa
-MenuState::MenuState(StateMachine& machine)
-    : stateMachine(machine), initialized(false) {
+MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window)
+    : stateMachine(machine), window(window) {
 }
 
 static std::vector<char> fontBuffer;
 
 void MenuState::onEnter() {
-    if (!font.openFromFile("assets/Montserrat-Italic.ttf")){
-        initialized = false;
+    if (!font.openFromFile("assets/fonts/Font.ttf")){
+        std::cerr << "Failed to load font!" << std::endl;
         return;
     }
 
     initialized = true;
     std::cout << "=> KHONG CO GI NGAN CAN DUOC NUA! NAP FONT THANH CONG!" << std::endl;
-
+    
     // BƯỚC 2: Font đã nạp xong, giờ mới an toàn tạo các đối tượng sf::Text
     titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 68);
     titleText->setFillColor(sf::Color::Yellow);
@@ -33,13 +34,15 @@ void MenuState::onEnter() {
     exitText->setPosition({ 605.f, 460.f });
 
     // Các nút bấm hình chữ nhật không cần font
-    startButton.setSize(sf::Vector2f(200.f, 60.f));
-    startButton.setFillColor(sf::Color(50, 150, 50));
-    startButton.setPosition({ 540.f, 350.f });
+    startButton = std::make_unique<sf::RectangleShape>();
+    startButton->setSize(sf::Vector2f(200.f, 60.f));
+    startButton->setFillColor(sf::Color(50, 150, 50));
+    startButton->setPosition({ 540.f, 350.f });
 
-    exitButton.setSize(sf::Vector2f(200.f, 60.f));
-    exitButton.setFillColor(sf::Color(150, 50, 50));
-    exitButton.setPosition({ 540.f, 450.f });
+    exitButton = std::make_unique<sf::RectangleShape>();
+    exitButton->setSize(sf::Vector2f(200.f, 60.f));
+    exitButton->setFillColor(sf::Color(150, 50, 50));
+    exitButton->setPosition({ 540.f, 450.f });
 }
 
 void MenuState::onExit() {
@@ -54,12 +57,15 @@ void MenuState::handleEvent(const sf::Event& event) {
             sf::Vector2i mousePos = mousePressed->position;
 
             // Dùng dấu -> vì startButton giờ là biến thông thường
-            if (startButton.getGlobalBounds().contains(sf::Vector2f(mousePos))) {
+            if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 std::cout << "Start button clicked!" << std::endl;
+                stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window));
+                return;
             }
 
-            if (exitButton.getGlobalBounds().contains(sf::Vector2f(mousePos))) {
+            if (exitButton && exitButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 std::cout << "Exit button clicked!" << std::endl;
+                window.close();
             }
         }
     }
@@ -71,9 +77,9 @@ void MenuState::render(sf::RenderWindow& window) {
     if (!initialized) return;
 
     // Dùng dấu * để giải băm unique_ptr khi vẽ
-    window.draw(*titleText);
-    window.draw(startButton);
-    window.draw(*startText);
-    window.draw(exitButton);
-    window.draw(*exitText);
+   if (titleText) window.draw(*titleText);
+   if (startButton) window.draw(*startButton);
+   if (startText) window.draw(*startText);
+   if (exitButton) window.draw(*exitButton);
+   if (exitText) window.draw(*exitText);
 }
