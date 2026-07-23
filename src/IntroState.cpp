@@ -19,7 +19,7 @@ void IntroState::onEnter() {
     std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
     std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
 
-    std::string fontPath = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    std::string fontPath = "assets/Montserrat-BlackItalic.ttf";
     if (!font.openFromFile(fontPath)) {
         std::cout << "KHONG THE NAP FONT!" << std::endl;
         gameTitle.reset();
@@ -40,7 +40,7 @@ void IntroState::onEnter() {
     displayTime = 3.0f;
     isDone = false;
 
-    std::string path = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    std::string path = "assets/Montserrat-BlackItalic.ttf";
     if (std::filesystem::exists(path)) {
         std::cout << "File exists!" << std::endl;
     }
