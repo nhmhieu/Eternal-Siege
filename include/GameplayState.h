@@ -1,6 +1,7 @@
 #pragma once
 
 #include "State.h"
+#include "StateMachine.h"
 #include "Player.h"
 #include "Monster.h"
 #include "CombatManager.h"
@@ -14,6 +15,7 @@
 
 class GameplayState : public State {
 private:
+    StateMachine& stateMachine;
     TextureManager& textureManager;
     std::unique_ptr<Player> player;
     std::vector<Monster*> monsters;
@@ -26,7 +28,7 @@ private:
     std::unique_ptr<Sword> sword;
 
 public:
-    GameplayState(sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions ={});
+    GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions = {});
     ~GameplayState() override;
 
     void onEnter() override;

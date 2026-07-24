@@ -5,11 +5,8 @@
 #include "StateMachine.h"
 #include "TextureManager.h"
 
-
-
-
 IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
-	: machine(machine), window(window), textureManager(textureManager), displayTime(3.0f), isDone(false)
+    : machine(machine), window(window), textureManager(textureManager), displayTime(3.0f), isDone(false)
 {
     background.setSize(sf::Vector2f(1280.0f, 720.0f));
     background.setFillColor(sf::Color::Blue);
@@ -63,12 +60,12 @@ void IntroState::handleEvent(const sf::Event& event) {
 }
 
 void IntroState::update(float dt) {
-    if (isDone) return;
+    if (!isDone) {
+        displayTime -= dt;
 
-    displayTime -= dt;
-
-    if (displayTime <= 0.0f) {
-        isDone = true;
+        if (displayTime <= 0.0f) {
+            isDone = true;
+        }
     }
 
     if (isDone) {

@@ -4,8 +4,8 @@
 #include <cstdlib>
 
 WaveManager::WaveManager()
-    : totalMonstersSpawned(0), spawnTimer(0.f), spawnInterval(1.5f), monstersPerWave(3), 
-      currentWave(0), waveActive(false), waveDelay(3.f), waveDelayTimer(0.f){ }
+    : totalMonstersSpawned(0), spawnTimer(0.f), spawnInterval(0.5f), monstersPerWave(5), 
+      currentWave(0), waveActive(false), waveDelay(1.f), waveDelayTimer(0.f){ }
 
 
 void WaveManager::update(const GameContext& context, std::vector<Monster*>& monsterList) {
@@ -20,21 +20,22 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
         }
         return;
     }
-    // 1. Sinh quái nếu chưa đủ
-    if ((int)monsterList.size() < monstersPerWave) {
+
+    // Sinh quái nếu chưa đủ số lượng trong wave
+    if (totalMonstersSpawned < monstersPerWave) {
         spawnTimer += context.deltaTime;
         if (spawnTimer >= spawnInterval) {
             spawnTimer = 0.f;
             float x = 50.f + rand() % 1100;
             float y = 50.f + rand() % 600;
             monsterList.push_back(new Monster(x, y, 100.f, 100.f, 50.f, 1.f, 100.f, 10.f));
-            std::cout << "Spawned monster! Total: " << monsterList.size() << std::endl;
+            totalMonstersSpawned++;
+            std::cout << "Spawned monster! Total now: " << monsterList.size() << ", spawned: " << totalMonstersSpawned << std::endl;
         }
-        return;
-
     }
 
-    if (monsterList.empty()) {
+    // Kiểm tra nếu đã spawn đủ quái và tất cả đã chết → wave hoàn thành
+    if (monsterList.empty() && totalMonstersSpawned >= monstersPerWave) {
         waveActive = false;
         currentWave++;
         std::cout << "Wave " << currentWave << " completed!" << std::endl;
@@ -43,7 +44,7 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
             gameCompleted = true;
             std::cout << "All waves completed! Game finished!" << std::endl;
         }
-
+        return;
     }
 }
 

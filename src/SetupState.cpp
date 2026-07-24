@@ -49,7 +49,7 @@ void SetupState::handleEvent(const sf::Event& event)
             if (canStart && startButton.getGlobalBounds().contains(sf::Vector2f(mousePos)))
             {
                 std::cout << "Bat dau game voi " << selectedPositions.size() << " tuong!" << std::endl;
-                stateMachine.changeState(std::make_unique<GameplayState>(window, textureManager, selectedPositions));
+                stateMachine.changeState(std::make_unique<GameplayState>(stateMachine, window, textureManager, selectedPositions));
                 return;
             }
 

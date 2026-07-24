@@ -104,4 +104,9 @@ public:
     // 7. ATTACK STATE MANAGEMENT
     // ===============================
     void updateStatus(); // Cập nhật trạng thái tấn công
+
+    // ===============================
+    // 8. HEALTH BAR VISUALIZATION
+    // ===============================
+    virtual void drawHealthBar(sf::RenderWindow& window) const;
 };

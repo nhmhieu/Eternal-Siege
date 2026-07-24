@@ -6,9 +6,12 @@
 #include "Map.h"
 #include <iostream>
 #include "TextureManager.h"
+#include "GameOverState.h"
+#include "WinState.h"
+#include "StateMachine.h"
 
-GameplayState::GameplayState(sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
-    : window(window), textureManager(textureManager), map(15, 15) {
+GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
+    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15) {
     textureManager.loadTexture("Ash", "assets/images/Ash.png");
 
     player = std::make_unique<Player>(textureManager);
@@ -39,11 +42,6 @@ GameplayState::GameplayState(sf::RenderWindow& window, TextureManager& textureMa
 
     std::cout << "Total allies: " << allies.size() << std::endl;
 
-    for (auto* m : monsters) {
-        context.allEntity.push_back(m);
-        context.enemies.push_back(m);
-        m->updateTarget(context.players);
-    }
 
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
     std::cout << "Ally count at init=" << allies.size() << std::endl;
@@ -134,6 +132,7 @@ void GameplayState::update(float dt) {
     }
 
     // Xóa quái chết
+    // Xóa quái chết
     auto it = monsters.begin();
     while (it != monsters.end()) {
         if ((*it)->isDead()) {
@@ -146,6 +145,19 @@ void GameplayState::update(float dt) {
         }
     }
 
+    // Kiểm tra điều kiện Game Over (player chết)
+    if (player->isDead()) {
+        std::cout << "Player died! Game Over!" << std::endl;
+        stateMachine.changeState(std::make_unique<GameOverState>(stateMachine, window, textureManager));
+        return;
+    }
+
+    // Kiểm tra điều kiện Win (hoàn thành tất cả wave)
+    if (waveManager.isGameCompleted() && monsters.empty()) {
+        std::cout << "All waves completed! Victory!" << std::endl;
+        stateMachine.changeState(std::make_unique<WinState>(stateMachine, window, textureManager));
+        return;
+    }
 }
 
 void GameplayState::render(sf::RenderWindow& window) {
@@ -154,14 +166,17 @@ void GameplayState::render(sf::RenderWindow& window) {
 
     // Vẽ player
     player->draw(window);
+    player->drawHealthBar(window);
 
     // Vẽ ally
     for (auto& allyPtr : allies) {
         allyPtr->draw(window);
+        allyPtr->drawHealthBar(window);
     }
 
     // Vẽ monster
     for (auto* m : monsters) {
         m->draw(window);
+        m->drawHealthBar(window);
     }
 }

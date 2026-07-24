@@ -1,28 +1,29 @@
 #pragma once
+
 #include "Entity.h"
+#include <SFML/Graphics.hpp>
 #include "TextureManager.h"
+
+class GameContext;
 
 class Ally : public Entity {
 private:
-    const sf::Texture* allyTexture;
-    float attackRange = 250.f;
-    float attackCoolDown = 0.8f;
+    float attackRange = 200.f;
+    float attackCoolDown = 1.5f;
     float cooldownTimer = 0.f;
-    float speed = 160.f;
-    sf::RectangleShape fallbackShape;
+    const sf::Texture* allyTexture;
     sf::RectangleShape rectShape;
-    bool useFallback = false;
+    sf::RectangleShape fallbackShape;
     sf::RectangleShape debugRect;
+    bool useFallback = true;
 public:
     Ally(float x, float y);
     Ally(float x, float y, TextureManager& textureManager, const std::string& textureName);
-    ~Ally() override = default;
-    
-     void update(const GameContext& context) override;
-     void draw(sf::RenderWindow& window) override;
 
-     sf::FloatRect getCollisionBox() const override;
-     sf::FloatRect getHurtBox() const override;
+    void update(const GameContext& context) override;
+    void draw(sf::RenderWindow& window) override;
 
-     bool isUsingFallback() const { return useFallback; }
+    sf::FloatRect getCollisionBox() const override;
+    sf::FloatRect getHurtBox() const override;
+
 };

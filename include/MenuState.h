@@ -5,14 +5,12 @@
 #include <memory>
 #include "TextureManager.h"
 
-
 class MenuState : public State {
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
     sf::Font font;
     TextureManager& textureManager;
-    
 
     // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
