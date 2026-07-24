@@ -1,4 +1,4 @@
-#include "Map.h"
+﻿#include "Map.h"
 #include <iostream>
 #include <random>
 
@@ -10,8 +10,7 @@ Map::Map(int width, int height)
     generate();
 }
 
-
- void Map::generate()
+void Map::generate()
 {
     tiles.assign(height, std::vector<int>(width, TILE_WALL));
 
@@ -29,23 +28,36 @@ Map::Map(int width, int height)
 
         switch (dir(gen))
         {
-        case 0: x++; break;
-        case 1: x--; break;
-        case 2: y++; break;
-        case 3: y--; break;
+        case 0:
+            x++;
+            break;
+        case 1:
+            x--;
+            break;
+        case 2:
+            y++;
+            break;
+        case 3:
+            y--;
+            break;
         }
 
-        if (x < 1) x = 1;
-        if (x > width - 2) x = width - 2;
+        if (x < 1)
+            x = 1;
+        if (x > width - 2)
+            x = width - 2;
 
-        if (y < 1) y = 1;
-        if (y > height - 2) y = height - 2;
+        if (y < 1)
+            y = 1;
+        if (y > height - 2)
+            y = height - 2;
     }
 }
 
 void Map::draw(sf::RenderWindow& window)
 {
     sf::RectangleShape tile(sf::Vector2f(TILE_SIZE, TILE_SIZE));
+
     tile.setOutlineColor(sf::Color::Black);
     tile.setOutlineThickness(-1.f);
 
@@ -54,58 +66,84 @@ void Map::draw(sf::RenderWindow& window)
         for (int x = 0; x < width; x++)
         {
             if (tiles[y][x] == TILE_GRASS)
-{
-    tile.setFillColor(sf::Color::Green);
-}
-else if (tiles[y][x] == TILE_WALL)
-{
-    tile.setFillColor(sf::Color(100,60,20));
-}
-else if (tiles[y][x] == TILE_PATH)
-{
-    tile.setFillColor(sf::Color::Yellow);
-}
-else if (tiles[y][x] == TILE_SPAWN)
-{
-    tile.setFillColor(sf::Color::Blue);
-}
-            tile.setPosition(sf::Vector2f(x * TILE_SIZE, y * TILE_SIZE));
+            {
+                tile.setFillColor(sf::Color::Green);
+            }
+            else if (tiles[y][x] == TILE_WALL)
+            {
+                tile.setFillColor(sf::Color(100, 60, 20));
+            }
+            else if (tiles[y][x] == TILE_PATH)
+            {
+                tile.setFillColor(sf::Color::Yellow);
+            }
+            else if (tiles[y][x] == TILE_SPAWN)
+            {
+                tile.setFillColor(sf::Color::Blue);
+            }
+
+            tile.setPosition(
+                sf::Vector2f(
+                    x * TILE_SIZE,
+                    y * TILE_SIZE));
+
             window.draw(tile);
         }
     }
 }
 
-void Map::handleMouseClick(int mouseX, int mouseY)
+void Map::handleMouseClick(
+    int mouseX,
+    int mouseY,
+    std::vector<sf::Vector2i>& selectedPositions,
+    int maxAllies)
 {
-    int gridX = mouseX / static_cast<int>(TILE_SIZE);
-    int gridY = mouseY / static_cast<int>(TILE_SIZE);
+    int gridX = static_cast<int>(mouseX / TILE_SIZE);
+    int gridY = static_cast<int>(mouseY / TILE_SIZE);
 
-    if (gridX >= 0 && gridX < width &&
-        gridY >= 0 && gridY < height)
+    if (gridX >= 0 &&
+        gridX < width &&
+        gridY >= 0 &&
+        gridY < height)
     {
-        if (spawnCount < 4 &&
+        if (static_cast<int>(selectedPositions.size()) < maxAllies &&
             (tiles[gridY][gridX] == TILE_GRASS ||
              tiles[gridY][gridX] == TILE_PATH))
         {
             tiles[gridY][gridX] = TILE_SPAWN;
+
+            selectedPositions.push_back(
+                sf::Vector2i(gridX, gridY));
+
             spawnCount++;
 
-            selectedPositions.push_back({gridX, gridY});
+            std::cout
+                << "Spawn placed at ("
+                << gridX
+                << ", "
+                << gridY
+                << ")\n";
 
-            std::cout << "Spawn placed at ("
-                      << gridX << ", "
-                      << gridY << ")\n";
-
-            std::cout << "Spawn count: "
-                      << spawnCount
-                      << "/4\n";
+            std::cout
+                << "Spawn count: "
+                << spawnCount
+                << "/"
+                << maxAllies
+                << "\n";
+        }
+        else
+        {
+            std::cout
+                << "Cannot place spawn here!\n";
         }
     }
 }
+
 const std::vector<sf::Vector2i>& Map::getSelectedPositions() const
 {
     return selectedPositions;
 }
+
 bool Map::canStart() const
 {
     return spawnCount == 4;

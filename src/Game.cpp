@@ -7,9 +7,7 @@ Game::Game()
 {
     window.setFramerateLimit(60);
 
-    stateMachine.changeState(
-    std::make_unique<SetupState>(stateMachine)
-);
+    stateMachine.changeState(std::make_unique<SetupState>(stateMachine));
 }
 
 void Game::run()
@@ -19,6 +17,7 @@ void Game::run()
         while (const std::optional<sf::Event> event = window.pollEvent())
         {
             std::cout << "Game got an event" << std::endl;
+
             if (event->is<sf::Event::Closed>())
                 window.close();
 
