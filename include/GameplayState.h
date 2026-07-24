@@ -7,12 +7,16 @@
 #include "GameContext.h"
 #include "Ally.h"
 #include "WaveManager.h"
+#include "Projectiles.h"
 
 class GameplayState : public State {
 private:
+    //review code can kiem tra ham huy xem da xoa het mang con tro chua nhe
     Player player;
     std::vector<Monster*> monsters;
     std::vector<Ally> allies;
+    std :: vector<Projectiles*> projectiles ; 
+
     WaveManager waveManager;
     GameContext context;
     sf::RenderWindow& window;

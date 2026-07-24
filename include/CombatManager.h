@@ -13,4 +13,5 @@ public:
     void processAttack(Entity* attacker, Weapon* weapon, std::vector<Entity*>& targets);
     void resetAttack();
     bool hasHit(Entity* target) const;
+    void processProjectiles(const GameContext& context, const std :: vector<Entity*>& target) ; 
 };

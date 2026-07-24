@@ -4,7 +4,8 @@
 #include <unordered_set>
 
 class Entity;
-
+class CombatManager ; 
+class GameContext ; 
 class Weapon {
 private:
     std::unordered_set<Entity*> hitList;
@@ -12,8 +13,8 @@ private:
 public:
     virtual ~Weapon() = default;
 
-    virtual sf::FloatRect getHitbox(sf::Vector2f entityCenter, sf::Vector2f attackDir) = 0;
-    virtual bool isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Vector2f targetPos) = 0;
+    virtual sf::FloatRect getHitbox(sf::Vector2f entityCenter, sf::Vector2f attackDir) ;
+    virtual bool isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Vector2f targetPos) ;
 
     virtual void setDamage(int damage) = 0;
     virtual int getDamage() const = 0;
@@ -34,4 +35,6 @@ public:
         debugRect.setOutlineThickness(1.5f);
         target.draw(debugRect);
     }
+
+    virtual void triggerAction(Entity* attacker,GameContext& context, CombatManager& combatManager) = 0 ; 
 };

@@ -3,20 +3,11 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Weapon.h" 
-#include "GameContext.h"
 
-// ===============================
-// 1. ENUM
-// ===============================
-enum class Team {
-    Player,
-    Enemy,
-    Neutral
-};
+#include "GameTypes.h"
 
-// ===============================
-// 2. LỚP ENTITY
-// ===============================
+class GameContext ; 
+
 class Entity {
 protected:
     // ---------- CORE PROPERTIES ----------
@@ -90,7 +81,6 @@ public:
     void setAttackPower(float power) { attackPower = power; }
     sf::Vector2f getAttackDirection() const { return attackDirection; }
     void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
-    sf :: Clock getAttackClock() const {return this->attackClock ;}
     // Weapon
     Weapon* getCurrentWeapon() const { return currentWeapon; }
     void setCurrentWeapon(Weapon* weapon) { currentWeapon = weapon; }
@@ -99,7 +89,7 @@ public:
     // 5. CORE LOGIC
     // ===============================
     virtual void takeDamage(float damage);
-    virtual void update(const GameContext& context) = 0;
+    virtual void update(const GameContext& context);
     virtual void draw(sf::RenderWindow& window) = 0;
 
     // ===============================
@@ -118,21 +108,9 @@ public:
     //DEAD AND EARSE ENTITY LOGIC 
     void startDying(){this->isDying = true ;}
     bool isReadyToBeDelete(){return isDying && deadTimer >= deadAnimationDuration ; }
-    void updateDeadTimer(const GameContext& context)
-    {
-        if(isDying){
-            this->deadTimer += context.deltaTime ;
-            //logic animation quai khi chet -----
-            return ;
-        }
-    }
+    void updateDeadTimer(const GameContext& context) ;
     void setIsDying(bool status){this->isDying = status ;}
-    void updateAttackTimer(const GameContext& context){
-        if(isAttacking){
-            attackTimer += context.deltaTime ; 
-
-        }
-    }
+    void updateAttackTimer(const GameContext& context) ;
 
     void startAttacking(){this->isAttacking = true ;}
 };

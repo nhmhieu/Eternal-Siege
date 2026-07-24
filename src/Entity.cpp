@@ -50,3 +50,26 @@ void Entity::updateStatus() {
         }
     }
 }
+
+void Entity :: updateDeadTimer(const GameContext& context){
+
+        if(isDying){
+        this->deadTimer += context.deltaTime ;
+        //logic animation quai khi chet -----
+        return ;
+    }
+}
+
+void Entity :: updateAttackTimer(const GameContext& context){
+    if(isAttacking){
+        attackTimer += context.deltaTime ; 
+
+    }
+}
+
+
+void Entity :: update(const GameContext& context){
+
+    
+
+}

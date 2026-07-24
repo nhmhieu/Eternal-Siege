@@ -5,6 +5,9 @@
 #include <cmath>
 #include "Map.h"
 #include <iostream>
+#include "Projectiles.h" 
+#include "Arrow.h"
+#include "Bow.h"
 
 GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vector2i>& allyPositions)
     : window(window) {
@@ -14,6 +17,7 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
 
     // Gán vũ khí cho Player
     Sword* sword = new Sword(20, 100);
+    Bow* bow = new Bow(10, 2.f) ;
     player.setCurrentWeapon(sword);
 
     // Tạo ally từ danh sách vị trí
@@ -56,6 +60,9 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
 GameplayState::~GameplayState() {
     for (auto* m : monsters) delete m;
     monsters.clear();
+
+    for(auto* p : projectiles) delete p ;
+    projectiles.clear() ;
 }
 
 void GameplayState::onEnter() {
@@ -106,8 +113,8 @@ void GameplayState::update(float dt) {
     player.canAttack() ;
     if (player.getIsAttacking() && player.canAttack()) {
         std :: cout << "Player is Aattacking" << std :: endl ;
-        combatManager.processAttack(&player, player.getCurrentWeapon(), context.enemies);
-
+        // combatManager.processAttack(&player, player.getCurrentWeapon(), context.enemies);
+        player.getCurrentWeapon()->triggerAction(&player, context, combatManager) ;
     }
 
     context.players.clear();
@@ -134,9 +141,9 @@ void GameplayState::update(float dt) {
             m->startAttacking() ; 
         }
         if(m->getIsAttacking()){
-            combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
-
-        }
+            // combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
+            m->getCurrentWeapon()->triggerAction(m, context, combatManager) ;
+         }
         
     }
 
@@ -151,7 +158,8 @@ void GameplayState::update(float dt) {
 
         if(ally.getIsAttacking()){
 
-            combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
+            // combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
+            ally.getCurrentWeapon()->triggerAction(&ally, context, combatManager) ; 
             std :: cout << "Ally is attacking, target health :  " << ally.getHealth() << std :: endl ;
             // std :: cout << "Ally is attacking ! " << count + 1 << std :: endl ; 
             // std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
