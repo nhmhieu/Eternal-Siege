@@ -36,4 +36,7 @@ public:
     void handleEvent(const sf::Event& event) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
+
+private:
+    void rebuildContext();
 };

@@ -6,11 +6,10 @@
 
 Ally::Ally(float x, float y) : Entity(x, y, 50, 50) {
     team = Team::Player;
-    useFallback = true;
-    fallbackShape.setFillColor(sf::Color::Cyan);
-    fallbackShape.setSize(sf::Vector2f(50.f, 50.f));
-    fallbackShape.setOrigin(sf::Vector2f(25.f, 25.f));
-    fallbackShape.setPosition(sf::Vector2f(x, y));
+    rectShape.setFillColor(sf::Color::Cyan);
+    rectShape.setSize(sf::Vector2f(50.f, 50.f));
+    rectShape.setOrigin(sf::Vector2f(25.f, 25.f));
+    rectShape.setPosition(sf::Vector2f(x, y));
 }
 
 Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& textureName)
@@ -18,38 +17,20 @@ Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& 
     team = Team::Player;
 
     sf::Texture& tex = textureManager.getTexture(textureName);
-    if (!tex.getSize().x) {
-        std::cerr << "Texture '" << textureName << "' is empty! Ally uses fallback." << std::endl;
-        useFallback = true;
-        fallbackShape.setFillColor(sf::Color::Magenta);
-        fallbackShape.setSize(sf::Vector2f(50.f, 50.f));
-        fallbackShape.setOrigin(sf::Vector2f(25.f, 25.f));
-        fallbackShape.setPosition(sf::Vector2f(x, y));
-    } else {
-        std::cout << "Texture '" << textureName << "' size=" << tex.getSize().x << "x" << tex.getSize().y << std::endl;
-        useFallback = false;
-        allyTexture = &tex;
+    allyTexture = &tex;
 
-        const float desiredWidth = 40.f;
-        const float desiredHeight = 40.f;
-        const sf::Vector2u textureSize = allyTexture->getSize();
+    const float desiredWidth = 40.f;
+    const float desiredHeight = 40.f;
+    const sf::Vector2u textureSize = allyTexture->getSize();
 
-        float scaleX = desiredWidth / static_cast<float>(textureSize.x);
-        float scaleY = desiredHeight / static_cast<float>(textureSize.y);
+    float scaleX = desiredWidth / static_cast<float>(textureSize.x);
+    float scaleY = desiredHeight / static_cast<float>(textureSize.y);
 
-        rectShape.setSize(sf::Vector2f(static_cast<float>(textureSize.x), static_cast<float>(textureSize.y)));
-        rectShape.setTexture(allyTexture);
-        rectShape.setScale(sf::Vector2f(scaleX, scaleY));
-        rectShape.setOrigin(sf::Vector2f(textureSize.x / 2.f, textureSize.y / 2.f));
-        rectShape.setPosition(sf::Vector2f(x, y));
-    }
-
-    debugRect.setSize(sf::Vector2f(50.f, 50.f));
-    debugRect.setOrigin(sf::Vector2f(25.f, 25.f));
-    debugRect.setPosition(sf::Vector2f(x, y));
-    debugRect.setFillColor(sf::Color::Transparent);
-    debugRect.setOutlineColor(sf::Color::Red);
-    debugRect.setOutlineThickness(2.f);
+    rectShape.setSize(sf::Vector2f(static_cast<float>(textureSize.x), static_cast<float>(textureSize.y)));
+    rectShape.setTexture(allyTexture);
+    rectShape.setScale(sf::Vector2f(scaleX, scaleY));
+    rectShape.setOrigin(sf::Vector2f(textureSize.x / 2.f, textureSize.y / 2.f));
+    rectShape.setPosition(sf::Vector2f(x, y));
 }
 
 void Ally::update(const GameContext& context) {
@@ -76,29 +57,17 @@ void Ally::update(const GameContext& context) {
         }
     }
 
-    if (useFallback) {
-        fallbackShape.setPosition(getPosition());
-    } else {
-        rectShape.setPosition(getPosition());
-    }
-    debugRect.setPosition(getPosition());
+    rectShape.setPosition(getPosition());
 }
 
 void Ally::draw(sf::RenderWindow& window) {
-    if (useFallback) {
-        window.draw(fallbackShape);
-    } else {
-        window.draw(rectShape);
-    }
-    window.draw(debugRect);
+    window.draw(rectShape);
 }
 
 sf::FloatRect Ally::getCollisionBox() const {
-    if (useFallback) return fallbackShape.getGlobalBounds();
     return rectShape.getGlobalBounds();
 }
 
 sf::FloatRect Ally::getHurtBox() const {
-    if (useFallback) return fallbackShape.getGlobalBounds();
     return rectShape.getGlobalBounds();
 }

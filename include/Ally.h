@@ -13,9 +13,6 @@ private:
     float cooldownTimer = 0.f;
     const sf::Texture* allyTexture;
     sf::RectangleShape rectShape;
-    sf::RectangleShape fallbackShape;
-    sf::RectangleShape debugRect;
-    bool useFallback = true;
 public:
     Ally(float x, float y);
     Ally(float x, float y, TextureManager& textureManager, const std::string& textureName);
@@ -25,5 +22,4 @@ public:
 
     sf::FloatRect getCollisionBox() const override;
     sf::FloatRect getHurtBox() const override;
-
 };

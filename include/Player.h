@@ -11,9 +11,6 @@ private:
     float speed = 300.f;
     const sf::Texture* playerTexture;
     sf::RectangleShape playerShape;
-    sf::RectangleShape fallbackShape;
-    bool useFallback = false;
-    sf::CircleShape debugDot;  // Debug: chấm đỏ ở vị trí entity
 public:
     Player(TextureManager& textureManager);
 

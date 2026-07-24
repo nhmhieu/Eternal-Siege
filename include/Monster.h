@@ -14,8 +14,7 @@ private:
     Entity* currentTarget = nullptr;
     float targetTimer = 0.f;
     float attackTimer = 0.f;
-    sf::RectangleShape fallbackShape;
-    bool useFallback = true;  // Monster không có texture → luôn dùng fallback
+    sf::RectangleShape monsterShape;
 
 public:
     Monster(float x, float y, float health = 100, float maxHealth = 100,

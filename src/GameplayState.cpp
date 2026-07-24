@@ -15,8 +15,6 @@ GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, Te
     textureManager.loadTexture("Ash", "assets/images/Ash.png");
 
     player = std::make_unique<Player>(textureManager);
-    context.allEntity.push_back(player.get());
-    context.players.push_back(player.get());
 
     sword = std::make_unique<Sword>(20, 100);
     player->setCurrentWeapon(sword.get());
@@ -34,14 +32,11 @@ GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, Te
         std::string textureName = allyTextureNames[allyindex % allyTextureNames.size()];
         
         auto ally = std::make_unique<Ally>(x, y, textureManager, textureName);
-        context.allEntity.push_back(ally.get());
-        context.players.push_back(ally.get());
         allies.push_back(std::move(ally));
         allyindex++;
     }
 
     std::cout << "Total allies: " << allies.size() << std::endl;
-
 
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
     std::cout << "Ally count at init=" << allies.size() << std::endl;
@@ -85,6 +80,29 @@ void GameplayState::handleEvent(const sf::Event& event) {
     }
 }
 
+void GameplayState::rebuildContext() {
+    context.players.clear();
+    context.enemies.clear();
+    context.allEntity.clear();
+
+    context.players.push_back(player.get());
+    context.allEntity.push_back(player.get());
+
+    for (auto& allyPtr : allies) {
+        if (!allyPtr->isDead()) {
+            context.players.push_back(allyPtr.get());
+            context.allEntity.push_back(allyPtr.get());
+        }
+    }
+
+    for (auto* m : monsters) {
+        if (!m->isDead()) {
+            context.enemies.push_back(m);
+            context.allEntity.push_back(m);
+        }
+    }
+}
+
 void GameplayState::update(float dt) {
     context.deltaTime = dt;
 
@@ -101,37 +119,24 @@ void GameplayState::update(float dt) {
 
     player->updateStatus();
 
-    context.players.clear();
-    context.players.push_back(player.get());
-    for (auto& allyPtr : allies) {
-        context.players.push_back(allyPtr.get());
-    }
+    // Rebuild context sau khi update player
+    rebuildContext();
 
     // Cập nhật wavemanager trước khi ally update
     waveManager.update(context, monsters);
 
-    context.enemies.clear();
-    context.allEntity.clear();
-    context.allEntity.push_back(player.get());
-    for (auto& allyPtr : allies) {
-        context.allEntity.push_back(allyPtr.get());
-    }
-    for (auto* m : monsters) {
-        context.enemies.push_back(m);
-        context.allEntity.push_back(m);
-    }
+    // Cập nhật context sau khi waveManager thêm monster mới
+    rebuildContext();
 
     for (auto& allyPtr : allies) {
         allyPtr->update(context);
     }
-    
 
     // Cập nhật quái
     for (auto* m : monsters) {
         m->update(context);
     }
 
-    // Xóa quái chết
     // Xóa quái chết
     auto it = monsters.begin();
     while (it != monsters.end()) {
@@ -144,6 +149,9 @@ void GameplayState::update(float dt) {
             ++it;
         }
     }
+
+    // Rebuild context sau khi xóa quái chết
+    rebuildContext();
 
     // Kiểm tra điều kiện Game Over (player chết)
     if (player->isDead()) {
@@ -162,7 +170,7 @@ void GameplayState::update(float dt) {
 
 void GameplayState::render(sf::RenderWindow& window) {
     // Vẽ map/background trước (lấp đầy màn hình)
-    map.draw(window);
+    
 
     // Vẽ player
     player->draw(window);
