@@ -10,6 +10,8 @@ private:
     sf::Font font;
     bool initialized = false;
 
+    std::unique_ptr<sf::Sprite> background;
+
     sf::Text titleText;
     sf::RectangleShape startButton;
     sf::Text startText;

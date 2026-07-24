@@ -1,12 +1,27 @@
 #include "Player.h"
 #include <cmath>
 
+//Player::Player() {
+//    this->sprite.setRadius(25.f);
+//    this->sprite.setFillColor(sf::Color::Cyan);
+//    this->sprite.setOrigin({25.f, 25.f}); // Đặt tâm ở giữa hình tròn
+//    this->sprite.setPosition({400.f, 300.f}); // Vị trí ban đầu
+//    this->speed = 300.f; // Vận tốc di chuyển (pixel/giây)
+//}
 Player::Player() {
-    this->sprite.setRadius(25.f);
-    this->sprite.setFillColor(sf::Color::Cyan);
-    this->sprite.setOrigin({25.f, 25.f}); // Đặt tâm ở giữa hình tròn
-    this->sprite.setPosition({400.f, 300.f}); // Vị trí ban đầu
-    this->speed = 300.f; // Vận tốc di chuyển (pixel/giây)
+    // Lấy reference tới texture từ TextureManager
+    const sf::Texture& texture = TextureManager::getInstance().getTexture("player");
+
+    // Khởi tạo con trỏ unique_ptr<sf::Sprite> truyền vào texture
+    this->sprite = std::make_unique<sf::Sprite>(texture);
+
+    // Tính toán và thiết lập origin ở trung tâm ảnh
+    sf::Vector2u size = texture.getSize();
+    this->sprite->setOrigin({ static_cast<float>(size.x) / 2.f, static_cast<float>(size.y) / 2.f });
+
+    // Đặt vị trí ban đầu và tốc độ
+    this->sprite->setPosition({ 400.f, 300.f });
+    this->speed = 300.f;
 }
 
 void Player::handleInput() {
@@ -33,18 +48,19 @@ void Player::update(float dt, const sf::RenderWindow& window) {
     
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     sf::Vector2f targetPos = window.mapPixelToCoords(mousePos);
-    sf::Vector2f playerPos = this->sprite.getPosition();
+    sf::Vector2f playerPos = this->sprite->getPosition();
     
     sf::Vector2f direction = targetPos - playerPos;
     float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     
     if (distance > 5.f) { // Tránh hiện tượng rung lắc khi đến sát con trỏ
         direction /= distance;
-        this->sprite.move(direction * this->speed * dt);
+        this->sprite->move(direction * this->speed * dt);
     }
     
 }
 
 void Player::render(sf::RenderWindow& window) {
-    window.draw(this->sprite);
+    //window.draw(this->sprite);
+    window.draw(*this->sprite);
 }

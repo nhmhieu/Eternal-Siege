@@ -1,4 +1,5 @@
 #include "MenuState.h"
+#include "TextureManager.h"
 #include <iostream>
 
 MenuState::MenuState(StateMachine& machine)
@@ -6,6 +7,21 @@ MenuState::MenuState(StateMachine& machine)
 }
 
 void MenuState::onEnter() {
+    //Tạo và set background
+    background = std::make_unique<sf::Sprite>(
+        TextureManager::getInstance().getTexture("menu")
+    );
+
+    background->setPosition({ 0.f, 0.f });
+
+    auto size = background->getTexture().getSize();
+
+    background->setScale({
+        1280.f / size.x,
+        720.f / size.y
+        });
+
+
     // Sửa đường dẫn tuyệt đối tạm thời để đảm bảo nạp font chạy được luôn trên máy bạn
     if (!font.openFromFile("assets/Montserrat-Italic.ttf")) {
         std::cerr << "Failed to load font trong MenuState!" << std::endl;
@@ -67,6 +83,12 @@ void MenuState::update(float dt) {}
 void MenuState::render(sf::RenderWindow& window) {
     // Chốt chặn an toàn: Chỉ vẽ khi toàn bộ text và button đã được nạp thành công
     if (!initialized) return;
+
+    //Vẽ background trước
+    if (background)
+    {
+        window.draw(*background);
+    }
 
     window.draw(titleText);
     window.draw(startButton);

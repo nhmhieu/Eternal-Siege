@@ -1,9 +1,12 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include "TextureManager.h"
+#include <memory>
 
 class Player {
 private:
-    sf::CircleShape sprite;
+    //sf::CircleShape sprite;
+    std::unique_ptr<sf::Sprite> sprite;
     float speed;
 
 public:

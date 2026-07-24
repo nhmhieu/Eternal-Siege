@@ -3,15 +3,31 @@
 #include "IntroState.h"
 #include "MenuState.h"
 #include "StateMachine.h"
+#include "TextureManager.h"
 
 IntroState::IntroState(StateMachine& machine)
 	: machine(machine), displayTime(3.0f), isDone(false)
 {
-    background.setSize(sf::Vector2f(1280.0f, 720.0f));
-    background.setFillColor(sf::Color::Blue);
+    //background.setSize(sf::Vector2f(1280.0f, 720.0f));
+    //background.setFillColor(sf::Color::Blue);
 }
 
 void IntroState::onEnter() {
+
+    // Lấy ảnh nền từ TextureManager
+    background = std::make_unique<sf::Sprite>(
+        TextureManager::getInstance().getTexture("intro")
+    );
+
+    background->setPosition({ 0.f, 0.f });
+
+    auto size = background->getTexture().getSize();
+
+    background->setScale({
+        1280.f / size.x,
+        720.f / size.y
+        });
+
     std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
     std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
 
@@ -70,7 +86,11 @@ void IntroState::update(float dt) {
 
 void IntroState::render(sf::RenderWindow& window) {
     // 1. Vẽ hình chữ nhật nền xanh trước
-    window.draw(background);
+    //window.draw(background);
+    if (background)
+    {
+        window.draw(*background);
+    }
 
     // 2. Vẽ dòng chữ đè lên trên nền (Nhớ kiểm tra pointer để tránh crash nếu nạp font lỗi)
     if (gameTitle) {

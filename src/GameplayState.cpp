@@ -2,6 +2,20 @@
 #include <iostream>
 
 void GameplayState::onEnter() {
+    //Tạo và set background
+    background = std::make_unique<sf::Sprite>(
+        TextureManager::getInstance().getTexture("gameplay")
+    );
+
+    background->setPosition({ 0.f,0.f });
+
+    auto size = background->getTexture().getSize();
+
+    background->setScale({
+        1280.f / size.x,
+        720.f / size.y
+        });
+
     std::cout << "Giai doan: Buoc vao man choi Gameplay!\n";
 }
 
@@ -34,6 +48,14 @@ void GameplayState::render(sf::RenderWindow& window) {
     // Ví dụ cập nhật nhanh tọa độ trực tiếp:
     this->player.update(0.016f, window); // Giả lập dt = 1/60s nếu chưa truyền trực tiếp qua hệ thống
     
+    //Vẽ background
+    if (background)
+    {
+        window.draw(*background);
+    }
+
+    player.render(window);
+
     // Vẽ nhân vật
     this->player.render(window);
 }

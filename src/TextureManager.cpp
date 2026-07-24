@@ -1,6 +1,12 @@
 #include "TextureManager.h"
 #include <iostream>
 
+TextureManager& TextureManager::getInstance()
+{
+    static TextureManager instance;
+    return instance;
+}
+
 bool TextureManager::loadTexture(const std::string& name,
     const std::string& filename)
 {
@@ -8,12 +14,16 @@ bool TextureManager::loadTexture(const std::string& name,
 
     if (!texture.loadFromFile(filename))
     {
-        std::cout << "Failed to load texture: "
+        std::cout << "[FAILED] Load texture: "
             << filename << std::endl;
         return false;
     }
 
     textures[name] = std::move(texture);
+
+    std::cout << "[SUCCESS] Load texture: "
+        << filename << std::endl;
+
     return true;
 }
 

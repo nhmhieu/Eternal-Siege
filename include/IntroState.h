@@ -9,9 +9,11 @@ private:
     StateMachine& machine;
     float displayTime;
     bool isDone;
-    sf::RectangleShape background;
+    //sf::RectangleShape background;
+    std::unique_ptr<sf::Sprite> background;
     sf::Font font;
     std::unique_ptr<sf::Text> gameTitle;
+
 
 public:
     IntroState(StateMachine& machine);
