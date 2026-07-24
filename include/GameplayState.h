@@ -5,9 +5,10 @@
 class GameplayState : public State {
 private:
     Player player;
+     std::vector<sf::Vector2i> allyPositions;
 
 public:
-    GameplayState() = default;
+    GameplayState(const std::vector<sf::Vector2i>& positions);
     ~GameplayState() override = default;
 
     void onEnter() override;

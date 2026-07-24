@@ -1,6 +1,12 @@
 #include "GameplayState.h"
 #include <iostream>
 
+GameplayState::GameplayState(
+    const std::vector<sf::Vector2i>& positions)
+    : allyPositions(positions)
+{
+}
+
 void GameplayState::onEnter() {
     std::cout << "Giai doan: Buoc vao man choi Gameplay!\n";
 }

@@ -2,14 +2,16 @@
 
 #include "State.h"
 #include "Map.h"
+#include "StateMachine.h"
 
 class SetupState : public State
 {
 private:
     Map map;
+    StateMachine& stateMachine;
 
 public:
-    SetupState();
+    SetupState(StateMachine& sm);
     ~SetupState() override = default;
 
     void onEnter() override;

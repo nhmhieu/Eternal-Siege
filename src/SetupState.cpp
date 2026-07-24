@@ -1,7 +1,9 @@
 #include "SetupState.h"
 
-SetupState::SetupState()
-    : map(15, 15)
+
+SetupState::SetupState(StateMachine& sm)
+    : map(15,15),
+      stateMachine(sm)
 {
 }
 
