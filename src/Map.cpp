@@ -1,6 +1,9 @@
 ﻿#include "Map.h"
+#include "Constants.h" // Sử dụng duy nhất nguồn này cho cấu hình
 #include <iostream>
 #include <random>
+
+using namespace GameConfig;
 
 Map::Map(int width, int height)
 {
@@ -24,8 +27,14 @@ void Map::generate()
 
     for (int i = 0; i < width * height * 4; i++)
     {
-        tiles[y][x] = TILE_GRASS;
+        // Tạo tỷ lệ: 20% là đường mòn (Path), 80% là cỏ (Grass)
+        if (i % 5 == 0) {
+            tiles[y][x] = TILE_PATH;
+        } else {
+            tiles[y][x] = TILE_GRASS;
+        }
 
+        // Đã xóa phần code bị trùng lặp ở đây
         switch (dir(gen))
         {
         case 0:
@@ -56,7 +65,8 @@ void Map::generate()
 
 void Map::draw(sf::RenderWindow& window)
 {
-    sf::RectangleShape tile(sf::Vector2f(TILE_SIZE, TILE_SIZE));
+    // Đồng bộ sử dụng TILE_SIZE từ GameConfig và viết gọn bằng cú pháp { }
+    sf::RectangleShape tile({TILE_SIZE, TILE_SIZE});
 
     tile.setOutlineColor(sf::Color::Black);
     tile.setOutlineThickness(-1.f);
@@ -82,10 +92,8 @@ void Map::draw(sf::RenderWindow& window)
                 tile.setFillColor(sf::Color::Blue);
             }
 
-            tile.setPosition(
-                sf::Vector2f(
-                    x * TILE_SIZE,
-                    y * TILE_SIZE));
+            // Đồng bộ tọa độ bằng cú pháp { } của SFML 3
+            tile.setPosition({x * TILE_SIZE, y * TILE_SIZE});
 
             window.draw(tile);
         }
@@ -98,6 +106,7 @@ void Map::handleMouseClick(
     std::vector<sf::Vector2i>& selectedPositions,
     int maxAllies)
 {
+    // Đồng bộ phép chia lưới dựa theo cấu hình chuẩn
     int gridX = static_cast<int>(mouseX / TILE_SIZE);
     int gridY = static_cast<int>(mouseY / TILE_SIZE);
 

@@ -13,7 +13,6 @@ enum TileType
 constexpr int TITLE_EMPTY = 0;
 constexpr int TITLE_WALL = 1;
 constexpr int TITLE_OCCUPIED = 2;
-constexpr float TILE_SIZE = 40.f;
 
 class Map
 {
@@ -22,6 +21,7 @@ public:
     void handleMouseClick(int mouseX, int mouseY, std::vector<sf::Vector2i>& selectedPositions, int maxAllies);
     void generate();
     void draw(sf::RenderWindow& window);
+    void setPosition(const sf::Vector2f& pos);
 
 const std::vector<sf::Vector2i>& getSelectedPositions() const;
 bool canStart() const;

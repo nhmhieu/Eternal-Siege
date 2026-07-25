@@ -1,4 +1,5 @@
 ﻿#include "SetupState.h"
+#include "GameplayState.h" // <-- 1. ĐÃ THÊM DÒNG NÀY ĐỂ SỬA LỖI UNDEFINED
 #include <iostream>
 
 SetupState::SetupState(StateMachine& machine)
@@ -8,7 +9,7 @@ SetupState::SetupState(StateMachine& machine)
 
 void SetupState::onEnter()
 {
-    if (!font.openFromFile("assets/fonts/arial.ttf"))
+    if (!font.openFromFile("assets/fonts/Roboto-Regular.ttf"))
     {
         std::cerr << "Failed to load font!" << std::endl;
     }
@@ -17,11 +18,25 @@ void SetupState::onEnter()
     startButton.setFillColor(sf::Color::Green);
     startButton.setPosition(sf::Vector2f(540.f, 600.f));
 
+    // 2. ĐÃ XÓA ĐOẠN KHỞI TẠO BỊ TRÙNG LẶP
     startText = std::make_unique<sf::Text>(font);
     startText->setString("BAT DAU");
     startText->setCharacterSize(30);
     startText->setFillColor(sf::Color::White);
-    startText->setPosition(sf::Vector2f(595.f, 610.f));
+
+    auto bounds = startText->getLocalBounds();
+
+    startText->setOrigin(
+    {
+        bounds.position.x + bounds.size.x / 2.f,
+        bounds.position.y + bounds.size.y / 2.f
+    });
+
+    startText->setPosition(
+    {
+        startButton.getPosition().x + startButton.getSize().x / 2.f,
+        startButton.getPosition().y + startButton.getSize().y / 2.f
+    });
 
     canStart = false;
     selectedPositions.clear();
@@ -47,10 +62,12 @@ void SetupState::handleEvent(const sf::Event& event)
                           << selectedPositions.size()
                           << " tuong!" << std::endl;
 
-                // stateMachine.changeState(
-                //     std::make_unique<GameplayState>(window, selectedPositions));
-
-                return;
+                // 3. ĐÃ BỎ LỆNH "return;" BỊ CHẶN Ở TRƯỚC ĐỂ GAME CHUYỂN STATE ĐƯỢC
+                stateMachine.changeState(
+                    std::make_unique<GameplayState>(
+                        map,
+                        selectedPositions));
+                return; // Đặt return ở ĐÂY sau khi đã đổi state (hoặc để trống nếu hàm kết thúc)
             }
 
             map.handleMouseClick(mousePos.x,
