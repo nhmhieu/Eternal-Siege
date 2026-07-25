@@ -13,7 +13,7 @@ Player::Player() {
     maxHealth = 100;
     isAlive = true;
     speed = 300.f;
-    attackCoolDown = 5.f ; 
+    attackCoolDown = 1.f ; 
 }
 
 void Player::handleInput() {
@@ -32,13 +32,13 @@ void Player::handleInput() {
     setDirection(movement);
 
     // Tấn công bằng chuột trái
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !isAttacking) {
-        if(canAttack()){
-            // std :: cout << "Cu click nay hop le " << std :: endl ;
-            isAttacking = true ;    // Sử dụng setter mới trong Entity.h
+    // if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !isAttacking) {
+    //     if(canAttack()){
+    //         // std :: cout << "Cu click nay hop le " << std :: endl ;
+    //         isAttacking = true ;    // Sử dụng setter mới trong Entity.h
 
-        }
-    }
+    //     }
+    // }
 }
 
 void Player::update(const GameContext& context) {

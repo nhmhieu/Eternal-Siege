@@ -16,9 +16,9 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
     context.players.push_back(&player);
 
     // Gán vũ khí cho Player
-    Sword* sword = new Sword(20, 100);
+    // Sword* sword = new Sword(20, 100);
     Bow* bow = new Bow(10, 2.f) ;
-    player.setCurrentWeapon(sword);
+    player.setCurrentWeapon(bow);
 
     // Tạo ally từ danh sách vị trí
     std::cout << "Number of ally positions: " << allyPositions.size() << std::endl;
@@ -52,6 +52,9 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
         Sword* temp = new Sword(20, 100) ;  
 
         ally.setCurrentWeapon(temp) ; 
+
+
+        context.allEntity.push_back(&ally) ; 
     }
 
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
@@ -82,7 +85,8 @@ void GameplayState::handleEvent(const sf::Event& event) {
 
     //can toi uu lai cho nay chi tinh attackDir khi player that su co the tan cong (cooldownTimer <= 0)
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mousePressed->button == sf::Mouse::Button::Left) {
+        if (mousePressed->button == sf::Mouse::Button::Left){
+            if(!player.canAttack()) return ;
             sf::Vector2i mousePixel = mousePressed->position;
             sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
 
@@ -94,13 +98,24 @@ void GameplayState::handleEvent(const sf::Event& event) {
             else attackDir = sf::Vector2f(0.f, 0.f);
 
             player.setAttackDirection(attackDir);
-            // player.setIsAttacking(true);   // Sử dụng setter
+            std :: cout << "Da xac nhan click nay du tieu chuan de tan cong" << std :: endl ;
+            player.setIsAttacking(true);   // Sử dụng setter
         }
     }
 }
 
 void GameplayState::update(float dt) {
     context.deltaTime = dt;
+
+// BƯỚC 1: LÀM SẠCH VÀ TÁI TẠO TẤT CẢ DANH SẢN TRONG CONTEXT
+    // ==========================================
+    context.allEntity.clear();
+    context.players.clear();
+    context.enemies.clear();
+
+    // 1. Thêm Player vào các danh sách quản lý
+    context.allEntity.push_back(&player);
+    context.players.push_back(&player);
 
     // Cập nhật Player
     player.handleInput();
@@ -110,9 +125,9 @@ void GameplayState::update(float dt) {
     // if(player.canAttack()){
     //     player.startAttacking() ;
     // }
-    player.canAttack() ;
+    // player.canAttack() ;
     if (player.getIsAttacking() && player.canAttack()) {
-        std :: cout << "Player is Aattacking" << std :: endl ;
+        // std :: cout << "Player is Aattacking" << std :: endl ;
         // combatManager.processAttack(&player, player.getCurrentWeapon(), context.enemies);
         player.getCurrentWeapon()->triggerAction(&player, context, combatManager) ;
     }
@@ -121,6 +136,7 @@ void GameplayState::update(float dt) {
     context.players.push_back(&player);
     for (auto& ally : allies) {
         context.players.push_back(&ally);
+        context.allEntity.push_back(&ally) ; 
     }
     // Cập nhật wavemanager
     waveManager.update(context, monsters);
@@ -129,6 +145,7 @@ void GameplayState::update(float dt) {
     context.enemies.clear();
     for (auto* m : monsters) {
         context.enemies.push_back(m);
+        context.allEntity.push_back(m) ; 
     }
     
 
@@ -160,7 +177,7 @@ void GameplayState::update(float dt) {
 
             // combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
             ally.getCurrentWeapon()->triggerAction(&ally, context, combatManager) ; 
-            std :: cout << "Ally is attacking, target health :  " << ally.getHealth() << std :: endl ;
+            // std :: cout << "Ally is attacking, target health :  " << ally.getHealth() << std :: endl ;
             // std :: cout << "Ally is attacking ! " << count + 1 << std :: endl ; 
             // std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
         }
@@ -174,18 +191,69 @@ void GameplayState::update(float dt) {
 
     }
     
+    //----------xu li cac projectiles 
+    // if(context.projectiles.empty()) std :: cout << "Khong co vat the daang bay !! " << std :: endl ;
+    // std :: cout << context.projectiles.size() << std :: endl ; 
+    // auto p_projectiles = context.projectiles.begin() ; 
+    // while(p_projectiles != context.projectiles.end()){
 
-    // Xóa quái chết
+    //     auto* p = *p_projectiles ; 
+    //     p->update(context); 
+
+    //     if(!(p->isActive())){
+    //         delete p ;
+    //         p_projectiles = context.projectiles.erase(p_projectiles) ; 
+    //     }
+    //     else{
+
+
+            
+    //         ++p_projectiles ; 
+    //     }
+
+
+    // }
+
+    if(!context.projectiles.empty()){
+        combatManager.processProjectiles(context, context.allEntity) ; 
+    }
+    else{
+        // std :: cout << "Projectiles is empty !!!" << std :: endl ;
+    }
+
+
+
+    // // Xóa quái chết
+    // auto p_monster = monsters.begin();
+    // while (p_monster != monsters.end()) {
+    //     if ((*p_monster)->isDead() && !(*p_monster)->getIsDying()) {
+    //         (*p_monster)->startDying() ; //bat isDying = true va xu li animation chet
+    //         p_monster++ ; 
+    //         std :: cout << "Quai bat dau chet" << std :: endl ; 
+    //     }
+    //     else if((*p_monster)->isReadyToBeDelete()){
+    //         p_monster = monsters.erase(p_monster) ;
+    //         std :: cout << "Quai da chet va xoa quai khoi mang" << std :: endl ; 
+    //     }
+    //     else {
+    //         ++p_monster;
+    //     }
+    // }
+
+    // --- XÓA QUÁI CHẾT ---
     auto p_monster = monsters.begin();
     while (p_monster != monsters.end()) {
         if ((*p_monster)->isDead() && !(*p_monster)->getIsDying()) {
-            (*p_monster)->startDying() ; //bat isDying = true va xu li animation chet
-            p_monster++ ; 
-            std :: cout << "Quai bat dau chet" << std :: endl ; 
+            (*p_monster)->startDying(); // Bật isDying = true và xử lý animation chết
+            p_monster++; 
+            std::cout << "Quai bat dau chet" << std::endl; 
         }
-        else if((*p_monster)->isReadyToBeDelete()){
-            p_monster = monsters.erase(p_monster) ;
-            std :: cout << "Quai da chet va xoa quai khoi mang" << std :: endl ; 
+        else if ((*p_monster)->isReadyToBeDelete()) {
+            // --- BỔ SUNG DÒNG NÀY ĐỂ GIẢI PHÓNG BỘ NHỚ TRÁNH CRASH ---
+            delete *p_monster; // Giải phóng object Monster (và vũ khí bên trong nó nếu Destructor của Monster có viết)
+            
+            p_monster = monsters.erase(p_monster);
+            std::cout << "Quai da chet va xoa quai khoi mang" << std::endl; 
         }
         else {
             ++p_monster;
@@ -228,6 +296,12 @@ void GameplayState::render(sf::RenderWindow& window) {
 
         if(ally.getIsAttacking()){
             ally.getCurrentWeapon()->drawDebug(window, ally.getPosition(), ally.getAttackDirection()) ; 
+        }
+    }
+
+    if(!context.projectiles.empty()){
+        for(auto* p : context.projectiles){
+            window.draw(p->getShape()) ;            
         }
     }
 

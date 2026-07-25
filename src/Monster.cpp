@@ -4,6 +4,10 @@
 #include <iostream>
 #include <limits>
 
+Monster :: Monster(){
+    team = Team :: Enemy ;
+}
+
 Monster::Monster(float x, float y, float health, float maxHealth,
     float range, float cooldown, float spd, float dmg)
     : Entity(x, y, health, maxHealth),

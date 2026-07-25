@@ -90,7 +90,7 @@ void Ally :: updateTarget(const GameContext& context){
     // if(context.enemies.empty())std :: cout << "enemies dang trong !!" << std :: endl ;
     for(auto* entity : context.enemies){
 
-        if(entity == nullptr && entity->isDead()){
+        if(entity == nullptr || entity->isDead()){
             continue; 
         }
 

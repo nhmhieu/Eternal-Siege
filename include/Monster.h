@@ -16,7 +16,9 @@ private:
     float targetTimer = 0.f;
     float attackTimer = 0.f;
 
+
 public:
+    Monster() ;
     Monster(float x, float y, float health = 100, float maxHealth = 100,
         float range = 50.f, float cooldown = 1.f, float spd = 100.f, float dmg = 10.f);
     ~Monster() override = default;

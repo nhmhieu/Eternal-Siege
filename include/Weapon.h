@@ -9,6 +9,10 @@ class GameContext ;
 class Weapon {
 private:
     std::unordered_set<Entity*> hitList;
+    
+protected : 
+    
+    bool hasAttacked = false ; //bool nay de dung cho class bow va sau nay co the dung de toi uu sword
 
 public:
     virtual ~Weapon() = default;
@@ -37,4 +41,7 @@ public:
     }
 
     virtual void triggerAction(Entity* attacker,GameContext& context, CombatManager& combatManager) = 0 ; 
+
+    bool getHasAttacked()const {return this->hasAttacked ;}
+    void setHasAttacked(bool val){this->hasAttacked = val ;}
 };

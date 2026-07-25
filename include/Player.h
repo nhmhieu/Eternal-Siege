@@ -18,7 +18,7 @@ public:
     void update(const GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
     bool canAttack(){
-        std :: cout << "cooLDownTimer : " << coolDownTimer << std :: endl ;
+        // std :: cout << "cooLDownTimer : " << coolDownTimer << std :: endl ;
         bool isReady = coolDownTimer <= 0 ; 
         return isReady ;
     }

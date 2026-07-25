@@ -12,6 +12,10 @@ Entity::Entity(float x, float y, float health, float maxHealth, Team team, Weapo
     : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(weapon) {
 }
 
+Entity :: ~Entity(){
+    delete this->currentWeapon ; 
+}
+
 void Entity::takeDamage(float damage) {
     health -= damage;
     if (health <= 0) {
@@ -43,9 +47,14 @@ void Entity::updateStatus() {
     if (isAttacking) {
         if (attackTimer >= attackDuration) {
             isAttacking = false;
-            if (currentWeapon) currentWeapon->clearHitList();
+            if (currentWeapon){
+                currentWeapon->clearHitList();
+                currentWeapon->setHasAttacked(false) ;
+
+            }
             coolDownTimer = attackCoolDown ; 
             attackTimer = 0.f ; 
+
 
         }
     }

@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <iostream> 
+
 #include "Weapon.h" 
 
 #include "GameTypes.h"
@@ -49,7 +51,7 @@ public:
     Entity();
     Entity(float x, float y, float health, float maxHealth);
     Entity(float x, float y, float health, float maxHealth, Team team, Weapon* weapon);
-    virtual ~Entity() = default;
+    virtual ~Entity();
 
     // ===============================
     // 4. GETTERS & SETTERS
@@ -83,7 +85,14 @@ public:
     void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
     // Weapon
     Weapon* getCurrentWeapon() const { return currentWeapon; }
-    void setCurrentWeapon(Weapon* weapon) { currentWeapon = weapon; }
+    void setCurrentWeapon(Weapon* weapon){
+        if(currentWeapon != weapon){
+            delete currentWeapon ; //tranh memory leak
+            currentWeapon = weapon; 
+        } 
+
+        // std :: cout << "Da trang bi vu khi thanh cong" << std :: endl ;
+    }
 
     // ===============================
     // 5. CORE LOGIC

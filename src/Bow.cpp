@@ -1,6 +1,7 @@
 #include "Bow.h"
 #include "Arrow.h" 
 #include "CombatManager.h"
+#include <iostream>
 
 Bow :: Bow(){
 
@@ -18,10 +19,12 @@ Bow :: ~Bow(){
 
 void Bow :: fire(sf :: Vector2f position, sf :: Vector2f direction, Team shooterTeam, GameContext& context){
 
+
     Arrow* newArrow = new Arrow(position, direction, projectTileSpeed,
     damage, shooterTeam) ; 
 
     context.projectiles.push_back(newArrow) ; 
+    std :: cout << "Da ban !!!" << std :: endl ;
 
 }
 
@@ -34,6 +37,12 @@ int Bow::getDamage() const {
 }
 
 void Bow :: triggerAction(Entity* attacker, GameContext& context, CombatManager& combatManager){
-    this->fire(attacker->getPosition(), attacker->getDirection(), attacker->getTeam(),
-context) ;
+    if(attacker->getIsAttacking() && !hasAttacked){
+        this->fire(attacker->getPosition(), attacker->getAttackDirection(),
+         attacker->getTeam(), context) ;
+         
+        hasAttacked = true ; 
+
+    }
+
 }
