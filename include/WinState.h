@@ -5,7 +5,7 @@
 #include <memory>
 #include "TextureManager.h"
 
-class GameOverState : public State {
+class WinState : public State {
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
@@ -20,8 +20,8 @@ private:
     std::unique_ptr<sf::RectangleShape> menuButton;
 
 public:
-    GameOverState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
-    ~GameOverState() override = default;
+    WinState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
+    ~WinState() override = default;
 
     void onEnter() override;
     void onExit() override;

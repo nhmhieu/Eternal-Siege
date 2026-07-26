@@ -5,24 +5,24 @@
 #include <memory>
 #include "TextureManager.h"
 
-class GameOverState : public State {
+class MenuState : public State {
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
+    sf::Font font;
     TextureManager& textureManager;
 
-    sf::RectangleShape background;
-    sf::Font font;
+    // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
-    std::unique_ptr<sf::Text> restartText;
-    std::unique_ptr<sf::Text> menuText;
-    std::unique_ptr<sf::RectangleShape> restartButton;
-    std::unique_ptr<sf::RectangleShape> menuButton;
+    std::unique_ptr<sf::Text> startText;
+    std::unique_ptr<sf::Text> exitText;
+
+    // Biến thông thường cho các đối tượng không cần Font
+    std::unique_ptr<sf::RectangleShape> startButton;
+    std::unique_ptr<sf::RectangleShape> exitButton;
 
 public:
-    GameOverState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
-    ~GameOverState() override = default;
-
+    MenuState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;

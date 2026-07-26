@@ -5,23 +5,21 @@
 #include <memory>
 #include "TextureManager.h"
 
-class GameOverState : public State {
+class IntroState : public State {
 private:
-    StateMachine& stateMachine;
+    StateMachine& machine;
     sf::RenderWindow& window;
     TextureManager& textureManager;
 
+    float displayTime;
+    bool isDone;
     sf::RectangleShape background;
     sf::Font font;
-    std::unique_ptr<sf::Text> titleText;
-    std::unique_ptr<sf::Text> restartText;
-    std::unique_ptr<sf::Text> menuText;
-    std::unique_ptr<sf::RectangleShape> restartButton;
-    std::unique_ptr<sf::RectangleShape> menuButton;
+    std::unique_ptr<sf::Text> gameTitle;
 
 public:
-    GameOverState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
-    ~GameOverState() override = default;
+    IntroState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
+    ~IntroState() override = default;
 
     void onEnter() override;
     void onExit() override;
