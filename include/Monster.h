@@ -26,7 +26,7 @@ public:
     void updateTarget(const std::vector<Entity*>& targets);
     void moveToward(float deltaTime);
 
-    void update(const GameContext& context) override;
+    void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
 
     Entity* getCurrentTarget() const { return currentTarget; }

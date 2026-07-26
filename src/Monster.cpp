@@ -87,7 +87,7 @@ void Monster::moveToward(float deltaTime) {
     sprite.setPosition(position);
 }
 
-void Monster::update(const GameContext& context) {
+void Monster::update(GameContext& context) {
 
     if(coolDownTimer > 0.0f) 
         coolDownTimer -= context.deltaTime ; 
@@ -109,13 +109,25 @@ void Monster::update(const GameContext& context) {
         currentTarget = nullptr;
     }
 
+    if(currentTarget && !(currentTarget->isDead()) && canAttack()){
+        startAttacking() ; 
+    }
+
+    if(isAttacking){
+
+        updateAttackTimer(context) ; 
+
+        if(this->getCurrentWeapon() != nullptr){
+            this->getCurrentWeapon()->triggerAction(this, context, *(context.combatManager)) ; 
+        }
+
+    }
+
+
     if(isDying){  //neu nhu flag dang chet duoc bat thi bat dau dem timer cho animation chet
         updateDeadTimer(context) ;
     }
-    if(isAttacking){
-        updateAttackTimer(context); 
-    }
-
+    
     updateStatus();
 }
 

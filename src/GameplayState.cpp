@@ -9,9 +9,28 @@
 #include "Arrow.h"
 #include "Bow.h"
 
+template <typename T>
+void cleanupEntities(std::vector<T*>& entityList) {
+    auto it = entityList.begin();
+    while (it != entityList.end()) {
+        if ((*it)->isDead() && !(*it)->getIsDying()) {
+            (*it)->startDying();
+            ++it;
+        }
+        else if ((*it)->isReadyToBeDelete()) {
+            delete *it;
+            it = entityList.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
 GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vector2i>& allyPositions)
     : window(window) {
-    // Thiết lập context
+    
+    //day player vao context
     context.allEntity.push_back(&player);
     context.players.push_back(&player);
 
@@ -27,9 +46,18 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
         std::cout << "Ally at (" << pos.x << ", " << pos.y << ")" << std::endl;
         float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
         float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
-        allies.emplace_back(x, y);
-        context.allEntity.push_back(&allies.back());
-        context.players.push_back(&allies.back());
+
+        //khoi tao ally tai vi tri x, y 
+        Ally* newAlly = new Ally(x, y) ;
+
+        //gan vu khi la kiem cho ally 
+        Sword* s = new Sword(20, 100) ; 
+        newAlly->setCurrentWeapon(s) ; 
+
+        //day vao context
+        context.allEntity.push_back(newAlly);
+        context.players.push_back(newAlly);
+        context.allies.push_back(newAlly) ; 
         std::cout << "Ally created at (" << x << ", " << y << ")" << std::endl;
     }
 
@@ -39,7 +67,7 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
     //monsters.push_back(m1);
     //monsters.push_back(m2);
 
-    for (auto* m : monsters) {
+    for (auto* m : context.monsters) {
         Sword* temp = new Sword(20, 100) ; 
         m->setCurrentWeapon(temp) ; 
 
@@ -48,21 +76,12 @@ GameplayState::GameplayState(sf::RenderWindow& window, const std::vector<sf::Vec
         m->updateTarget(context.players);
     }
 
-    for(auto& ally : allies){
-        Sword* temp = new Sword(20, 100) ;  
-
-        ally.setCurrentWeapon(temp) ; 
-
-
-        context.allEntity.push_back(&ally) ; 
-    }
-
     std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
 }
 
 GameplayState::~GameplayState() {
-    for (auto* m : monsters) delete m;
-    monsters.clear();
+    for (auto* m : context.monsters) delete m;
+    context.monsters.clear();
 
     for(auto* p : projectiles) delete p ;
     projectiles.clear() ;
@@ -106,9 +125,9 @@ void GameplayState::handleEvent(const sf::Event& event) {
 
 void GameplayState::update(float dt) {
     context.deltaTime = dt;
+    context.combatManager = &combatManager ; 
 
-// BƯỚC 1: LÀM SẠCH VÀ TÁI TẠO TẤT CẢ DANH SẢN TRONG CONTEXT
-    // ==========================================
+    //lam sach danh sach 2 phe va entity
     context.allEntity.clear();
     context.players.clear();
     context.enemies.clear();
@@ -117,103 +136,28 @@ void GameplayState::update(float dt) {
     context.allEntity.push_back(&player);
     context.players.push_back(&player);
 
-    // Cập nhật Player
-    player.handleInput();
-    player.update(context);
-
-    // Xử lý tấn công của Player
-    // if(player.canAttack()){
-    //     player.startAttacking() ;
-    // }
-    // player.canAttack() ;
-    if (player.getIsAttacking() && player.canAttack()) {
-        // std :: cout << "Player is Aattacking" << std :: endl ;
-        // combatManager.processAttack(&player, player.getCurrentWeapon(), context.enemies);
-        player.getCurrentWeapon()->triggerAction(&player, context, combatManager) ;
+    for(auto* ally : context.allies){
+        context.players.push_back(ally) ; 
+        context.allEntity.push_back(ally) ; 
     }
 
-    context.players.clear();
-    context.players.push_back(&player);
-    for (auto& ally : allies) {
-        context.players.push_back(&ally);
-        context.allEntity.push_back(&ally) ; 
-    }
-    // Cập nhật wavemanager
-    waveManager.update(context, monsters);
-
-    // Cập nhật context .enemies(cho ally tìm được quái)
-    context.enemies.clear();
-    for (auto* m : monsters) {
-        context.enemies.push_back(m);
+    for(auto* m : context.monsters){
         context.allEntity.push_back(m) ; 
-    }
-    
-
-    // Cập nhật quái
-    for (auto* m : monsters) {
-        m->update(context);
-
-        if(m->canAttack()){
-            // std :: cout << "Quai bat dau tan cong !" << std :: endl ;
-            m->startAttacking() ; 
-        }
-        if(m->getIsAttacking()){
-            // combatManager.processAttack(m, m->getCurrentWeapon(), context.players) ; 
-            m->getCurrentWeapon()->triggerAction(m, context, combatManager) ;
-         }
+        context.enemies.push_back(m) ; 
         
     }
-
-    int count = 0 ; 
     
-    for(auto& ally : allies){
-        ally.update(context) ;
+    // Cập nhật wavemanager
+    waveManager.update(context, context.monsters);
 
-        if(ally.canAttack()){
-            ally.startAttacking() ; 
-        }
 
-        if(ally.getIsAttacking()){
 
-            // combatManager.processAttack(&ally, ally.getCurrentWeapon(), context.enemies) ; 
-            ally.getCurrentWeapon()->triggerAction(&ally, context, combatManager) ; 
-            // std :: cout << "Ally is attacking, target health :  " << ally.getHealth() << std :: endl ;
-            // std :: cout << "Ally is attacking ! " << count + 1 << std :: endl ; 
-            // std :: cout << ally.getAttackClock().getElapsedTime().asSeconds() << std :: endl ; 
-        }
-        else{
-            // std :: cout << "Ally is not attacking : " << count << std :: endl ; 
-        }
-
-        count++ ;
-
-        ally.updateStatus() ;
-
+    for(auto* entity : context.allEntity){
+        entity->update(context) ; 
     }
-    
-    //----------xu li cac projectiles 
-    // if(context.projectiles.empty()) std :: cout << "Khong co vat the daang bay !! " << std :: endl ;
-    // std :: cout << context.projectiles.size() << std :: endl ; 
-    // auto p_projectiles = context.projectiles.begin() ; 
-    // while(p_projectiles != context.projectiles.end()){
-
-    //     auto* p = *p_projectiles ; 
-    //     p->update(context); 
-
-    //     if(!(p->isActive())){
-    //         delete p ;
-    //         p_projectiles = context.projectiles.erase(p_projectiles) ; 
-    //     }
-    //     else{
 
 
-            
-    //         ++p_projectiles ; 
-    //     }
-
-
-    // }
-
+    //Xu li projectile
     if(!context.projectiles.empty()){
         combatManager.processProjectiles(context, context.allEntity) ; 
     }
@@ -222,66 +166,10 @@ void GameplayState::update(float dt) {
     }
 
 
+    //Don dep va xoa quai da chet
+    cleanupEntities(context.monsters) ;
+    cleanupEntities(context.allies) ;  
 
-    // // Xóa quái chết
-    // auto p_monster = monsters.begin();
-    // while (p_monster != monsters.end()) {
-    //     if ((*p_monster)->isDead() && !(*p_monster)->getIsDying()) {
-    //         (*p_monster)->startDying() ; //bat isDying = true va xu li animation chet
-    //         p_monster++ ; 
-    //         std :: cout << "Quai bat dau chet" << std :: endl ; 
-    //     }
-    //     else if((*p_monster)->isReadyToBeDelete()){
-    //         p_monster = monsters.erase(p_monster) ;
-    //         std :: cout << "Quai da chet va xoa quai khoi mang" << std :: endl ; 
-    //     }
-    //     else {
-    //         ++p_monster;
-    //     }
-    // }
-
-    // --- XÓA QUÁI CHẾT ---
-    auto p_monster = monsters.begin();
-    while (p_monster != monsters.end()) {
-        if ((*p_monster)->isDead() && !(*p_monster)->getIsDying()) {
-            (*p_monster)->startDying(); // Bật isDying = true và xử lý animation chết
-            p_monster++; 
-            std::cout << "Quai bat dau chet" << std::endl; 
-        }
-        else if ((*p_monster)->isReadyToBeDelete()) {
-            // --- BỔ SUNG DÒNG NÀY ĐỂ GIẢI PHÓNG BỘ NHỚ TRÁNH CRASH ---
-            delete *p_monster; // Giải phóng object Monster (và vũ khí bên trong nó nếu Destructor của Monster có viết)
-            
-            p_monster = monsters.erase(p_monster);
-            std::cout << "Quai da chet va xoa quai khoi mang" << std::endl; 
-        }
-        else {
-            ++p_monster;
-        }
-    }
-
-    auto p_ally = allies.begin() ;
-    while(p_ally != allies.end()){
-
-        //neu ally nay da het mau ma chua bat isDying thi bat flag isDying va chay animation
-        if(p_ally->isDead() && !(p_ally->getIsDying())){
-            p_ally->startDying() ; 
-            p_ally++ ; 
-            std :: cout << "An ally has been slain, dying animation start !" << std :: endl ; 
-
-        }
-        else if(p_ally->isReadyToBeDelete()){
-            p_ally = allies.erase(p_ally) ; 
-            std :: cout << "Ally has died and removed from vector" << std :: endl ; 
-        }
-        else{ //ally chua chet thi duyet ally tiep theo
-            ++p_ally ; 
-        }
-
-    }
-
-    // Cập nhật trạng thái tấn công của Player (tự tắt)
-    player.updateStatus();
 }
 
 void GameplayState::render(sf::RenderWindow& window) {
@@ -291,11 +179,16 @@ void GameplayState::render(sf::RenderWindow& window) {
         player.getCurrentWeapon()->drawDebug(window, player.getPosition(), player.getAttackDirection()) ; 
     }
 
-    for (auto& ally : allies) {
-        ally.draw(window);
+    int count = 0 ;
+    for (auto* ally : context.allies) {
+        ally->draw(window);
 
-        if(ally.getIsAttacking()){
-            ally.getCurrentWeapon()->drawDebug(window, ally.getPosition(), ally.getAttackDirection()) ; 
+        if(ally->getIsAttacking()){
+            ally->getCurrentWeapon()->drawDebug(window, ally->getPosition(), ally->getAttackDirection()) ; 
+        }
+        else{
+            // std :: cout << "Ally "<< count  << " is not attacking" << std :: endl ;
+            count++ ; 
         }
     }
 
@@ -305,7 +198,7 @@ void GameplayState::render(sf::RenderWindow& window) {
         }
     }
 
-    for (auto* m : monsters) {
+    for (auto* m : context.monsters) {
         m->draw(window);
 
         // std :: cout << "Dang chuan bi ve debug" << std :: endl ; 

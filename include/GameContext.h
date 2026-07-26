@@ -1,25 +1,33 @@
 #pragma once
 
 #include <vector>
-// #include "Projectiles.h" 
-// #include "Entity.h" 
- 
+#include "CombatManager.h"
+#include "Projectiles.h" 
+#include "Entity.h" 
+#include "Ally.h" 
+#include "Monster.h"  
+
 class Projectiles ; 
 class Entity ; 
 class GameContext {
 public:
     float deltaTime = 0.f;
-    std::vector<Entity*> allEntity;
-    std::vector<Entity*> players;
-    std::vector<Entity*> enemies;
+    std :: vector<Entity*> allEntity;
+
+    //mang de npc updateTarget
+    std :: vector<Entity*> players;
+    std :: vector<Entity*> enemies;
+    
+    std :: vector<Monster*> monsters ; 
+    std :: vector<Ally*> allies ; 
     std :: vector<Projectiles*> projectiles ; 
 
-    GameContext() = default;
-    ~GameContext(){
-        // for(auto* it : allEntity) delete it ; 
+    CombatManager* combatManager = nullptr; 
 
-        // for(auto* it : projectiles) delete it ; 
-    }
+    
+
+    GameContext() = default;
+    ~GameContext() = default; 
     GameContext(float dt, const std::vector<Entity*>& entities)
         : deltaTime(dt), allEntity(entities) {
     }

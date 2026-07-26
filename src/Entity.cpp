@@ -77,7 +77,7 @@ void Entity :: updateAttackTimer(const GameContext& context){
 }
 
 
-void Entity :: update(const GameContext& context){
+void Entity :: update(GameContext& context){
 
     
 

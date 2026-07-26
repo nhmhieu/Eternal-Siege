@@ -18,7 +18,7 @@ public:
 	Ally(float x, float y);
 	~Ally() override = default;
 	
-	void update(const GameContext& context) override;
+	void update(GameContext& context) override;
 	void draw(sf::RenderWindow& window) override;
 
 	Entity* getTarget() const{return target ;}
@@ -30,13 +30,23 @@ public:
 
 	bool canAttack(){
         // std :: cout << gap << std :: endl ;
-        bool isInRange = (range >= gap) ; 
+
         bool isReady = !isAttacking && coolDownTimer <= 0 ;
+		// if(!isReady) std :: cout << "chua san sang tan cong !!" << std :: endl ;
 
         // if(!isInRange) std :: cout << "Khong trong tam danh" << std :: endl ; 
         // if(!isReady) std :: cout << "Quai chua san sang tan cong " << std :: endl ; 
-        
-        return isInRange && isReady ; 
+
+		if(!isInRange(target)){
+			// std :: cout << "Khong trong tam danh !!  : " << this->range << std :: endl ;
+
+		}
+
+        if(target){
+			return isInRange(target) && isReady ; 
+
+		}
+		return false ; 
     }
 
 };

@@ -41,7 +41,9 @@ void Player::handleInput() {
     // }
 }
 
-void Player::update(const GameContext& context) {
+void Player::update(GameContext& context) {
+    handleInput() ; 
+
     if(coolDownTimer > 0.0f) 
         coolDownTimer -= context.deltaTime ; 
     // Di chuyển theo hướng đã lưu
@@ -56,6 +58,14 @@ void Player::update(const GameContext& context) {
 
     if(isDying){
         updateDeadTimer(context) ; 
+    }
+
+    if(getIsAttacking() && canAttack()){
+        startAttacking() ; //bat isAttacking len 
+        if(getCurrentWeapon() != nullptr){
+            getCurrentWeapon()->triggerAction(this, context, *(context.combatManager)) ; 
+
+        }
     }
 
     if(isAttacking){

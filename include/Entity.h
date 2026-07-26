@@ -98,7 +98,7 @@ public:
     // 5. CORE LOGIC
     // ===============================
     virtual void takeDamage(float damage);
-    virtual void update(const GameContext& context);
+    virtual void update(GameContext& context);
     virtual void draw(sf::RenderWindow& window) = 0;
 
     // ===============================

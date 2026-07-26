@@ -15,7 +15,7 @@ public:
     ~Player() override = default;
 
     void handleInput();
-    void update(const GameContext& context) override;
+    void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
     bool canAttack(){
         // std :: cout << "cooLDownTimer : " << coolDownTimer << std :: endl ;
