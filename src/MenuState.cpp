@@ -21,7 +21,7 @@ void MenuState::onEnter() {
     std::cout << "=> KHONG CO GI NGAN CAN DUOC NUA! NAP FONT THANH CONG!" << std::endl;
     
     // BƯỚC 2: Font đã nạp xong, giờ mới an toàn tạo các đối tượng sf::Text
-    titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 68);
+    titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 98);
     titleText->setFillColor(sf::Color::Yellow);
     titleText->setPosition({ 300.f, 150.f });
 
