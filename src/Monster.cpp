@@ -4,6 +4,14 @@
 #include <iostream>
 #include <limits>
 
+// ===============================
+// CONSTRUCTORS
+// ===============================
+
+Monster::Monster() {
+    team = Team::Enemy;
+}
+
 Monster::Monster(float x, float y, float health, float maxHealth,
     float range, float cooldown, float spd, float dmg)
     : Entity(x, y, health, maxHealth),
@@ -11,24 +19,29 @@ Monster::Monster(float x, float y, float health, float maxHealth,
     attackCooldown(cooldown),
     attackDamage(dmg),
     speed(spd) {
-    // Monster luôn dùng shape màu đỏ
+
+    // Khởi tạo shape màu đỏ (fallback)
     monsterShape.setFillColor(sf::Color::Red);
     monsterShape.setSize(sf::Vector2f(30.f, 30.f));
     monsterShape.setOrigin(sf::Vector2f(15.f, 15.f));
     monsterShape.setPosition(sf::Vector2f(x, y));
-    
+
     setPosition(x, y);
     team = Team::Enemy;
+    isAlive = true;
 }
+
+// ===============================
+// TARGET MANAGEMENT
+// ===============================
 
 void Monster::updateTarget(const std::vector<Entity*>& targets) {
     if (targets.empty()) {
-        std::cout << "Monster: targets is empty" << std::endl;
+        // std::cout << "Monster: targets is empty" << std::endl;
         currentTarget = nullptr;
         return;
     }
-    
-    
+
     Entity* closest = nullptr;
     float minDistSq = std::numeric_limits<float>::max();
 
@@ -42,12 +55,23 @@ void Monster::updateTarget(const std::vector<Entity*>& targets) {
             closest = target;
         }
     }
+
     currentTarget = closest;
+
+    // Cập nhật hướng tấn công nếu có mục tiêu
+    if (currentTarget) {
+        sf::Vector2f attackDir = currentTarget->getPosition() - this->getPosition();
+        float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
+        if (length != 0.f) {
+            attackDir /= length;
+        }
+        this->setAttackDirection(attackDir);
+    }
 }
 
 void Monster::moveToward(float deltaTime) {
     if (!currentTarget) {
-        std::cout << "Monster: no target!" << std::endl;
+        // std::cout << "Monster: no target!" << std::endl;
         return;
     }
 
@@ -55,26 +79,46 @@ void Monster::moveToward(float deltaTime) {
     float dy = currentTarget->getY() - getY();
     float distance = std::sqrt(dx * dx + dy * dy);
 
-    if (distance <= 0.001f) return;
+    // Cập nhật gap (khoảng cách đến mục tiêu)
+    gap = distance;
 
+    if (distance <= 1.f) return;
+
+    // Nếu trong tầm đánh → bật tấn công
     if (distance <= attackRange) {
-        attackTimer += deltaTime;
-        if (attackTimer >= attackCooldown) {
-            attackTimer = 0.f;
-            currentTarget->takeDamage(attackDamage);
-            std::cout << "Monster attacked! Target health: " << currentTarget->getHealth() << std::endl;
+        // Bật cờ tấn công (sẽ được xử lý trong update)
+        if (!isAttacking) {
+            startAttacking();
         }
         return;
     }
 
+    // Di chuyển về phía mục tiêu
     float moveX = (dx / distance) * speed * deltaTime;
     float moveY = (dy / distance) * speed * deltaTime;
     setX(getX() + moveX);
     setY(getY() + moveY);
-    monsterShape.setPosition(position);
+    monsterShape.setPosition(getPosition());
 }
 
-void Monster::update(const GameContext& context) {
+// ===============================
+// UPDATE & DRAW
+// ===============================
+
+void Monster::update(GameContext& context) {
+    // 1. Giảm cooldown
+    if (coolDownTimer > 0.f) {
+        coolDownTimer -= context.deltaTime;
+    }
+
+    // 2. Nếu chết, cập nhật timer chết và thoát
+    if (isDying) {
+        updateDeadTimer(context);
+        monsterShape.setPosition(getPosition());
+        return;
+    }
+
+    // 3. Cập nhật mục tiêu nếu cần
     if (currentTarget == nullptr || currentTarget->isDead()) {
         updateTarget(context.players);
     }
@@ -85,6 +129,7 @@ void Monster::update(const GameContext& context) {
         updateTarget(context.players);
     }
 
+    // 4. Di chuyển về phía mục tiêu
     if (currentTarget && !currentTarget->isDead()) {
         moveToward(context.deltaTime);
     }
@@ -92,10 +137,34 @@ void Monster::update(const GameContext& context) {
         currentTarget = nullptr;
     }
 
+    // 5. Xử lý tấn công
+    if (currentTarget && !currentTarget->isDead() && canAttack()) {
+        startAttacking();
+    }
+
+    if (isAttacking) {
+        updateAttackTimer(context);
+        if (getCurrentWeapon() != nullptr) {
+            getCurrentWeapon()->triggerAction(this, context, *(context.combatManager));
+        }
+        else {
+            // Fallback: gây sát thương trực tiếp
+            if (currentTarget && !currentTarget->isDead() && gap <= attackRange) {
+                currentTarget->takeDamage(attackDamage);
+                std::cout << "Monster attacked (fallback)! Target health: " << currentTarget->getHealth() << std::endl;
+            }
+        }
+    }
+
+    // 6. Cập nhật trạng thái (tự tắt isAttacking nếu hết thời gian)
     updateStatus();
+
+    // 7. Đồng bộ vị trí shape
+    monsterShape.setPosition(getPosition());
 }
 
 void Monster::draw(sf::RenderWindow& window) {
+    // Vẽ shape (có thể thay bằng sprite sau)
     window.draw(monsterShape);
 }
 

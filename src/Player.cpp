@@ -4,7 +4,6 @@
 #include <iostream>
 #include "TextureManager.h"
 
-
 Player::Player(TextureManager& textureManager)
     : Entity(400.f, 300.f, 100, 100), playerTexture(nullptr) {
     team = Team::Player;
@@ -17,6 +16,7 @@ Player::Player(TextureManager& textureManager)
     playerShape.setTexture(playerTexture);
     playerShape.setPosition(sf::Vector2f(400.f, 300.f));
 }
+
 
 void Player::handleInput() {
     sf::Vector2f movement(0.f, 0.f);
@@ -31,12 +31,25 @@ void Player::handleInput() {
     }
     setDirection(movement);
 
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !isAttacking) {
-        setIsAttacking(true);
+    // Tấn công khi click chuột trái và sẵn sàng
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && canAttack()) {
+        if (!isAttacking) {
+            setIsAttacking(true);
+        }
     }
 }
 
-void Player::update(const GameContext& context) {
+void Player::update(GameContext& context) {
+    // Giảm cooldown
+    if (coolDownTimer > 0.f) {
+        coolDownTimer -= context.deltaTime;
+        if (coolDownTimer < 0.f) coolDownTimer = 0.f;
+    }
+
+    // Xử lý input (di chuyển, tấn công)
+    handleInput();
+
+    // Di chuyển player
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
         float newX = getX() + dir.x * speed * context.deltaTime;
@@ -44,10 +57,27 @@ void Player::update(const GameContext& context) {
         setPosition(newX, newY);
         playerShape.setPosition(getPosition());
     }
+
+    // Xử lý trạng thái chết
+    if (isDying) {
+        updateDeadTimer(context);
+    }
+
+    // Xử lý tấn công
+    if (isAttacking) {
+        updateAttackTimer(context);
+        if (currentWeapon) {
+            currentWeapon->triggerAction(this, context, *context.combatManager);
+        }
+    }
+
+    // Cập nhật trạng thái tấn công (tự tắt)
+    updateStatus();
 }
 
 void Player::draw(sf::RenderWindow& window) {
     window.draw(playerShape);
+    drawHealthBar(window);  // Vẽ thanh máu nếu cần
 }
 
 sf::FloatRect Player::getCollisionBox() const {

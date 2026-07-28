@@ -9,182 +9,243 @@
 #include "GameOverState.h"
 #include "WinState.h"
 #include "StateMachine.h"
+#include "Projectiles.h"
+#include "Arrow.h"
+#include "Bow.h"
 
-GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
-    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15) {
-    textureManager.loadTexture("Ash", "assets/images/Ash.png");
-
-    player = std::make_unique<Player>(textureManager);
-
-    sword = std::make_unique<Sword>(20, 100);
-    player->setCurrentWeapon(sword.get());
-
-    std::vector<std::string> allyTextureNames = { "Damian", "Evangeline", "Junior", "Lucas" };
-    for (const auto& name : allyTextureNames) {
-        textureManager.loadTexture(name, "assets/images/" + name + ".png");
-    }
-    int allyindex = 0;
-
-    for (const auto& pos : allyPositions) {
-        float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
-        float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
-
-        std::string textureName = allyTextureNames[allyindex % allyTextureNames.size()];
-        
-        auto ally = std::make_unique<Ally>(x, y, textureManager, textureName);
-        allies.push_back(std::move(ally));
-        allyindex++;
-    }
-
-    std::cout << "Total allies: " << allies.size() << std::endl;
-
-    std::cout << "GameplayState khoi tao thanh cong!" << std::endl;
-    std::cout << "Ally count at init=" << allies.size() << std::endl;
-}
-
-GameplayState::~GameplayState() {
-    for (auto* m : monsters) delete m;
-    monsters.clear();
-}
-
-void GameplayState::onEnter() {
-    std::cout << "GameplayState: Da vao man choi!" << std::endl;
-}
-
-void GameplayState::onExit() {
-    std::cout << "GameplayState: Da thoat!" << std::endl;
-}
-
-void GameplayState::handleEvent(const sf::Event& event) {
-    if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
-        if (keyPressed->code == sf::Keyboard::Key::P) {
-            std::cout << "Tam dung game!" << std::endl;
+// ===============================
+// UTILITY: XÓA ENTITY CHẾT
+// ===============================
+template <typename T>
+void cleanupEntities(std::vector<T*>& entityList) {
+    auto it = entityList.begin();
+    while (it != entityList.end()) {
+        if ((*it)->isDead() && !(*it)->getIsDying()) {
+            (*it)->startDying();
+            ++it;
         }
-    }
-
-    if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mousePressed->button == sf::Mouse::Button::Left) {
-            sf::Vector2i mousePixel = mousePressed->position;
-            sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
-
-            sf::Vector2f playerPos(player->getX(), player->getY());
-            sf::Vector2f attackDir = mouseWorld - playerPos;
-
-            float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
-            if (length != 0.f) attackDir /= length;
-            else attackDir = sf::Vector2f(1.f, 0.f);
-
-            player->setAttackDirection(attackDir);
-            player->setIsAttacking(true);   // Sử dụng setter
-        }
-    }
-}
-
-void GameplayState::rebuildContext() {
-    context.players.clear();
-    context.enemies.clear();
-    context.allEntity.clear();
-
-    context.players.push_back(player.get());
-    context.allEntity.push_back(player.get());
-
-    for (auto& allyPtr : allies) {
-        if (!allyPtr->isDead()) {
-            context.players.push_back(allyPtr.get());
-            context.allEntity.push_back(allyPtr.get());
-        }
-    }
-
-    for (auto* m : monsters) {
-        if (!m->isDead()) {
-            context.enemies.push_back(m);
-            context.allEntity.push_back(m);
-        }
-    }
-}
-
-void GameplayState::update(float dt) {
-    context.deltaTime = dt;
-
-    // Cập nhật Player
-    player->handleInput();
-    player->update(context);
-
-    // Xử lý tấn công của Player
-    if (player->getIsAttacking()) {
-        std::vector<Entity*> targets;
-        for (auto* m : monsters) targets.push_back(m);
-        combatManager.processAttack(player.get(), player->getCurrentWeapon(), targets);
-    }
-
-    player->updateStatus();
-
-    // Rebuild context sau khi update player
-    rebuildContext();
-
-    // Cập nhật wavemanager trước khi ally update
-    waveManager.update(context, monsters);
-
-    // Cập nhật context sau khi waveManager thêm monster mới
-    rebuildContext();
-
-    for (auto& allyPtr : allies) {
-        allyPtr->update(context);
-    }
-
-    // Cập nhật quái
-    for (auto* m : monsters) {
-        m->update(context);
-    }
-
-    // Xóa quái chết
-    auto it = monsters.begin();
-    while (it != monsters.end()) {
-        if ((*it)->isDead()) {
+        else if ((*it)->isReadyToBeDelete()) {
             delete* it;
-            it = monsters.erase(it);
-            std::cout << "Quai da bi tieu diet!" << std::endl;
+            it = entityList.erase(it);
         }
         else {
             ++it;
         }
     }
+}
 
-    // Rebuild context sau khi xóa quái chết
-    rebuildContext();
+// ===============================
+// CONSTRUCTOR
+// ===============================
+GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
+    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15) {
 
-    // Kiểm tra điều kiện Game Over (player chết)
+    // Load texture cho Player
+    textureManager.loadTexture("Ash", "assets/images/Ash.png");
+
+    // Tạo Player
+    player = std::make_unique<Player>(textureManager);
+    context.allEntity.push_back(player.get());
+    context.players.push_back(player.get());
+
+    // Gán vũ khí cho Player (Bow)
+    player->setCurrentWeapon(std::make_unique<Bow>(10, 2.f));;
+
+    // Load texture cho Ally
+    std::vector<std::string> allyTextureNames = { "Damian", "Evangeline", "Junior", "Lucas" };
+    for (const auto& name : allyTextureNames) {
+        textureManager.loadTexture(name, "assets/images/" + name + ".png");
+    }
+
+    // Tạo Ally từ danh sách vị trí (theo feature/gameplay)
+    int allyIndex = 0;
+    for (const auto& pos : allyPositions) {
+        float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
+        float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
+
+        // Tạo Ally mới
+        Ally* newAlly = new Ally(x, y, textureManager, allyTextureNames[allyIndex]);
+        // Gán vũ khí cho Ally
+        newAlly->setCurrentWeapon(std::make_unique<Sword>(20, 100));
+
+        // Thêm vào context
+        context.allEntity.push_back(newAlly);
+        context.players.push_back(newAlly);
+        context.allies.push_back(newAlly);
+
+        std::cout << "Ally created at (" << x << ", " << y << ")" << std::endl;
+        allyIndex++;
+    }
+
+    // Tạo quái vật (nếu có)
+    for (auto* m : context.monsters) {
+        m->setCurrentWeapon(std::make_unique<Sword>(20, 100));
+        context.allEntity.push_back(m);
+        context.enemies.push_back(m);
+        m->updateTarget(context.players);
+    }
+
+    std::cout << "GameplayState init complete! Allies: " << context.allies.size() << std::endl;
+}
+
+// ===============================
+// DESTRUCTOR
+// ===============================
+GameplayState::~GameplayState() {
+    for (auto* m : context.monsters) delete m;
+    context.monsters.clear();
+
+    for (auto* a : context.allies) delete a;
+    context.allies.clear();
+
+    for (auto* p : context.projectiles) delete p;
+    context.projectiles.clear();
+}
+
+// ===============================
+// STATE LIFECYCLE
+// ===============================
+void GameplayState::onEnter() {
+    std::cout << "GameplayState: Entered!" << std::endl;
+}
+
+void GameplayState::onExit() {
+    std::cout << "GameplayState: Exited!" << std::endl;
+}
+
+// ===============================
+// EVENT HANDLING
+// ===============================
+void GameplayState::handleEvent(const sf::Event& event) {
+    if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
+        if (keyPressed->code == sf::Keyboard::Key::P) {
+            std::cout << "Pause game!" << std::endl;
+        }
+    }
+
+    // Xử lý tấn công của Player (chỉ khi sẵn sàng)
+    if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (mousePressed->button == sf::Mouse::Button::Left) {
+            if (!player->canAttack()) return;  // Tối ưu: không bắn khi đang cooldown
+
+            sf::Vector2i mousePixel = mousePressed->position;
+            sf::Vector2f mouseWorld = window.mapPixelToCoords(mousePixel);
+            sf::Vector2f playerPos(player->getX(), player->getY());
+            sf::Vector2f attackDir = mouseWorld - playerPos;
+
+            float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
+            if (length != 0.f) attackDir /= length;
+            else attackDir = sf::Vector2f(0.f, 0.f);
+
+            player->setAttackDirection(attackDir);
+            player->setIsAttacking(true);
+        }
+    }
+}
+
+// ===============================
+// UPDATE
+// ===============================
+void GameplayState::update(float dt) {
+    context.deltaTime = dt;
+    context.combatManager = &combatManager;
+
+    // --- XÂY DỰNG LẠI CONTEXT (mỗi frame) ---
+    context.allEntity.clear();
+    context.players.clear();
+    context.enemies.clear();
+
+    // 1. Thêm Player
+    context.allEntity.push_back(player.get());
+    context.players.push_back(player.get());
+
+    // 2. Thêm Ally
+    for (auto* ally : context.allies) {
+        context.players.push_back(ally);
+        context.allEntity.push_back(ally);
+    }
+
+    // 3. Thêm Monster
+    for (auto* m : context.monsters) {
+        context.enemies.push_back(m);
+        context.allEntity.push_back(m);
+    }
+
+    // 4. Cập nhật WaveManager (sinh quái)
+    waveManager.update(context, context.monsters);
+
+    // 5. Cập nhật tất cả Entity
+    for (auto* entity : context.allEntity) {
+        entity->update(context);
+    }
+
+    // 6. Xử lý đạn (Projectiles)
+    if (!context.projectiles.empty()) {
+        combatManager.processProjectiles(context, context.allEntity);
+    }
+    
+
+    // 7. Xóa Entity chết (dùng template)
+    cleanupEntities(context.monsters);
+    cleanupEntities(context.allies);
+
+    // 8. Kiểm tra GameOver (Player chết)
     if (player->isDead()) {
         std::cout << "Player died! Game Over!" << std::endl;
         stateMachine.changeState(std::make_unique<GameOverState>(stateMachine, window, textureManager));
         return;
     }
 
-    // Kiểm tra điều kiện Win (hoàn thành tất cả wave)
-    if (waveManager.isGameCompleted() && monsters.empty()) {
+    // 9. Kiểm tra Win (hoàn thành wave)
+    if (waveManager.isGameCompleted() && context.monsters.empty()) {
         std::cout << "All waves completed! Victory!" << std::endl;
         stateMachine.changeState(std::make_unique<WinState>(stateMachine, window, textureManager));
         return;
     }
 }
 
+// ===============================
+// RENDER
+// ===============================
 void GameplayState::render(sf::RenderWindow& window) {
-    // Vẽ map/background trước (lấp đầy màn hình)
+    // Vẽ map/background (nếu có)
     
 
-    // Vẽ player
+    // --- Vẽ Player ---
     player->draw(window);
     player->drawHealthBar(window);
 
-    // Vẽ ally
-    for (auto& allyPtr : allies) {
-        allyPtr->draw(window);
-        allyPtr->drawHealthBar(window);
+    // --- Vẽ Ally ---
+    for (auto* ally : context.allies) {
+        ally->draw(window);
+        ally->drawHealthBar(window);
     }
 
-    // Vẽ monster
-    for (auto* m : monsters) {
+    // --- Vẽ Monster ---
+    for (auto* m : context.monsters) {
         m->draw(window);
         m->drawHealthBar(window);
+    }
+
+    // --- Vẽ Projectiles ---
+    for (auto* p : context.projectiles) {
+        window.draw(p->getShape());
+    }
+
+    // --- DEBUG: Vẽ hitbox khi đang tấn công ---
+    if (player->getIsAttacking() && player->canAttack()) {
+        player->getCurrentWeapon()->drawDebug(window, player->getPosition(), player->getAttackDirection());
+    }
+
+    for (auto* ally : context.allies) {
+        if (ally->getIsAttacking()) {
+            ally->getCurrentWeapon()->drawDebug(window, ally->getPosition(), ally->getAttackDirection());
+        }
+    }
+
+    for (auto* m : context.monsters) {
+        if (m->getIsAttacking() && m->getCurrentWeapon()) {
+            m->getCurrentWeapon()->drawDebug(window, m->getPosition(), m->getAttackDirection());
+        }
     }
 }

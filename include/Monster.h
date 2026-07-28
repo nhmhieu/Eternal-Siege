@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include <vector>
+#include <iostream>
 
 class GameContext;
 
@@ -16,7 +17,9 @@ private:
     float attackTimer = 0.f;
     sf::RectangleShape monsterShape;
 
+
 public:
+    Monster() ;
     Monster(float x, float y, float health = 100, float maxHealth = 100,
         float range = 50.f, float cooldown = 1.f, float spd = 100.f, float dmg = 10.f);
     ~Monster() override = default;
@@ -24,11 +27,22 @@ public:
     void updateTarget(const std::vector<Entity*>& targets);
     void moveToward(float deltaTime);
 
-     void update(const GameContext& context) override;
-     void draw(sf::RenderWindow& window) override;
+    void update(GameContext& context) override;
+    void draw(sf::RenderWindow& window) override;
 
-     sf::FloatRect getCollisionBox() const override;
-     sf::FloatRect getHurtBox() const override;
+    sf::FloatRect getCollisionBox() const override;
+    sf::FloatRect getHurtBox() const override;
+    Entity* getCurrentTarget() const { return currentTarget; }
 
-     Entity* getCurrentTarget() const { return currentTarget; }
+    bool canAttack(){
+        // std :: cout << gap << std :: endl ;
+        bool isInRange = (attackRange >= gap) ; 
+        bool isReady = !isAttacking && coolDownTimer <= 0 ;
+
+        // if(!isInRange) std :: cout << "Khong trong tam danh" << std :: endl ; 
+        // if(!isReady) std :: cout << "Quai chua san sang tan cong " << std :: endl ; 
+        
+        return isInRange && isReady ; 
+    }
+
 };

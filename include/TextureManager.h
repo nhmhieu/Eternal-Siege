@@ -1,19 +1,14 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <map>
+#include <unordered_map>
 #include <string>
 
-class TextureManager
-{
+class TextureManager {
 private:
-    std::map<std::string, sf::Texture> textures;
+    std::unordered_map<std::string, sf::Texture> textures;
 
 public:
-    // Load một texture từ file
-    bool loadTexture(const std::string& name,
-        const std::string& filename);
-
-    // Lấy texture đã load
+    bool loadTexture(const std::string& name, const std::string& filename);
     sf::Texture& getTexture(const std::string& name);
+  
 };
-

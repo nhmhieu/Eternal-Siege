@@ -1,5 +1,8 @@
 #include "Entity.h"
+#include "Weapon.h"
 #include <iostream>
+#include "GameContext.h"
+#include <cmath>   // nếu dùng sqrt
 
 Entity::Entity()
     : position(0, 0), health(0), maxHealth(0), sprite(defaultTexture) {
@@ -9,10 +12,9 @@ Entity::Entity(float x, float y, float health, float maxHealth)
     : position(x, y), health(health), maxHealth(maxHealth), sprite(defaultTexture) {
 }
 
-Entity::Entity(float x, float y, float health, float maxHealth, Team team, Weapon* weapon)
-    : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(weapon), sprite(defaultTexture) {
+Entity::Entity(float x, float y, float health, float maxHealth, Team team, std::unique_ptr<Weapon> weapon)
+    : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(std::move(weapon)), sprite(defaultTexture) {
 }
-
 
 void Entity::takeDamage(float damage) {
     health -= damage;
@@ -43,9 +45,15 @@ sf::FloatRect Entity::getAttackHitbox() const {
 
 void Entity::updateStatus() {
     if (isAttacking) {
-        if (attackClock.getElapsedTime().asSeconds() > attackDuration) {
+        if (attackTimer >= attackDuration) {
             isAttacking = false;
-            if (currentWeapon) currentWeapon->clearHitList();
+            if (currentWeapon) {
+                currentWeapon->clearHitList();
+                // Chỉ gọi nếu có setHasAttacked trong Weapon
+                // currentWeapon->setHasAttacked(false);
+            }
+            coolDownTimer = attackCoolDown;
+            attackTimer = 0.f;
         }
     }
 }
@@ -53,28 +61,47 @@ void Entity::updateStatus() {
 void Entity::drawHealthBar(sf::RenderWindow& window) const {
     const float barWidth = 50.f;
     const float barHeight = 6.f;
-    const float offsetY = -40.f; // Phía trên entity
+    const float offsetY = -40.f;
 
     sf::Vector2f pos = position;
     sf::Vector2f barPos(pos.x - barWidth / 2.f, pos.y + offsetY);
 
-    // Nền (màu xám đen)
     sf::RectangleShape background(sf::Vector2f(barWidth, barHeight));
     background.setFillColor(sf::Color(60, 60, 60));
     background.setPosition(barPos);
     window.draw(background);
 
-    // Thanh máu
     float healthPercent = (maxHealth > 0.f) ? (health / maxHealth) : 0.f;
     if (healthPercent < 0.f) healthPercent = 0.f;
 
     sf::RectangleShape healthBar(sf::Vector2f(barWidth * healthPercent, barHeight));
-    // Màu sắc dựa trên team
     if (team == Team::Enemy) {
         healthBar.setFillColor(sf::Color::Red);
-    } else {
+    }
+    else {
         healthBar.setFillColor(sf::Color::Green);
     }
     healthBar.setPosition(barPos);
     window.draw(healthBar);
+}
+
+void Entity::updateDeadTimer(const GameContext& context) {
+    if (isDying) {
+        deadTimer += context.deltaTime;
+        // logic animation chết
+    }
+}
+
+void Entity::updateAttackTimer(const GameContext& context) {
+    if (isAttacking) {
+        attackTimer += context.deltaTime;
+    }
+}
+
+void Entity::update(GameContext& context) {
+    // Giảm cooldown timer
+    if (coolDownTimer > 0) {
+        coolDownTimer -= context.deltaTime;
+        if (coolDownTimer < 0) coolDownTimer = 0;
+    }
 }

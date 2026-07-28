@@ -1,59 +1,60 @@
 #pragma once
 
-#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics.hpp>      
+#include <memory>                 // Cho unique_ptr
 #include <vector>
-#include "Weapon.h" 
+#include <iostream>
 #include <SFML/System/Clock.hpp>
-// ===============================
-// 1. ENUM
-// ===============================
-enum class Team {
-    Player,
-    Enemy,
-    Neutral
-};
+#include "GameTypes.h"
 
 class GameContext;
+class Weapon;
 
-// ===============================
-// 2. LỚP ENTITY
-// ===============================
 class Entity {
 protected:
     // ---------- CORE PROPERTIES ----------
     sf::Texture defaultTexture;
-    sf::Sprite sprite;   
+    sf::Sprite sprite;
     sf::Vector2f position;
     float health;
     float maxHealth;
     Team team;
-    bool isAlive = true;   
+    bool isAlive = true;
 
     // ---------- MOVEMENT ----------
-    sf::Vector2f direction = { 0.f, 1.f }; // Hướng di chuyển
+    sf::Vector2f direction = { 0.f, 1.f };
     float speed = 0.f;
 
     // ---------- ATTACK ----------
     sf::Vector2f attackDirection = { 0.f, 0.f };
     bool isAttacking = false;
-    float attackDuration = 0.2f;
+    float attackDuration = 1.0f;
     float attackPower = 10.f;
     sf::Clock attackClock;
+    float attackTimer = 0.f;
+    float attackCoolDown = 1.f;
+    float coolDownTimer = attackCoolDown;
+    float gap = 0;
 
     // ---------- WEAPON ----------
-    Weapon* currentWeapon = nullptr;
+    std::unique_ptr<Weapon> currentWeapon;   // Sử dụng unique_ptr để rõ ràng ownership
+
+    // ---------- DEAD ----------
+    bool isDying = false;
+    float deadTimer = 0.f;
+    float deadAnimationDuration = 0.5f;
 
 public:
     // ===============================
-    // 3. CONSTRUCTORS & DESTRUCTOR
+    // CONSTRUCTORS & DESTRUCTOR
     // ===============================
     Entity();
     Entity(float x, float y, float health, float maxHealth);
-    Entity(float x, float y, float health, float maxHealth, Team team, Weapon* weapon);
-    virtual ~Entity() = default;
+    Entity(float x, float y, float health, float maxHealth, Team team, std::unique_ptr<Weapon> weapon);
+    virtual ~Entity() = default;   // unique_ptr tự động giải phóng
 
     // ===============================
-    // 4. GETTERS & SETTERS
+    // GETTERS & SETTERS
     // ===============================
     // Position
     float getX() const { return position.x; }
@@ -62,10 +63,11 @@ public:
     void setPosition(float x, float y) { position = { x, y }; sprite.setPosition(position); }
     void setX(float x) { position.x = x; sprite.setPosition(position); }
     void setY(float y) { position.y = y; sprite.setPosition(position); }
+
     // Health
     float getHealth() const { return health; }
     float getMaxHealth() const { return maxHealth; }
-    bool isDead() const { return !isAlive; }  // ← ĐÃ SỬA LỖI
+    bool isDead() const { return !isAlive; }
 
     // Team
     Team getTeam() const { return team; }
@@ -83,30 +85,45 @@ public:
     void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
 
     // Weapon
-    Weapon* getCurrentWeapon() const { return currentWeapon; }
-    void setCurrentWeapon(Weapon* weapon) { currentWeapon = weapon; }
+    Weapon* getCurrentWeapon() const { return currentWeapon.get(); }
+    void setCurrentWeapon(std::unique_ptr<Weapon> weapon) { currentWeapon = std::move(weapon); }
+
+    // Dead state
+    bool getIsDying() const { return isDying; }
+    void setIsDying(bool status) { isDying = status; }
+    void startDying() { isDying = true; }
+    bool isReadyToBeDelete() const { return isDying && deadTimer >= deadAnimationDuration; }
 
     // ===============================
-    // 5. CORE LOGIC
+    // CORE LOGIC
     // ===============================
     virtual void takeDamage(float damage);
-    virtual void update(const GameContext& context) = 0;
+    virtual void update(GameContext& context);
     virtual void draw(sf::RenderWindow& window) = 0;
 
     // ===============================
-    // 6. COLLISION & HITBOX HELPERS
+    // COLLISION & HITBOX HELPERS
     // ===============================
     virtual sf::FloatRect getCollisionBox() const;
     virtual sf::FloatRect getHurtBox() const;
     virtual sf::FloatRect getAttackHitbox() const;
 
     // ===============================
-    // 7. ATTACK STATE MANAGEMENT
+    // ATTACK STATE MANAGEMENT
     // ===============================
-    void updateStatus(); // Cập nhật trạng thái tấn công
+    void updateStatus();
+    void updateAttackTimer(const GameContext& context);
+    void startAttacking() { isAttacking = true; }
 
     // ===============================
-    // 8. HEALTH BAR VISUALIZATION
+    // HEALTH BAR VISUALIZATION
     // ===============================
     virtual void drawHealthBar(sf::RenderWindow& window) const;
+
+    // ===============================
+    // DEAD TIMER UPDATE
+    // ===============================
+    void updateDeadTimer(const GameContext& context);
 };
+
+ 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "State.h"
 #include "StateMachine.h"
@@ -12,20 +12,24 @@
 #include "Map.h"
 #include "Sword.h"
 #include <memory>
+#include "Projectiles.h"
 
 class GameplayState : public State {
 private:
     StateMachine& stateMachine;
+    sf::RenderWindow& window;
     TextureManager& textureManager;
+
+    // Entity management (dùng raw pointer trong context)
     std::unique_ptr<Player> player;
-    std::vector<Monster*> monsters;
-    std::vector<std::unique_ptr<Ally>> allies;
+    // Không cần vector riêng nữa, dùng context
     Map map;
     WaveManager waveManager;
-    GameContext context;
-    sf::RenderWindow& window;
     CombatManager combatManager;
     std::unique_ptr<Sword> sword;
+
+    // Context (chứa tất cả entity)
+    GameContext context;
 
 public:
     GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions = {});
@@ -36,7 +40,4 @@ public:
     void handleEvent(const sf::Event& event) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
-
-private:
-    void rebuildContext();
 };
