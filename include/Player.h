@@ -1,19 +1,27 @@
 #pragma once
+
+#include "Entity.h"
 #include <SFML/Graphics.hpp>
 #include "TextureManager.h"
-#include <memory>
 
-class Player {
+class GameContext;
+
+class Player : public Entity {
 private:
-    //sf::CircleShape sprite;
+    float speed = 300.f;
+    const sf::Texture* playerTexture;
+    //sf::RectangleShape playerShape;
     std::unique_ptr<sf::Sprite> sprite;
-    float speed;
-
+    sf::RectangleShape fallbackShape;
+    bool useFallback = false;
+    sf::CircleShape debugDot;  // Debug: chấm đỏ ở vị trí entity
 public:
-    Player();
-    ~Player() = default;
+    Player(TextureManager& textureManager);
 
     void handleInput();
-    void update(float dt, const sf::RenderWindow& window);
-    void render(sf::RenderWindow& window);
+    void update(const GameContext& context) override;
+    void draw(sf::RenderWindow& window) override;
+
+    sf::FloatRect getCollisionBox() const override;
+    sf::FloatRect getHurtBox() const override;
 };
