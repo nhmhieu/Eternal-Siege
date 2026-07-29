@@ -5,8 +5,8 @@
 #include "StateMachine.h"
 #include "TextureManager.h"
 
-IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
-    : machine(machine), window(window), textureManager(textureManager), displayTime(3.0f), isDone(false)
+IntroState::IntroState(StateMachine& machine, sf::RenderWindow& window)
+    : machine(machine), window(window), displayTime(3.0f), isDone(false)
 {
     //background.setSize(sf::Vector2f(1280.0f, 720.0f));
     //background.setFillColor(sf::Color::Blue);
@@ -30,7 +30,7 @@ void IntroState::onEnter() {
     std::cout << "--- DANG KHOI DONG INTRO STATE ---" << std::endl;
     std::cout << "Thu muc lam viec hien tai: " << std::filesystem::current_path() << std::endl;
 
-    std::string fontPath = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    std::string fontPath = "D:/C++/Eternal-Siege/assets/fonts/Font.ttf";
     if (!font.openFromFile(fontPath)) {
         std::cout << "KHONG THE NAP FONT!" << std::endl;
         gameTitle.reset();
@@ -51,7 +51,7 @@ void IntroState::onEnter() {
     displayTime = 3.0f;
     isDone = false;
 
-    std::string path = "C:/Project GAME/Eternal-Siege/out/build/x64-debug/assets/fonts/Font.ttf";
+    std::string path = "D:/C++/Eternal-Siege/assets/fonts/Font.ttf";
     if (std::filesystem::exists(path)) {
         std::cout << "File exists!" << std::endl;
     }
@@ -84,7 +84,7 @@ void IntroState::update(float dt) {
 
     if (isDone) {
         std::cout << "Chuyen sang MenuState!" << std::endl;
-        auto nextState = std::make_unique<MenuState>(machine, window, textureManager);
+        auto nextState = std::make_unique<MenuState>(machine, window);
         machine.changeState(std::move(nextState));
         return;
     }
