@@ -1,5 +1,6 @@
 #include "TextureManager.h"
 #include <iostream>
+#include <filesystem>
 
 TextureManager& TextureManager::getInstance()
 {
@@ -12,35 +13,62 @@ bool TextureManager::loadTexture(const std::string& name,
 {
     sf::Texture texture;
 
-    // Thử đường dẫn gốc
-    if (texture.loadFromFile(path)) {
-        textures[name] = std::move(texture);
-        return true;
-    }
-    
-    // Nếu fail, thử các path khác (khi chạy từ thư mục build)
-    std::string filename = path;
-    size_t lastSlash = path.find_last_of("/\\");
-    if (lastSlash != std::string::npos) {
-        filename = path.substr(lastSlash + 1);
-    }
-    
-    // Thử "../assets/images/" (khi chạy từ out/build/x64-debug/)
-    std::string altPath1 = "../assets/images/" + filename;
-    if (texture.loadFromFile(altPath1)) {
-        textures[name] = std::move(texture);
-        return true;
-    }
-    
-    // Thử "assets/images/" (khi chạy từ thư mục gốc)
-    std::string altPath2 = "assets/images/" + filename;
-    if (texture.loadFromFile(altPath2)) {
-        textures[name] = std::move(texture);
-        return true;
-    }
+    //// Thử đường dẫn gốc
+    //if (texture.loadFromFile(path)) {
+    //    textures[name] = std::move(texture);
+    //    return true;
+    //}
+    //
+    //// Nếu fail, thử các path khác (khi chạy từ thư mục build)
+    //std::string filename = path;
+    //size_t lastSlash = path.find_last_of("/\\");
+    //if (lastSlash != std::string::npos) {
+    //    filename = path.substr(lastSlash + 1);
+    //}
+    //
+    //// Thử "../assets/images/" (khi chạy từ out/build/x64-debug/)
+    //std::string altPath1 = "../assets/images/" + filename;
+    //if (texture.loadFromFile(altPath1)) {
+    //    textures[name] = std::move(texture);
+    //    return true;
+    //}
+    //
+    //// Thử "assets/images/" (khi chạy từ thư mục gốc)
+    //std::string altPath2 = "assets/images/" + filename;
+    //if (texture.loadFromFile(altPath2)) {
+    //    textures[name] = std::move(texture);
+    //    return true;
+    //}
 
-    std::cout << "Failed to load texture: " << path << std::endl;
-    return false;
+    //std::cout << "Failed to load texture: " << path << std::endl;
+    //return false;
+
+    std::cout << "\n==============================\n";
+    std::cout << "Loading texture: " << path << '\n';
+
+    std::cout << "Working directory: "
+        << std::filesystem::current_path()
+        << '\n';
+
+    std::filesystem::path filePath(path);
+
+    std::cout << "Full path: "
+        << std::filesystem::absolute(filePath)
+        << '\n';
+
+    std::cout << "File exists: "
+        << std::filesystem::exists(filePath)
+        << '\n';
+
+    if (!texture.loadFromFile(path))
+    {
+        std::cerr << "FAILED to load texture: "
+            << path << '\n';
+
+        return false;
+    }
+    textures[name] = std::move(texture);
+    return true;
 }
 
 sf::Texture& TextureManager::getTexture(const std::string& name)

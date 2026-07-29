@@ -1,40 +1,72 @@
-#File này kiểm tra các thư viện/gcc tối thiêu cho máy mỗi khi mở source nha ae !!! 
-cmake_minimum_required(VERSION 3.10)
-project(EternalSiege CXX)
+cmake_minimum_required(VERSION 3.20)
 
-# Ép dự án sử dụng chuẩn C++17
+project(EternalSiege LANGUAGES CXX)
+
+# ==============================
+# C++17
+# ==============================
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_PREFIX_PATH "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2")
-# Tự động tìm bộ thư viện SFML trên hệ thống (Bỏ số phiên bản cứng để nhận cả bản 2.x lẫn 3.x)
-# Sửa chữ cái đầu của các component thành VIẾT HOA:
-find_package(SFML COMPONENTS Graphics Window System Audio REQUIRED)
-
-# Chỉ đường dẫn tới thư mục chứa các file Header (.hpp) của bạn
-include_directories(include)
-
-# Quét sạch tất cả file .cpp nằm trong thư mục src/
-file(GLOB SOURCES "src/*.cpp")
-add_executable(my_game ${SOURCES})
-
-# === ĐƯỜNG DẪN CỨNG ===
-target_include_directories(my_game PRIVATE "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2/include" include)
-target_link_directories(my_game PRIVATE "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2/lib")
-
-# === LINK ĐÚNG TÊN FILE (DỰA TRÊN THƯ MỤC LIB CỦA BẠN) ===
-# Nếu bạn dùng Debug, link file có -d
-# Nếu bạn dùng Release, link file không có -d
-target_link_libraries(my_game
-    "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2/lib/sfml-window.lib"
-    "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2/lib/sfml-system.lib"
-    "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2/lib/sfml-graphics.lib"
+# ==============================
+# SFML
+# ==============================
+set(CMAKE_PREFIX_PATH
+    "D:/SFML-3.0.2-windows-vc17-64-bit/SFML-3.0.2"
 )
 
+find_package(SFML 3 COMPONENTS
+    Graphics
+    Window
+    System
+    Audio
+    REQUIRED
+)
+
+# ==============================
+# Source files
+# ==============================
+file(GLOB SOURCES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+)
+
+# ==============================
+# Create executable
+# ==============================
+add_executable(my_game ${SOURCES})
+
+# ==============================
+# Header files
+# ==============================
+target_include_directories(my_game PRIVATE
+    "${CMAKE_SOURCE_DIR}/include"
+)
+
+# ==============================
+# Link SFML
+# ==============================
+target_link_libraries(my_game PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+    SFML::Audio
+)
+
+# ==============================
+# Đưa .exe vào chính thư mục
+# x64-Debug
+# ==============================
+set_target_properties(my_game PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}"
+)
+
+# ==============================
 # Copy assets
+# ==============================
 add_custom_command(TARGET my_game POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets
-    $<TARGET_FILE_DIR:my_game>/assets
+    "${CMAKE_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:my_game>/assets"
     COMMENT "Copying assets to output directory"
 )
