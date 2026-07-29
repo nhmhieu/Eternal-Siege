@@ -5,21 +5,25 @@
 #include <memory>
 #include "TextureManager.h"
 
-class IntroState : public State {
+class WinState : public State {
 private:
-    StateMachine& machine;
+    StateMachine& stateMachine;
     sf::RenderWindow& window;
 
-    float displayTime;
-    bool isDone;
     //sf::RectangleShape background;
     std::unique_ptr<sf::Sprite> background;
+
     sf::Font font;
-    std::unique_ptr<sf::Text> gameTitle;
+
+    std::unique_ptr<sf::Text> titleText;
+    std::unique_ptr<sf::Text> restartText;
+    std::unique_ptr<sf::Text> menuText;
+    std::unique_ptr<sf::RectangleShape> restartButton;
+    std::unique_ptr<sf::RectangleShape> menuButton;
 
 public:
-    IntroState(StateMachine& machine, sf::RenderWindow& window);
-    ~IntroState() override = default;
+    WinState(StateMachine& machine, sf::RenderWindow& window);
+    ~WinState() override = default;
 
     void onEnter() override;
     void onExit() override;

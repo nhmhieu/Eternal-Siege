@@ -5,14 +5,14 @@
 #include "TextureManager.h"
 
 
-Player::Player(TextureManager& textureManager)
+Player::Player()
     : Entity(400.f, 300.f, 100, 100), playerTexture(nullptr) {
     team = Team::Player;
 
     const float desiredSize = 80.f;
 
     std::string textureKey = "player";
-    if (!textureManager.hasTexture(textureKey)) {
+    if (!TextureManager::getInstance().hasTexture(textureKey)) {
         std::cerr << "Failed to load Ash texture!" << std::endl;
         useFallback = true;
         fallbackShape.setFillColor(sf::Color::Blue);
@@ -23,16 +23,17 @@ Player::Player(TextureManager& textureManager)
         std::cout << "Ash texture loaded OK!" << std::endl;
         useFallback = false;
         //playerTexture = &textureManager.getTexture("Ash");
-        playerTexture = &textureManager.getTexture(textureKey);
+        playerTexture = &TextureManager::getInstance().getTexture(textureKey);
 
         // Khởi tạo con trỏ unique_ptr<sf::Sprite> truyền vào texture
-        this->sprite = std::make_unique<sf::Sprite>(texture);
+        this->sprite = std::make_unique<sf::Sprite>(*playerTexture);
+
 
         // Tính toán và thiết lập origin ở trung tâm ảnh
-        sf::Vector2u size = texture.getSize();
+        sf::Vector2u size = playerTexture->getSize();
         this->sprite->setOrigin({ static_cast<float>(size.x) / 2.f, static_cast<float>(size.y) / 2.f });
 
-        // Đặt vị trí ban đầu và tốc độ
+        // Đặt vị trí ban đầu và tốc độa
         this->sprite->setPosition({ 400.f, 300.f });
     }
 }
@@ -79,11 +80,13 @@ void Player::draw(sf::RenderWindow& window) {
 }
 
 sf::FloatRect Player::getCollisionBox() const {
-    if (useFallback) return fallbackShape.getGlobalBounds();
-    return playerShape.getGlobalBounds();
+    //if (useFallback) return fallbackShape.getGlobalBounds();
+    //return playerShape.getGlobalBounds();
+    if (useFallback || !sprite) return fallbackShape.getGlobalBounds();
+    return sprite->getGlobalBounds();
 }
 
 sf::FloatRect Player::getHurtBox() const {
-    if (useFallback) return fallbackShape.getGlobalBounds();
-    return playerShape.getGlobalBounds();
+    if (useFallback || !sprite) return fallbackShape.getGlobalBounds();
+    return sprite->getGlobalBounds();
 }

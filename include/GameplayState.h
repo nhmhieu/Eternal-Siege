@@ -1,21 +1,43 @@
 #pragma once
+
 #include "State.h"
+#include "StateMachine.h"
 #include "Player.h"
+#include "Monster.h"
+#include "CombatManager.h"
+#include "GameContext.h"
+#include "Ally.h"
+#include "WaveManager.h"
 #include "TextureManager.h"
+#include "Map.h"
+#include "Sword.h"
 #include <memory>
 
 class GameplayState : public State {
 private:
     std::unique_ptr<sf::Sprite> background;
-    Player player;
+    //Player player;
+    StateMachine& stateMachine;
+    std::unique_ptr<Player> player;
+    std::vector<Monster*> monsters;
+    std::vector<std::unique_ptr<Ally>> allies;
+    Map map;
+    WaveManager waveManager;
+    GameContext context;
+    sf::RenderWindow& window;
+    CombatManager combatManager;
+    std::unique_ptr<Sword> sword;
 
 public:
-    GameplayState() = default;
-    ~GameplayState() override = default;
+    GameplayState(StateMachine& machine, sf::RenderWindow& window, const std::vector<sf::Vector2i>& allyPositions = {});
+    ~GameplayState() override;
 
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;
     void update(float dt) override;
     void render(sf::RenderWindow& window) override;
+
+private:
+    void rebuildContext();
 };

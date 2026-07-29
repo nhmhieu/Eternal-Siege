@@ -16,7 +16,7 @@ private:
     bool useFallback = false;
     sf::CircleShape debugDot;  // Debug: chấm đỏ ở vị trí entity
 public:
-    Player(TextureManager& textureManager);
+    Player();
 
     void handleInput();
     void update(const GameContext& context) override;

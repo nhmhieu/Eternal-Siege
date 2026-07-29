@@ -1,29 +1,32 @@
 #pragma once
+
 #include "State.h"
 #include "StateMachine.h"
+#include "Map.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <vector>
 #include "TextureManager.h"
 
-class MenuState : public State {
+class SetupState : public State
+{
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
-    sf::Font font;
-    //TextureManager& textureManager;
     std::unique_ptr<sf::Sprite> background;
+    Map map;
+    std::vector<sf::Vector2i> selectedPositions;
+    int maxAllies = 4;
+    bool canStart = false;
 
-    // Dùng unique_ptr cho các đối tượng cần Font
-    std::unique_ptr<sf::Text> titleText;
+    sf::Font font;
     std::unique_ptr<sf::Text> startText;
-    std::unique_ptr<sf::Text> exitText;
-
-    // Biến thông thường cho các đối tượng không cần Font
-    std::unique_ptr<sf::RectangleShape> startButton;
-    std::unique_ptr<sf::RectangleShape> exitButton;
+    sf::RectangleShape startButton;
 
 public:
-    MenuState(StateMachine& machine, sf::RenderWindow& window);
+    SetupState(StateMachine& machine, sf::RenderWindow& window);
+    ~SetupState() override = default;
+
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;
