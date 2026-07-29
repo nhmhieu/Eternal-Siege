@@ -23,21 +23,10 @@ public:
     void draw(sf::RenderWindow& window) override;
 
     bool canAttack() {
-        return coolDownTimer <= 0;
+        return !isAttacking && coolDownTimer <= 0.f;
     }
+    void setPosition(const sf::Vector2f& pos);
 
-    void updateStatus()  {
-        if (isAttacking) {
-            if (attackTimer >= attackDuration) {
-                isAttacking = false;
-                if (currentWeapon) {
-                    currentWeapon->clearHitList();
-                }
-                coolDownTimer = attackCoolDown;
-                attackTimer = 0.f;
-            }
-        }
-    }
     sf::FloatRect getCollisionBox() const override;
     sf::FloatRect getHurtBox() const override;
 };

@@ -8,9 +8,9 @@ void DummyState::onEnter() {
 
 void DummyState::onExit() {}
 
-void DummyState::handleEvent(const sf::Event& event) {}
+void DummyState::handleEvent(const sf::Event&) {}
 
-void DummyState::update(float dt) {}
+void DummyState::update(float) {}
 
 void DummyState::render(sf::RenderWindow& window) {
     window.draw(box);

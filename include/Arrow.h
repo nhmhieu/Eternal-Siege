@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Projectiles.h" 
 
 class Arrow : public Projectiles{

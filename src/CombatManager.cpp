@@ -22,7 +22,7 @@ void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<
             { target->getX(), target->getY() })) continue;
 
         if (!weapon->isHit(target)) {
-            target->takeDamage(attacker->getAttackPower());
+            target->takeDamage(static_cast<float>(weapon->getDamage()));
             weapon->addHit(target);
             std :: cout << "Current health : " << target->getHealth() << std :: endl ; 
              std::cout << "Da danh trung quai!" << std::endl;
@@ -68,7 +68,7 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
             if (target->getTeam() == proj->getShooterTeam()) continue; // Bỏ qua cùng team
 
             if (proj->isHitting(target)) {
-                target->takeDamage(10);
+                target->takeDamage(proj->getDamage());
                 
                 // Hạn chế std::cout nếu không thực sự cần thiết để tránh lag
                 // std::cout << "Da ban trung quai, mau quai hien tai : " << target->getHealth() << std::endl; 

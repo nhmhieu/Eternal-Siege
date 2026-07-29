@@ -1,4 +1,4 @@
-﻿#include "Ally.h"
+#include "Ally.h"
 #include "GameContext.h"
 #include "MathUtils.h"
 #include <cmath>
@@ -13,6 +13,8 @@
 Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& textureName)
     : Entity(x, y, 50, 50), allyTexture(nullptr) {
     team = Team::Player;
+    attackCoolDown = 2.f;
+    coolDownTimer = 0.f;
 
     sf::Texture& tex = textureManager.getTexture(textureName);
     allyTexture = &tex;
@@ -21,13 +23,21 @@ Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& 
     const float desiredHeight = 40.f;
     const sf::Vector2u textureSize = allyTexture->getSize();
 
-    float scaleX = desiredWidth / static_cast<float>(textureSize.x);
-    float scaleY = desiredHeight / static_cast<float>(textureSize.y);
-
-    rectShape.setSize(sf::Vector2f(static_cast<float>(textureSize.x), static_cast<float>(textureSize.y)));
-    rectShape.setTexture(allyTexture);
-    rectShape.setScale(sf::Vector2f(scaleX, scaleY));
-    rectShape.setOrigin(sf::Vector2f(textureSize.x / 2.f, textureSize.y / 2.f));
+    if (textureSize.x > 0 && textureSize.y > 0) {
+        const float scaleX = desiredWidth / static_cast<float>(textureSize.x);
+        const float scaleY = desiredHeight / static_cast<float>(textureSize.y);
+        rectShape.setSize(sf::Vector2f(
+            static_cast<float>(textureSize.x),
+            static_cast<float>(textureSize.y)));
+        rectShape.setTexture(allyTexture);
+        rectShape.setScale(sf::Vector2f(scaleX, scaleY));
+        rectShape.setOrigin(sf::Vector2f(textureSize.x / 2.f, textureSize.y / 2.f));
+    }
+    else {
+        rectShape.setSize({ desiredWidth, desiredHeight });
+        rectShape.setOrigin({ desiredWidth / 2.f, desiredHeight / 2.f });
+        rectShape.setFillColor(sf::Color::Cyan);
+    }
     rectShape.setPosition(sf::Vector2f(x, y));
 }
 
@@ -36,6 +46,12 @@ Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& 
 // ===============================
 
 void Ally::update(GameContext& context) {
+    if (isDying) {
+        updateDeadTimer(context);
+        rectShape.setPosition(getPosition());
+        return;
+    }
+
     // 1. Giảm cooldown
     if (coolDownTimer > 0.f) {
         coolDownTimer -= context.deltaTime;
@@ -59,10 +75,6 @@ void Ally::update(GameContext& context) {
         if (isInRange(target) && coolDownTimer <= 0.f) {
             startAttacking();
         }
-    }
-
-    if (isDying) {
-        updateDeadTimer(context);
     }
 
     if (isAttacking) {
@@ -91,7 +103,7 @@ void Ally::draw(sf::RenderWindow& window) {
 // TARGET MANAGEMENT
 // ===============================
 
-bool Ally::isInRange(Entity* target) {
+bool Ally::isInRange(const Entity* target) const {
     if (!target) return false;
     float dx = target->getX() - getX();
     float dy = target->getY() - getY();
@@ -101,10 +113,6 @@ bool Ally::isInRange(Entity* target) {
 //logic tim kiem va chon quai gan nhat lam muc tieu va danh den khi quai do chet 
 
 void Ally::updateTarget(const GameContext& context) {
-    if (target != nullptr && target->isDead()) {
-        target = nullptr;
-    }
-
     Entity* bestTarget = nullptr;
     float minDistSq = range * range;
 

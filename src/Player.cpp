@@ -3,6 +3,8 @@
 #include <cmath>
 #include <iostream>
 #include "TextureManager.h"
+#include "Constants.h"
+#include <algorithm>
 
 Player::Player(TextureManager& textureManager)
     : Entity(400.f, 300.f, 100, 100), playerTexture(nullptr) {
@@ -15,6 +17,8 @@ Player::Player(TextureManager& textureManager)
     playerShape.setOrigin(sf::Vector2f(desiredSize / 2.f, desiredSize / 2.f));
     playerShape.setTexture(playerTexture);
     playerShape.setPosition(sf::Vector2f(400.f, 300.f));
+    
+
 }
 
 
@@ -31,39 +35,44 @@ void Player::handleInput() {
     }
     setDirection(movement);
 
-    // Tấn công khi click chuột trái và sẵn sàng
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && canAttack()) {
-        if (!isAttacking) {
-            setIsAttacking(true);
-        }
-    }
+}
+
+void Player::setPosition(const sf::Vector2f& pos) {
+    Entity::setPosition(pos.x, pos.y);
+    playerShape.setPosition(pos);
 }
 
 void Player::update(GameContext& context) {
-    // Giảm cooldown
+    // Gi?m cooldown
     if (coolDownTimer > 0.f) {
         coolDownTimer -= context.deltaTime;
         if (coolDownTimer < 0.f) coolDownTimer = 0.f;
     }
 
-    // Xử lý input (di chuyển, tấn công)
+    // X? l input (di chuy?n, t?n cng)
     handleInput();
 
-    // Di chuyển player
+    // Di chuy?n player
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
         float newX = getX() + dir.x * speed * context.deltaTime;
         float newY = getY() + dir.y * speed * context.deltaTime;
-        setPosition(newX, newY);
-        playerShape.setPosition(getPosition());
+        constexpr float halfPlayerSize = 40.f;
+        const float worldWidth =
+            GameConfig::DEFAULT_MAP_WIDTH * GameConfig::TILE_SIZE;
+        const float worldHeight =
+            GameConfig::DEFAULT_MAP_HEIGHT * GameConfig::TILE_SIZE;
+        newX = std::clamp(newX, halfPlayerSize, worldWidth - halfPlayerSize);
+        newY = std::clamp(newY, halfPlayerSize, worldHeight - halfPlayerSize);
+        setPosition({ newX, newY });
     }
 
-    // Xử lý trạng thái chết
+    // X? l tr?ng thi ch?t
     if (isDying) {
         updateDeadTimer(context);
     }
 
-    // Xử lý tấn công
+    // X? l t?n cng
     if (isAttacking) {
         updateAttackTimer(context);
         if (currentWeapon) {
@@ -71,13 +80,12 @@ void Player::update(GameContext& context) {
         }
     }
 
-    // Cập nhật trạng thái tấn công (tự tắt)
+    // C?p nh?t tr?ng thi t?n cng (t? t?t)
     updateStatus();
 }
 
 void Player::draw(sf::RenderWindow& window) {
     window.draw(playerShape);
-    drawHealthBar(window);  // Vẽ thanh máu nếu cần
 }
 
 sf::FloatRect Player::getCollisionBox() const {

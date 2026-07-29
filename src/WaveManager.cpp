@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <memory>   // Cho std::make_unique
+#include "Constants.h"
 
 WaveManager::WaveManager()
     : totalMonstersSpawned(0), spawnTimer(0.f), spawnInterval(0.5f), monstersPerWave(5),
@@ -29,12 +30,36 @@ void WaveManager::update(const GameContext& context, std::vector<Monster*>& mons
         spawnTimer += context.deltaTime;
         if (spawnTimer >= spawnInterval) {
             spawnTimer = 0.f;
-            float x = 50.f + rand() % 1100;
-            float y = 50.f + rand() % 600;
+            const int mapWidth = static_cast<int>(
+                GameConfig::DEFAULT_MAP_WIDTH * GameConfig::TILE_SIZE);
+            const int mapHeight = static_cast<int>(
+                GameConfig::DEFAULT_MAP_HEIGHT * GameConfig::TILE_SIZE);
+            constexpr int margin = 20;
+
+            float x = 0.f;
+            float y = 0.f;
+            switch (rand() % 4) {
+            case 0:
+                x = static_cast<float>(margin);
+                y = static_cast<float>(margin + rand() % (mapHeight - 2 * margin));
+                break;
+            case 1:
+                x = static_cast<float>(mapWidth - margin);
+                y = static_cast<float>(margin + rand() % (mapHeight - 2 * margin));
+                break;
+            case 2:
+                x = static_cast<float>(margin + rand() % (mapWidth - 2 * margin));
+                y = static_cast<float>(margin);
+                break;
+            default:
+                x = static_cast<float>(margin + rand() % (mapWidth - 2 * margin));
+                y = static_cast<float>(mapHeight - margin);
+                break;
+            }
 
             // Tạo Monster và gán vũ khí (dùng unique_ptr)
             Monster* m = new Monster(x, y, 100.f, 100.f, 50.f, 1.f, 100.f, 10.f);
-            m->setCurrentWeapon(std::make_unique<Sword>(20, 100));   //  Dùng unique_ptr
+            m->setCurrentWeapon(std::make_unique<Sword>(10, 50));
             monsterList.push_back(m);
             totalMonstersSpawned++;   //biến đếm
 

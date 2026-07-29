@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "State.h"
 #include "StateMachine.h"
@@ -20,19 +20,19 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
 
-    // Entity management (dùng raw pointer trong context)
+    // Entity management (dng raw pointer trong context)
     std::unique_ptr<Player> player;
-    // Không cần vector riêng nữa, dùng context
+    // Khng c?n vector ring n?a, dng context
     Map map;
     WaveManager waveManager;
     CombatManager combatManager;
-    std::unique_ptr<Sword> sword;
+    bool paused = false;
 
-    // Context (chứa tất cả entity)
+    // Context (ch?a t?t c? entity)
     GameContext context;
 
 public:
-    GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions = {});
+    GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager,const Map& setupMap, const std::vector<sf::Vector2i>& allyPositions = {});
     ~GameplayState() override;
 
     void onEnter() override;

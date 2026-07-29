@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Entity.h"
 #include <SFML/Graphics.hpp>
@@ -9,14 +9,11 @@ class GameContext;
 class Ally : public Entity {
 private:
     float range = 200.f;
-    float attackCoolDown = 2.f;
-    float coolDownTimer = 0.f;
-    const sf::Texture* allyTexture;
+    const sf::Texture* allyTexture = nullptr;
     sf::RectangleShape rectShape;
     Entity* target = nullptr;
 
 public:
-    Ally(float x, float y);
     Ally(float x, float y, TextureManager& textureManager, const std::string& textureName);
 
     void update(GameContext& context) override;
@@ -25,12 +22,12 @@ public:
     Entity* getTarget() const { return target; }
     void updateTarget(const GameContext& context);
 
-    bool isInRange(Entity* target) ;
+    bool isInRange(const Entity* target) const;
 
-    bool canAttack() {
+    bool canAttack() const {
         if (!target) return false;
-        bool isReady = !isAttacking && coolDownTimer <= 0;
-        bool inRange = isInRange(target);
+        const bool isReady = !isAttacking && coolDownTimer <= 0.f;
+        const bool inRange = isInRange(target);
         return inRange && isReady;
     }
 

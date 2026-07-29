@@ -29,6 +29,9 @@ Monster::Monster(float x, float y, float health, float maxHealth,
     setPosition(x, y);
     team = Team::Enemy;
     isAlive = true;
+    attackPower = dmg;
+    attackCoolDown = cooldown;
+    coolDownTimer = cooldown;
 }
 
 // ===============================
@@ -84,12 +87,9 @@ void Monster::moveToward(float deltaTime) {
 
     if (distance <= 1.f) return;
 
-    // Nếu trong tầm đánh → bật tấn công
+    // Trong tầm đánh thì dừng di chuyển; update() sẽ kiểm tra cooldown
+    // trước khi bật trạng thái tấn công.
     if (distance <= attackRange) {
-        // Bật cờ tấn công (sẽ được xử lý trong update)
-        if (!isAttacking) {
-            startAttacking();
-        }
         return;
     }
 
@@ -118,15 +118,12 @@ void Monster::update(GameContext& context) {
         return;
     }
 
-    // 3. Cập nhật mục tiêu nếu cần
-    if (currentTarget == nullptr || currentTarget->isDead()) {
-        updateTarget(context.players);
-    }
-
+    // Re-evaluate before dereferencing the previous raw target. A target may
+    // have been removed during the previous frame's cleanup.
+    updateTarget(context.players);
     targetTimer += context.deltaTime;
     if (targetTimer >= 0.5f) {
         targetTimer = 0.f;
-        updateTarget(context.players);
     }
 
     // 4. Di chuyển về phía mục tiêu

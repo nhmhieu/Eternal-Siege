@@ -74,7 +74,7 @@ void GameOverState::handleEvent(const sf::Event& event) {
     }
 }
 
-void GameOverState::update(float dt) {
+void GameOverState::update(float) {
     // No update logic needed
 }
 

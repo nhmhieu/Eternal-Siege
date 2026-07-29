@@ -5,15 +5,16 @@
 #include <cmath>   // nếu dùng sqrt
 
 Entity::Entity()
-    : position(0, 0), health(0), maxHealth(0), sprite(defaultTexture) {
+    : sprite(defaultTexture), position(0, 0), health(0), maxHealth(0) {
 }
 
 Entity::Entity(float x, float y, float health, float maxHealth)
-    : position(x, y), health(health), maxHealth(maxHealth), sprite(defaultTexture) {
+    : sprite(defaultTexture), position(x, y), health(health), maxHealth(maxHealth) {
 }
 
 Entity::Entity(float x, float y, float health, float maxHealth, Team team, std::unique_ptr<Weapon> weapon)
-    : position(x, y), health(health), maxHealth(maxHealth), team(team), currentWeapon(std::move(weapon)), sprite(defaultTexture) {
+    : sprite(defaultTexture), position(x, y), health(health), maxHealth(maxHealth),
+      team(team), currentWeapon(std::move(weapon)) {
 }
 
 void Entity::takeDamage(float damage) {
@@ -49,8 +50,7 @@ void Entity::updateStatus() {
             isAttacking = false;
             if (currentWeapon) {
                 currentWeapon->clearHitList();
-                // Chỉ gọi nếu có setHasAttacked trong Weapon
-                // currentWeapon->setHasAttacked(false);
+                currentWeapon->setHasAttacked(false);
             }
             coolDownTimer = attackCoolDown;
             attackTimer = 0.f;

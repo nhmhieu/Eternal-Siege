@@ -74,7 +74,7 @@ void WinState::handleEvent(const sf::Event& event) {
     }
 }
 
-void WinState::update(float dt) {
+void WinState::update(float) {
     // No update logic needed
 }
 

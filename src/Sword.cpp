@@ -28,6 +28,7 @@ bool Sword :: isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Ve
     sf::Vector2f dirToTarget = targetPos - attackerPos;
     float distance = std::sqrt(dirToTarget.x * dirToTarget.x + dirToTarget.y * dirToTarget.y);
     if (distance > range) return false;
+    if (distance <= 0.0001f) return true;
 
     sf::Vector2f normalizedDir = dirToTarget / distance;
     float dot = (attackDir.x * normalizedDir.x) + (attackDir.y * normalizedDir.y);

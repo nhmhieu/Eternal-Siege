@@ -18,7 +18,7 @@ protected:
     sf::Vector2f position;
     float health;
     float maxHealth;
-    Team team;
+    Team team = Team::Neutral;
     bool isAlive = true;
 
     // ---------- MOVEMENT ----------
@@ -81,6 +81,10 @@ public:
     void setIsAttacking(bool val) { isAttacking = val; if (val) attackClock.restart(); }
     float getAttackPower() const { return attackPower; }
     void setAttackPower(float power) { attackPower = power; }
+    void setAttackCooldown(float seconds) {
+        attackCoolDown = seconds;
+        coolDownTimer = 0.f;
+    }
     sf::Vector2f getAttackDirection() const { return attackDirection; }
     void setAttackDirection(sf::Vector2f dir) { attackDirection = dir; }
 

@@ -3,6 +3,8 @@
 #include "GameplayState.h"
 #include "GameContext.h"
 #include "IntroState.h"
+#include <optional>
+#include <algorithm>
 
 
 Game::Game()
@@ -24,7 +26,8 @@ void Game::run() {
                 window.close();
             stateMachine.handleEvent(*event);
         }
-        float dt = clock.restart().asSeconds();
+        // Avoid a huge simulation jump after dragging/debug-pausing the window.
+        const float dt = std::min(clock.restart().asSeconds(), 0.1f);
 
         stateMachine.update(dt);
         window.clear();

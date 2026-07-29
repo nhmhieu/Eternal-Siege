@@ -12,7 +12,10 @@
 #include "Projectiles.h"
 #include "Arrow.h"
 #include "Bow.h"
+#include "Constants.h"
+#include <algorithm>
 
+using namespace GameConfig;
 // ===============================
 // UTILITY: XÓA ENTITY CHẾT
 // ===============================
@@ -37,9 +40,11 @@ void cleanupEntities(std::vector<T*>& entityList) {
 // ===============================
 // CONSTRUCTOR
 // ===============================
-GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const std::vector<sf::Vector2i>& allyPositions)
-    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15) {
+GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager, const Map& setupMap, const std::vector<sf::Vector2i>& allyPositions)
+    : stateMachine(machine), window(window), textureManager(textureManager), map(setupMap) {
 
+    
+    
     // Load texture cho Player
     textureManager.loadTexture("Ash", "assets/images/Ash.png");
 
@@ -49,7 +54,8 @@ GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, Te
     context.players.push_back(player.get());
 
     // Gán vũ khí cho Player (Bow)
-    player->setCurrentWeapon(std::make_unique<Bow>(10, 2.f));;
+    player->setCurrentWeapon(std::make_unique<Bow>(10, 2.f));
+    player->setAttackCooldown(2.f);
 
     // Load texture cho Ally
     std::vector<std::string> allyTextureNames = { "Damian", "Evangeline", "Junior", "Lucas" };
@@ -58,15 +64,18 @@ GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, Te
     }
 
     // Tạo Ally từ danh sách vị trí (theo feature/gameplay)
-    int allyIndex = 0;
+    std::size_t allyIndex = 0;
     for (const auto& pos : allyPositions) {
+        if (allyIndex >= allyTextureNames.size()) {
+            break;
+        }
         float x = pos.x * TILE_SIZE + TILE_SIZE / 2.f;
         float y = pos.y * TILE_SIZE + TILE_SIZE / 2.f;
 
         // Tạo Ally mới
         Ally* newAlly = new Ally(x, y, textureManager, allyTextureNames[allyIndex]);
         // Gán vũ khí cho Ally
-        newAlly->setCurrentWeapon(std::make_unique<Sword>(20, 100));
+        newAlly->setCurrentWeapon(std::make_unique<Sword>(20, 200));
 
         // Thêm vào context
         context.allEntity.push_back(newAlly);
@@ -79,7 +88,7 @@ GameplayState::GameplayState(StateMachine& machine, sf::RenderWindow& window, Te
 
     // Tạo quái vật (nếu có)
     for (auto* m : context.monsters) {
-        m->setCurrentWeapon(std::make_unique<Sword>(20, 100));
+        m->setCurrentWeapon(std::make_unique<Sword>(10, 50));
         context.allEntity.push_back(m);
         context.enemies.push_back(m);
         m->updateTarget(context.players);
@@ -105,9 +114,19 @@ GameplayState::~GameplayState() {
 // ===============================
 // STATE LIFECYCLE
 // ===============================
-void GameplayState::onEnter() {
-    std::cout << "GameplayState: Entered!" << std::endl;
+void GameplayState::onEnter()
+{
+    std::cout << "=== Gameplay Start ===" << std::endl;
+
+    // 1. Spawn Player giữa map
+    const float centerX = (DEFAULT_MAP_WIDTH * TILE_SIZE) / 2.f;
+    const float centerY = (DEFAULT_MAP_HEIGHT * TILE_SIZE) / 2.f;
+
+    // Đã thêm cặp dấu ngoặc nhọn { }:
+    player->setPosition({ centerX, centerY });
+
 }
+
 
 void GameplayState::onExit() {
     std::cout << "GameplayState: Exited!" << std::endl;
@@ -119,8 +138,14 @@ void GameplayState::onExit() {
 void GameplayState::handleEvent(const sf::Event& event) {
     if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
         if (keyPressed->code == sf::Keyboard::Key::P) {
-            std::cout << "Pause game!" << std::endl;
+            paused = !paused;
+            std::cout << (paused ? "Game paused!" : "Game resumed!") << std::endl;
+            return;
         }
+    }
+
+    if (paused) {
+        return;
     }
 
     // Xử lý tấn công của Player (chỉ khi sẵn sàng)
@@ -134,8 +159,10 @@ void GameplayState::handleEvent(const sf::Event& event) {
             sf::Vector2f attackDir = mouseWorld - playerPos;
 
             float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
-            if (length != 0.f) attackDir /= length;
-            else attackDir = sf::Vector2f(0.f, 0.f);
+            if (length <= 0.0001f) {
+                return;
+            }
+            attackDir /= length;
 
             player->setAttackDirection(attackDir);
             player->setIsAttacking(true);
@@ -147,6 +174,10 @@ void GameplayState::handleEvent(const sf::Event& event) {
 // UPDATE
 // ===============================
 void GameplayState::update(float dt) {
+    if (paused) {
+        return;
+    }
+
     context.deltaTime = dt;
     context.combatManager = &combatManager;
 
@@ -174,6 +205,14 @@ void GameplayState::update(float dt) {
     // 4. Cập nhật WaveManager (sinh quái)
     waveManager.update(context, context.monsters);
 
+    // Add monsters spawned this frame before entity updates.
+    for (auto* monster : context.monsters) {
+        if (std::find(context.enemies.begin(), context.enemies.end(), monster) == context.enemies.end()) {
+            context.enemies.push_back(monster);
+            context.allEntity.push_back(monster);
+        }
+    }
+
     // 5. Cập nhật tất cả Entity
     for (auto* entity : context.allEntity) {
         entity->update(context);
@@ -183,7 +222,7 @@ void GameplayState::update(float dt) {
     if (!context.projectiles.empty()) {
         combatManager.processProjectiles(context, context.allEntity);
     }
-    
+
 
     // 7. Xóa Entity chết (dùng template)
     cleanupEntities(context.monsters);
@@ -209,8 +248,7 @@ void GameplayState::update(float dt) {
 // ===============================
 void GameplayState::render(sf::RenderWindow& window) {
     // Vẽ map/background (nếu có)
-    
-
+     map.draw(window);
     // --- Vẽ Player ---
     player->draw(window);
     player->drawHealthBar(window);
@@ -233,7 +271,7 @@ void GameplayState::render(sf::RenderWindow& window) {
     }
 
     // --- DEBUG: Vẽ hitbox khi đang tấn công ---
-    if (player->getIsAttacking() && player->canAttack()) {
+    if (player->getIsAttacking() && player->getCurrentWeapon()) {
         player->getCurrentWeapon()->drawDebug(window, player->getPosition(), player->getAttackDirection());
     }
 

@@ -15,7 +15,7 @@ private :
     sf :: Vector2f velocity ;
     float speed ; 
     float damage ; 
-    Team shooterTeam ; 
+    Team shooterTeam = Team::Neutral;
     bool active = true ; 
     float maxRange = 800.f ; 
     float distanceTraveled = 0.f ; 
@@ -34,7 +34,7 @@ public :
 
     bool isActive() const { return active; }
     void deactivate() { active = false; } //ham tat projectile
-    int getDamage() const { return damage; }
+    float getDamage() const { return damage; }
     Team getShooterTeam() const { return shooterTeam; }
     bool isHitting(Entity* target) ;
 

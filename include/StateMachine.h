@@ -16,4 +16,8 @@ public:
 
 private:
     std::stack<std::unique_ptr<State>> states;
+    std::unique_ptr<State> pendingState;
+    bool isDispatching = false;
+
+    void applyPendingState();
 };

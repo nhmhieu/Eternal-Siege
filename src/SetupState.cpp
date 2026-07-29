@@ -4,7 +4,7 @@
 #include <iostream>
 
 SetupState::SetupState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager)
-    : stateMachine(machine), window(window), textureManager(textureManager), map(15, 15)
+    : stateMachine(machine), window(window), map(15, 15), textureManager(textureManager)
 {
 }
 
@@ -21,13 +21,13 @@ void SetupState::onEnter()
         // 2. Tạo text chỉ khi font thành công
         startText = std::make_unique<sf::Text>(font, "BAT DAU", 30);
         startText->setFillColor(sf::Color::White);
-        startText->setPosition(sf::Vector2f(595.f, 610.f));
+        startText->setPosition(sf::Vector2f(985.f, 310.f));
     }
 
     // 3. Các thành phần khác (không cần font)
     startButton.setSize(sf::Vector2f(200.f, 60.f));
     startButton.setFillColor(sf::Color::Green);
-    startButton.setPosition(sf::Vector2f(540.f, 600.f));
+    startButton.setPosition(sf::Vector2f(940.f, 300.f));
 
     canStart = false;
     selectedPositions.clear();
@@ -49,7 +49,12 @@ void SetupState::handleEvent(const sf::Event& event)
             if (canStart && startButton.getGlobalBounds().contains(sf::Vector2f(mousePos)))
             {
                 std::cout << "Bat dau game voi " << selectedPositions.size() << " tuong!" << std::endl;
-                stateMachine.changeState(std::make_unique<GameplayState>(stateMachine, window, textureManager, selectedPositions));
+                stateMachine.changeState(std::make_unique<GameplayState>(
+                    stateMachine,
+                    window,
+                    textureManager,
+                    map,
+                    selectedPositions));
                 return;
             }
 
@@ -64,7 +69,7 @@ void SetupState::handleEvent(const sf::Event& event)
     }
 }
 
-void SetupState::update(float dt)
+void SetupState::update(float)
 {}
 
 void SetupState::render(sf::RenderWindow& window)
