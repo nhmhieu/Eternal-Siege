@@ -33,6 +33,9 @@ public:
     void updateTarget(const std::vector<Entity*>& targets);
     void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
+    void forgetEntity(const Entity* entity) override;
+    void setPosition(float x, float y);
+    void moveWithCollision(sf::Vector2f displacement, const Map& map);
 
     sf::FloatRect getCollisionBox() const override;
     sf::FloatRect getHurtBox() const override;

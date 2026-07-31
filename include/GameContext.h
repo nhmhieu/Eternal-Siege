@@ -35,4 +35,7 @@ public:
 
     GameContext(const GameContext&) = delete;
     GameContext& operator=(const GameContext&) = delete;
+
+    void removeFromTargetViews(const Entity* entity);
+    void forgetEntity(const Entity* entity);
 };

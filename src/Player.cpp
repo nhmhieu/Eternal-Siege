@@ -50,6 +50,15 @@ void Player::setPosition(const sf::Vector2f& pos) {
     playerShape.setPosition(pos);
 }
 
+void Player::moveWithCollision(
+    sf::Vector2f displacement,
+    const Map& map
+) {
+    constexpr sf::Vector2f collisionHalfExtents{18.f, 18.f};
+    setPosition(map.resolveMovement(
+        getPosition(), collisionHalfExtents, displacement));
+}
+
 void Player::update(GameContext& context) {
     Entity::update(context);
 
@@ -64,28 +73,13 @@ void Player::update(GameContext& context) {
     // Di chuy?n player
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
-        constexpr float collisionHalfSize = 18.f;
-        sf::Vector2f nextPosition = getPosition();
-
-        const sf::Vector2f horizontal{
-            nextPosition.x + dir.x * speed * context.deltaTime,
-            nextPosition.y
-        };
-        if (!context.map ||
-            context.map->isWalkableWorld(horizontal, collisionHalfSize)) {
-            nextPosition.x = horizontal.x;
+        const sf::Vector2f displacement =
+            dir * speed * context.deltaTime;
+        if (context.map) {
+            moveWithCollision(displacement, *context.map);
+        } else {
+            setPosition(getPosition() + displacement);
         }
-
-        const sf::Vector2f vertical{
-            nextPosition.x,
-            nextPosition.y + dir.y * speed * context.deltaTime
-        };
-        if (!context.map ||
-            context.map->isWalkableWorld(vertical, collisionHalfSize)) {
-            nextPosition.y = vertical.y;
-        }
-
-        setPosition(nextPosition);
     }
 
     // X? l t?n cng
@@ -105,7 +99,8 @@ void Player::draw(sf::RenderWindow& window) {
 }
 
 sf::FloatRect Player::getCollisionBox() const {
-    return playerShape.getGlobalBounds();
+    constexpr sf::Vector2f collisionSize{36.f, 36.f};
+    return {getPosition() - collisionSize / 2.f, collisionSize};
 }
 
 sf::FloatRect Player::getHurtBox() const {

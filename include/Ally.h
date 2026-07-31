@@ -18,6 +18,7 @@ public:
 
     void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
+    void forgetEntity(const Entity* entity) override;
 
     Entity* getTarget() const { return target; }
     void updateTarget(const GameContext& context);

@@ -126,6 +126,15 @@ std::unique_ptr<Monster> WaveManager::createMonster(
         stats.effectiveDamage,
         stats.attackRange
     ));
+
+    const sf::FloatRect spawnBounds = monster->getCollisionBox();
+    const sf::Vector2f halfExtents = spawnBounds.size / 2.f;
+    if (const auto validPosition =
+            map.findNearestValidPosition(spawnPosition, halfExtents)) {
+        monster->setPosition(validPosition->x, validPosition->y);
+    } else {
+        return nullptr;
+    }
     return monster;
 }
 

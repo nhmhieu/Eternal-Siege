@@ -262,6 +262,7 @@ public:
     virtual void takeDamage(float damage);
 
     virtual void update(GameContext& context);
+    virtual void forgetEntity(const Entity* entity);
 
     virtual void draw(sf::RenderWindow& window) = 0;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <optional>
 #include <vector>
 
 enum TileType {
@@ -24,9 +25,21 @@ public:
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     bool isInside(sf::Vector2i cell) const;
+    bool isSolid(sf::Vector2i cell) const;
     bool isWalkable(int x, int y) const;
     bool isWalkable(sf::Vector2i cell) const;
     bool isWalkableWorld(sf::Vector2f center, float halfSize = 14.f) const;
+    bool collidesWithSolid(const sf::FloatRect& bounds) const;
+    sf::FloatRect getWorldBounds() const;
+    sf::Vector2f resolveMovement(
+        sf::Vector2f center,
+        sf::Vector2f halfExtents,
+        sf::Vector2f displacement
+    ) const;
+    std::optional<sf::Vector2f> findNearestValidPosition(
+        sf::Vector2f preferred,
+        sf::Vector2f halfExtents
+    ) const;
 
     sf::Vector2i worldToGrid(sf::Vector2f world) const;
     sf::Vector2f gridToWorld(sf::Vector2i cell) const;

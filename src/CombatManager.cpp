@@ -24,6 +24,7 @@ void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<
         if (!weapon->isHit(target)) {
             target->takeDamage(static_cast<float>(weapon->getDamage()));
             weapon->addHit(target);
+            hitEntities.insert(target);
             std :: cout << "Current health : " << target->getHealth() << std :: endl ; 
              std::cout << "Da danh trung quai!" << std::endl;
         }
@@ -37,6 +38,10 @@ void CombatManager::resetAttack() {
 
 bool CombatManager::hasHit(Entity* target) const {
     return hitEntities.find(target) != hitEntities.end();
+}
+
+void CombatManager::forgetEntity(const Entity* entity) {
+    hitEntities.erase(const_cast<Entity*>(entity));
 }
 
 //Ham xu li logic rieng danh cho dan bay 

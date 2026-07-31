@@ -3,6 +3,8 @@
 #include "BalanceConfig.h"
 #include "Bow.h"
 #include "Constants.h"
+#include "EntityCollision.h"
+#include "EntityLifecycle.h"
 #include "GameOverState.h"
 #include "Sword.h"
 #include "WinState.h"
@@ -39,6 +41,7 @@ GameplayState::GameplayState(
 void GameplayState::onEnter() {
     std::cout << "=== Gameplay Start ===\n";
     paused = false;
+    transitionRequested = false;
     hud.load();
 
     const sf::Vector2i centerCell =
@@ -51,9 +54,15 @@ void GameplayState::onEnter() {
     };
 
     for (std::size_t i = 0; i < allyPositions.size() && i < names.size(); ++i) {
-        const sf::Vector2f worldPosition = map.gridToWorld(allyPositions[i]);
+        const sf::Vector2f requestedPosition =
+            map.gridToWorld(allyPositions[i]);
+        const auto validPosition = map.findNearestValidPosition(
+            requestedPosition, {20.f, 20.f});
+        if (!validPosition) {
+            continue;
+        }
         auto ally = std::make_unique<Ally>(
-            worldPosition.x, worldPosition.y, textureManager, names[i]);
+            validPosition->x, validPosition->y, textureManager, names[i]);
         ally->setCurrentWeapon(std::make_unique<Sword>(
             BalanceConfig::ALLY_DAMAGE, 105.f));
         allies.push_back(std::move(ally));
@@ -76,18 +85,24 @@ void GameplayState::rebuildContext() {
     context.allies.clear();
 
     context.allEntity.push_back(player.get());
-    context.players.push_back(player.get());
+    if (!player->isDead()) {
+        context.players.push_back(player.get());
+    }
 
     for (auto& ally : allies) {
         context.allEntity.push_back(ally.get());
-        context.players.push_back(ally.get());
-        context.allies.push_back(ally.get());
+        if (!ally->isDead()) {
+            context.players.push_back(ally.get());
+            context.allies.push_back(ally.get());
+        }
     }
 
     for (auto& monster : monsters) {
         context.allEntity.push_back(monster.get());
-        context.enemies.push_back(monster.get());
-        context.monsters.push_back(monster.get());
+        if (!monster->isDead()) {
+            context.enemies.push_back(monster.get());
+            context.monsters.push_back(monster.get());
+        }
     }
 }
 
@@ -97,6 +112,21 @@ void GameplayState::collectRewardsAndRemoveDead() {
             upgradeManager.addGold(monster->claimGoldReward());
         }
     }
+
+    std::vector<Entity*> readyToRemove;
+    for (const auto& monster : monsters) {
+        if (monster->isReadyToBeDelete()) {
+            readyToRemove.push_back(monster.get());
+        }
+    }
+    for (const auto& ally : allies) {
+        if (ally->isReadyToBeDelete()) {
+            readyToRemove.push_back(ally.get());
+        }
+    }
+
+    EntityLifecycle::invalidateReferencesTo(
+        readyToRemove, context, combatManager, true);
 
     monsters.erase(
         std::remove_if(monsters.begin(), monsters.end(),
@@ -174,7 +204,7 @@ void GameplayState::handleEvent(const sf::Event& event) {
 }
 
 void GameplayState::update(float dt) {
-    if (paused) {
+    if (paused || transitionRequested) {
         return;
     }
 
@@ -203,7 +233,20 @@ void GameplayState::update(float dt) {
         if (entity) entity->update(context);
     }
 
+    EntityCollision::separateLivingEntities(
+        map, context.monsters, context.allies);
+
     combatManager.processProjectiles(context, context.allEntity);
+
+    std::vector<Entity*> logicallyDead;
+    for (Entity* entity : context.allEntity) {
+        if (entity && entity->isDead()) {
+            logicallyDead.push_back(entity);
+        }
+    }
+    EntityLifecycle::invalidateReferencesTo(
+        logicallyDead, context, combatManager, false);
+
     collectRewardsAndRemoveDead();
     rebuildContext();
 
@@ -211,12 +254,14 @@ void GameplayState::update(float dt) {
                static_cast<int>(monsters.size()));
 
     if (player->isDead()) {
+        transitionRequested = true;
         stateMachine.changeState(std::make_unique<GameOverState>(
             stateMachine, window, textureManager));
         return;
     }
 
     if (waveManager.isGameCompleted() && monsters.empty()) {
+        transitionRequested = true;
         stateMachine.changeState(std::make_unique<WinState>(
             stateMachine, window, textureManager));
     }

@@ -99,6 +99,14 @@ void Ally::draw(sf::RenderWindow& window) {
     window.draw(rectShape);
 }
 
+void Ally::forgetEntity(const Entity* entity) {
+    Entity::forgetEntity(entity);
+    if (target == entity) {
+        target = nullptr;
+        setIsAttacking(false);
+    }
+}
+
 // ===============================
 // TARGET MANAGEMENT
 // ===============================

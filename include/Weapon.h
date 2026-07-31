@@ -28,7 +28,11 @@ public:
     std::unordered_set<Entity*> getHitList() const { return hitList; }
     bool isHit(Entity* target) const { return hitList.find(target) != hitList.end(); }
     void addHit(Entity* target) { hitList.insert(target); }
+    void forgetEntity(const Entity* target) {
+        hitList.erase(const_cast<Entity*>(target));
+    }
     void clearHitList() { hitList.clear(); }
+    std::size_t getHitCount() const { return hitList.size(); }
 
     // === TRẠNG THÁI TẤN CÔNG ===
     bool getHasAttacked() const { return hasAttacked; }

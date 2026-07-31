@@ -7,6 +7,7 @@
 #include "Weapon.h"
 
 class GameContext;
+class Map;
 
 class Player : public Entity {
 private:
@@ -21,6 +22,7 @@ public:
     void handleInput();
     void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
+    void moveWithCollision(sf::Vector2f displacement, const Map& map);
 
     bool canAttack() {
         return !isAttacking && coolDownTimer <= 0.f;

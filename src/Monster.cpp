@@ -48,6 +48,32 @@ void Monster::updateTarget(const std::vector<Entity*>& targets) {
     currentTarget = closest;
 }
 
+void Monster::forgetEntity(const Entity* entity) {
+    Entity::forgetEntity(entity);
+    if (currentTarget == entity) {
+        currentTarget = nullptr;
+        path.clear();
+        waypointIndex = 0;
+        setIsAttacking(false);
+    }
+}
+
+void Monster::setPosition(float x, float y) {
+    Entity::setPosition(x, y);
+    monsterShape.setPosition(position);
+}
+
+void Monster::moveWithCollision(
+    sf::Vector2f displacement,
+    const Map& map
+) {
+    const sf::Vector2f navigationHalfExtents =
+        getCollisionBox().size / 2.f;
+    const sf::Vector2f resolved = map.resolveMovement(
+        position, navigationHalfExtents, displacement);
+    setPosition(resolved.x, resolved.y);
+}
+
 void Monster::rebuildPath(const Map& map) {
     if (!currentTarget) {
         path.clear();
@@ -87,10 +113,9 @@ void Monster::followPath(float dt, const Map& map) {
 
     const sf::Vector2f moveDirection = normalized(toWaypoint);
     const float step = std::min(moveSpeed * dt, waypointDistance);
-    const sf::Vector2f candidate = position + moveDirection * step;
-    if (map.isWalkableWorld(candidate, 14.f)) {
-        setPosition(candidate.x, candidate.y);
-    } else {
+    const sf::Vector2f before = position;
+    moveWithCollision(moveDirection * step, map);
+    if (position == before && step > 0.f) {
         path.clear();
     }
 }
@@ -134,7 +159,12 @@ void Monster::draw(sf::RenderWindow& window) {
 }
 
 sf::FloatRect Monster::getCollisionBox() const {
-    return monsterShape.getGlobalBounds();
+    sf::Vector2f collisionSize = monsterShape.getGlobalBounds().size;
+    // Keep the Boss able to pass through the map's 48 px gates while using
+    // the same centered collision rule as every other Monster subtype.
+    collisionSize.x = std::min(collisionSize.x, 44.f);
+    collisionSize.y = std::min(collisionSize.y, 44.f);
+    return {position - collisionSize / 2.f, collisionSize};
 }
 
 sf::FloatRect Monster::getHurtBox() const {

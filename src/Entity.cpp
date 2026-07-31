@@ -63,6 +63,12 @@ void Entity::setCurrentWeapon(
     currentWeapon = std::move(weapon);
 }
 
+void Entity::forgetEntity(const Entity* entity) {
+    if (currentWeapon) {
+        currentWeapon->forgetEntity(entity);
+    }
+}
+
 // ===============================
 // HEALTH
 // ===============================

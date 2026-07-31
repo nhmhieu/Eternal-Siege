@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <limits>
 #include <queue>
 
 using namespace GameConfig;
@@ -61,12 +63,16 @@ bool Map::isInside(sf::Vector2i cell) const {
     return cell.x >= 0 && cell.x < width && cell.y >= 0 && cell.y < height;
 }
 
+bool Map::isSolid(sf::Vector2i cell) const {
+    return !isInside(cell) || tiles[cell.y][cell.x] == TILE_WALL;
+}
+
 bool Map::isWalkable(int x, int y) const {
     return isWalkable({x, y});
 }
 
 bool Map::isWalkable(sf::Vector2i cell) const {
-    return isInside(cell) && tiles[cell.y][cell.x] != TILE_WALL;
+    return !isSolid(cell);
 }
 
 sf::Vector2i Map::worldToGrid(sf::Vector2f world) const {
@@ -84,14 +90,141 @@ sf::Vector2f Map::gridToWorld(sf::Vector2i cell) const {
 }
 
 bool Map::isWalkableWorld(sf::Vector2f center, float halfSize) const {
-    const std::array<sf::Vector2f, 4> corners = {{
-        {center.x - halfSize, center.y - halfSize},
-        {center.x + halfSize, center.y - halfSize},
-        {center.x - halfSize, center.y + halfSize},
-        {center.x + halfSize, center.y + halfSize}
+    return !collidesWithSolid({
+        center - sf::Vector2f(halfSize, halfSize),
+        {halfSize * 2.f, halfSize * 2.f}
+    });
+}
+
+sf::FloatRect Map::getWorldBounds() const {
+    return {
+        {0.f, 0.f},
+        {
+            static_cast<float>(width) * TILE_SIZE,
+            static_cast<float>(height) * TILE_SIZE
+        }
+    };
+}
+
+bool Map::collidesWithSolid(const sf::FloatRect& bounds) const {
+    if (bounds.size.x <= 0.f || bounds.size.y <= 0.f) {
+        return true;
+    }
+
+    const sf::FloatRect world = getWorldBounds();
+    const float right = bounds.position.x + bounds.size.x;
+    const float bottom = bounds.position.y + bounds.size.y;
+    const float worldRight = world.position.x + world.size.x;
+    const float worldBottom = world.position.y + world.size.y;
+    if (bounds.position.x < world.position.x ||
+        bounds.position.y < world.position.y ||
+        right > worldRight ||
+        bottom > worldBottom) {
+        return true;
+    }
+
+    // nextafter keeps a box ending exactly on a tile edge from claiming the
+    // neighbouring tile. Only the covered tile range is inspected.
+    const float insideRight = std::nextafter(
+        right, -std::numeric_limits<float>::infinity());
+    const float insideBottom = std::nextafter(
+        bottom, -std::numeric_limits<float>::infinity());
+    const int minX = static_cast<int>(std::floor(bounds.position.x / TILE_SIZE));
+    const int maxX = static_cast<int>(std::floor(insideRight / TILE_SIZE));
+    const int minY = static_cast<int>(std::floor(bounds.position.y / TILE_SIZE));
+    const int maxY = static_cast<int>(std::floor(insideBottom / TILE_SIZE));
+
+    for (int y = minY; y <= maxY; ++y) {
+        for (int x = minX; x <= maxX; ++x) {
+            if (isSolid({x, y})) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+sf::Vector2f Map::resolveMovement(
+    sf::Vector2f center,
+    sf::Vector2f halfExtents,
+    sf::Vector2f displacement
+) const {
+    if (!std::isfinite(center.x) || !std::isfinite(center.y) ||
+        !std::isfinite(displacement.x) || !std::isfinite(displacement.y)) {
+        return center;
+    }
+
+    halfExtents.x = std::max(0.5f, halfExtents.x);
+    halfExtents.y = std::max(0.5f, halfExtents.y);
+    constexpr float maxStep = TILE_SIZE * 0.25f;
+    const float longestAxis =
+        std::max(std::abs(displacement.x), std::abs(displacement.y));
+    const int stepCount = std::clamp(
+        static_cast<int>(std::ceil(longestAxis / maxStep)), 1, 4096);
+    const sf::Vector2f step = displacement / static_cast<float>(stepCount);
+
+    bool xBlocked = false;
+    bool yBlocked = false;
+    for (int index = 0; index < stepCount; ++index) {
+        if (!xBlocked && std::abs(step.x) > 0.f) {
+            const sf::Vector2f candidate{center.x + step.x, center.y};
+            if (!collidesWithSolid({
+                    candidate - halfExtents, halfExtents * 2.f})) {
+                center.x = candidate.x;
+            } else {
+                xBlocked = true;
+            }
+        }
+
+        if (!yBlocked && std::abs(step.y) > 0.f) {
+            const sf::Vector2f candidate{center.x, center.y + step.y};
+            if (!collidesWithSolid({
+                    candidate - halfExtents, halfExtents * 2.f})) {
+                center.y = candidate.y;
+            } else {
+                yBlocked = true;
+            }
+        }
+    }
+    return center;
+}
+
+std::optional<sf::Vector2f> Map::findNearestValidPosition(
+    sf::Vector2f preferred,
+    sf::Vector2f halfExtents
+) const {
+    sf::Vector2i start = worldToGrid(preferred);
+    start.x = std::clamp(start.x, 0, width - 1);
+    start.y = std::clamp(start.y, 0, height - 1);
+
+    std::queue<sf::Vector2i> frontier;
+    std::vector<bool> visited(static_cast<std::size_t>(width * height), false);
+    frontier.push(start);
+    visited[static_cast<std::size_t>(flatten(start, width))] = true;
+
+    constexpr std::array<sf::Vector2i, 4> directions = {{
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1}
     }};
-    return std::all_of(corners.begin(), corners.end(),
-        [this](sf::Vector2f point) { return isWalkable(worldToGrid(point)); });
+    while (!frontier.empty()) {
+        const sf::Vector2i cell = frontier.front();
+        frontier.pop();
+        const sf::Vector2f candidate = gridToWorld(cell);
+        if (!collidesWithSolid({
+                candidate - halfExtents, halfExtents * 2.f})) {
+            return candidate;
+        }
+
+        for (const sf::Vector2i direction : directions) {
+            const sf::Vector2i next = cell + direction;
+            if (!isInside(next)) continue;
+            const std::size_t nextIndex =
+                static_cast<std::size_t>(flatten(next, width));
+            if (visited[nextIndex]) continue;
+            visited[nextIndex] = true;
+            frontier.push(next);
+        }
+    }
+    return std::nullopt;
 }
 
 sf::Vector2i Map::nearestWalkable(sf::Vector2i cell) const {

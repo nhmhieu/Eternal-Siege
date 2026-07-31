@@ -35,6 +35,7 @@ private:
     std::vector<sf::Vector2i> allyPositions;
     GameContext context;
     bool paused = false;
+    bool transitionRequested = false;
 
     void rebuildContext();
     void collectRewardsAndRemoveDead();
