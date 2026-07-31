@@ -1,14 +1,23 @@
 #include "Ally.h"
+#include "Arrow.h"
 #include "BalanceConfig.h"
 #include "Bow.h"
+#include "Boss.h"
+#include "CombatManager.h"
 #include "EnemyConfig.h"
+#include "Elite.h"
+#include "EntityCollision.h"
+#include "EntityLifecycle.h"
+#include "GameContext.h"
 #include "Map.h"
 #include "Player.h"
+#include "Sword.h"
 #include "TextureManager.h"
 #include "UpgradeManager.h"
 #include "WaveManager.h"
 
 #include <array>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -32,6 +41,304 @@ ObservedEnemyType getEnemyType(const Monster& monster) {
     if (monster.isBoss()) return ObservedEnemyType::Boss;
     if (monster.isElite()) return ObservedEnemyType::Elite;
     return ObservedEnemyType::Normal;
+}
+
+bool containsPointer(
+    const std::vector<Entity*>& pointers,
+    const Entity* expected
+) {
+    return std::find(pointers.begin(), pointers.end(), expected) !=
+           pointers.end();
+}
+
+void assertFinite(sf::Vector2f value) {
+    assert(std::isfinite(value.x));
+    assert(std::isfinite(value.y));
+}
+
+void verifyMapCollisionRules(Map& map) {
+    const sf::Vector2f grass = map.gridToWorld({6, 6});
+    const sf::Vector2f path = map.gridToWorld({7, map.getHeight() / 2});
+    const sf::Vector2f spawn = map.gridToWorld(
+        map.getEnemySpawnCells().front());
+    assert(!map.collidesWithSolid({grass - sf::Vector2f(5.f, 5.f),
+                                   {10.f, 10.f}}));
+    assert(!map.collidesWithSolid({path - sf::Vector2f(5.f, 5.f),
+                                   {10.f, 10.f}}));
+    assert(!map.collidesWithSolid({spawn - sf::Vector2f(5.f, 5.f),
+                                   {10.f, 10.f}}));
+
+    const sf::Vector2f wall = map.gridToWorld({0, 0});
+    assert(map.collidesWithSolid({wall - sf::Vector2f(5.f, 5.f),
+                                  {10.f, 10.f}}));
+    assert(map.collidesWithSolid({{-1.f, 100.f}, {10.f, 10.f}}));
+    assert(map.collidesWithSolid({
+        {map.getWorldBounds().size.x - 5.f, 100.f},
+        {10.f, 10.f}
+    }));
+}
+
+void verifyMovementCollision(
+    Map& map,
+    TextureManager& textures
+) {
+    Player player(textures);
+
+    player.setPosition({150.f, 160.f});
+    player.moveWithCollision({200.f, 0.f}, map);
+    assert(player.getPosition().x <= 174.01f);
+    assert(!map.collidesWithSolid(player.getCollisionBox()));
+
+    player.setPosition({150.f, 160.f});
+    player.moveWithCollision({200.f, 30.f}, map);
+    assert(player.getPosition().x <= 174.01f);
+    assert(player.getPosition().y > 160.f);
+    assert(!map.collidesWithSolid(player.getCollisionBox()));
+
+    player.setPosition({150.f, 160.f});
+    player.moveWithCollision({5000.f, 0.f}, map);
+    assert(player.getPosition().x <= 174.01f);
+    assert(!map.collidesWithSolid(player.getCollisionBox()));
+
+    Monster normal(150.f, 160.f);
+    Elite elite(150.f, 160.f, 3);
+    Boss boss(150.f, 160.f, 4);
+    std::array<Monster*, 3> variants{{&normal, &elite, &boss}};
+    for (Monster* variant : variants) {
+        variant->moveWithCollision({500.f, 0.f}, map);
+        assert(!map.collidesWithSolid(variant->getCollisionBox()));
+        assert(variant->getPosition().x < 192.f);
+    }
+
+    player.setPosition({264.f, 160.f});
+    GameContext chaseContext;
+    CombatManager chaseCombat;
+    chaseContext.map = &map;
+    chaseContext.combatManager = &chaseCombat;
+    chaseContext.deltaTime = 0.2f;
+    chaseContext.players = {&player};
+    for (Monster* variant : variants) {
+        variant->setPosition(150.f, 160.f);
+        variant->setCurrentWeapon(std::make_unique<Sword>(1, 50.f));
+        for (int frame = 0; frame < 60; ++frame) {
+            variant->update(chaseContext);
+            assert(!map.collidesWithSolid(variant->getCollisionBox()));
+        }
+    }
+}
+
+void verifySeparation(
+    Map& map,
+    TextureManager& textures
+) {
+    const sf::Vector2f openPosition = map.gridToWorld({7, 7});
+    Monster first(openPosition.x, openPosition.y);
+    Monster second(openPosition.x, openPosition.y);
+    std::vector<Monster*> pair{&first, &second};
+    std::vector<Ally*> noAllies;
+    EntityCollision::separateLivingEntities(map, pair, noAllies);
+    assertFinite(first.getPosition());
+    assertFinite(second.getPosition());
+    assert(first.getPosition() != second.getPosition());
+    assert(!first.getCollisionBox()
+                .findIntersection(second.getCollisionBox())
+                .has_value());
+
+    Ally fixed(
+        openPosition.x, openPosition.y, textures, "Damian");
+    Monster approaching(openPosition.x, openPosition.y);
+    const sf::Vector2f allyBefore = fixed.getPosition();
+    std::vector<Monster*> oneMonster{&approaching};
+    std::vector<Ally*> oneAlly{&fixed};
+    EntityCollision::separateLivingEntities(
+        map, oneMonster, oneAlly);
+    assert(fixed.getPosition() == allyBefore);
+    assertFinite(approaching.getPosition());
+    assert(!approaching.getCollisionBox()
+                .findIntersection(fixed.getCollisionBox())
+                .has_value());
+
+    // Correction next to a wall must move away from the wall, not into it.
+    Ally wallAlly(170.f, 160.f, textures, "Damian");
+    Monster wallMonster(169.f, 160.f);
+    std::vector<Monster*> nearWallMonsters{&wallMonster};
+    std::vector<Ally*> nearWallAllies{&wallAlly};
+    EntityCollision::separateLivingEntities(
+        map, nearWallMonsters, nearWallAllies);
+    assert(!map.collidesWithSolid(wallMonster.getCollisionBox()));
+    assert(!map.collidesWithSolid(wallAlly.getCollisionBox()));
+}
+
+void verifyTargetAndCacheInvalidation(
+    Map& map,
+    TextureManager& textures
+) {
+    CombatManager combat;
+    GameContext context;
+    context.map = &map;
+    context.combatManager = &combat;
+
+    Ally attacker(300.f, 300.f, textures, "Damian");
+    attacker.setCurrentWeapon(std::make_unique<Sword>(1000, 105.f));
+    Monster doomed(340.f, 300.f);
+    Monster replacement(360.f, 300.f);
+
+    context.allEntity = {&attacker, &doomed, &replacement};
+    context.players = {&attacker};
+    context.allies = {&attacker};
+    context.enemies = {&doomed};
+    context.monsters = {&doomed};
+    attacker.updateTarget(context);
+    assert(attacker.getTarget() == &doomed);
+
+    attacker.setAttackDirection({1.f, 0.f});
+    attacker.setIsAttacking(true);
+    combat.processAttack(
+        &attacker, attacker.getCurrentWeapon(), context.enemies);
+    assert(doomed.isDead());
+    assert(attacker.getCurrentWeapon()->isHit(&doomed));
+    assert(combat.hasHit(&doomed));
+
+    EntityLifecycle::invalidateReferencesTo(
+        {&doomed}, context, combat, false);
+    assert(attacker.getTarget() == nullptr);
+    assert(!attacker.getCurrentWeapon()->isHit(&doomed));
+    assert(!combat.hasHit(&doomed));
+    assert(!containsPointer(context.enemies, &doomed));
+    assert(containsPointer(context.allEntity, &doomed));
+
+    context.enemies.push_back(&replacement);
+    context.monsters.push_back(&replacement);
+    attacker.updateTarget(context);
+    assert(attacker.getTarget() == &replacement);
+
+    EntityLifecycle::invalidateReferencesTo(
+        {&doomed}, context, combat, true);
+    assert(!containsPointer(context.allEntity, &doomed));
+
+    Ally firstTarget(300.f, 340.f, textures, "Junior");
+    Ally secondTarget(350.f, 340.f, textures, "Lucas");
+    Monster hunter(320.f, 340.f);
+    context.allEntity = {&hunter, &firstTarget, &secondTarget};
+    context.players = {&firstTarget};
+    context.allies = {&firstTarget};
+    context.enemies = {&hunter};
+    context.monsters = {&hunter};
+
+    hunter.updateTarget(context.players);
+    assert(hunter.getCurrentTarget() == &firstTarget);
+    firstTarget.takeDamage(firstTarget.getMaxHealth());
+    EntityLifecycle::invalidateReferencesTo(
+        {&firstTarget}, context, combat, false);
+    assert(hunter.getCurrentTarget() == nullptr);
+
+    context.players.push_back(&secondTarget);
+    context.allies.push_back(&secondTarget);
+    hunter.updateTarget(context.players);
+    assert(hunter.getCurrentTarget() == &secondTarget);
+    secondTarget.takeDamage(secondTarget.getMaxHealth());
+    EntityLifecycle::invalidateReferencesTo(
+        {&secondTarget}, context, combat, false);
+    assert(hunter.getCurrentTarget() == nullptr);
+}
+
+void verifyMultiEntityCleanup(
+    Map& map,
+    TextureManager& textures
+) {
+    CombatManager combat;
+    GameContext context;
+    context.map = &map;
+    context.combatManager = &combat;
+    context.deltaTime = 1.f;
+
+    std::vector<std::unique_ptr<Monster>> monsters;
+    monsters.push_back(std::make_unique<Monster>(330.f, 330.f));
+    monsters.push_back(std::make_unique<Monster>(330.f, 330.f));
+    std::vector<std::unique_ptr<Ally>> allies;
+    allies.push_back(std::make_unique<Ally>(
+        360.f, 330.f, textures, "Damian"));
+    allies.push_back(std::make_unique<Ally>(
+        390.f, 330.f, textures, "Junior"));
+
+    for (const auto& monster : monsters) {
+        context.allEntity.push_back(monster.get());
+        context.enemies.push_back(monster.get());
+        context.monsters.push_back(monster.get());
+    }
+    for (const auto& ally : allies) {
+        context.allEntity.push_back(ally.get());
+        context.players.push_back(ally.get());
+        context.allies.push_back(ally.get());
+    }
+
+    // Two projectiles kill two overlapping Monsters in one processing pass;
+    // projectile erasure must not invalidate either target iteration.
+    context.projectiles.push_back(std::make_unique<Arrow>(
+        sf::Vector2f{330.f, 330.f},
+        sf::Vector2f{},
+        0.f,
+        1000.f,
+        Team::Player
+    ));
+    context.projectiles.push_back(std::make_unique<Arrow>(
+        sf::Vector2f{330.f, 330.f},
+        sf::Vector2f{},
+        0.f,
+        1000.f,
+        Team::Player
+    ));
+    combat.processProjectiles(context, context.allEntity);
+    assert(monsters[0]->isDead());
+    assert(monsters[1]->isDead());
+    assert(context.projectiles.empty());
+
+    // Allies die in the same frame as the Monsters.
+    for (const auto& ally : allies) {
+        ally->takeDamage(ally->getMaxHealth());
+    }
+
+    std::vector<Entity*> dead;
+    for (Entity* entity : context.allEntity) {
+        if (entity->isDead()) dead.push_back(entity);
+    }
+    EntityLifecycle::invalidateReferencesTo(
+        dead, context, combat, false);
+    assert(context.players.empty());
+    assert(context.enemies.empty());
+    assert(context.monsters.empty());
+    assert(context.allies.empty());
+
+    for (const auto& monster : monsters) {
+        monster->update(context);
+        assert(monster->isReadyToBeDelete());
+    }
+    for (const auto& ally : allies) {
+        ally->update(context);
+        assert(ally->isReadyToBeDelete());
+    }
+
+    EntityLifecycle::invalidateReferencesTo(
+        dead, context, combat, true);
+    monsters.erase(
+        std::remove_if(
+            monsters.begin(), monsters.end(),
+            [](const std::unique_ptr<Monster>& monster) {
+                return monster->isReadyToBeDelete();
+            }),
+        monsters.end());
+    allies.erase(
+        std::remove_if(
+            allies.begin(), allies.end(),
+            [](const std::unique_ptr<Ally>& ally) {
+                return ally->isReadyToBeDelete();
+            }),
+        allies.end());
+
+    assert(monsters.empty());
+    assert(allies.empty());
+    assert(context.allEntity.empty());
+    assert(combat.getTrackedHitCount() == 0);
 }
 
 std::vector<std::unique_ptr<Monster>> spawnBatch(
@@ -59,6 +366,7 @@ std::vector<std::unique_ptr<Monster>> spawnBatch(
     std::vector<std::unique_ptr<Monster>> monsters;
     assert(first);
     assert(getEnemyType(*first) == expected.enemyType);
+    assert(!map.collidesWithSolid(first->getCollisionBox()));
     monsters.push_back(std::move(first));
 
     for (int index = 1; index < expected.count; ++index) {
@@ -66,6 +374,7 @@ std::vector<std::unique_ptr<Monster>> spawnBatch(
         auto next = waves.update(0.02f, map, false);
         assert(next);
         assert(getEnemyType(*next) == expected.enemyType);
+        assert(!map.collidesWithSolid(next->getCollisionBox()));
         monsters.push_back(std::move(next));
     }
 
@@ -100,6 +409,7 @@ void verifyEnemyStats(const Monster& monster, int waveNumber) {
 
 int main() {
     Map map(15, 15);
+    verifyMapCollisionRules(map);
     const auto& spawnCells = map.getEnemySpawnCells();
     assert(spawnCells.size() == 4);
 
@@ -198,6 +508,19 @@ int main() {
             "assets/images/" + name + ".png"
         ));
     }
+
+    verifyMovementCollision(map, textures);
+    verifySeparation(map, textures);
+    verifyTargetAndCacheInvalidation(map, textures);
+    verifyMultiEntityCleanup(map, textures);
+
+    const auto correctedAllyPosition = map.findNearestValidPosition(
+        map.gridToWorld({4, 3}), {20.f, 20.f});
+    assert(correctedAllyPosition);
+    assert(!map.collidesWithSolid({
+        *correctedAllyPosition - sf::Vector2f(20.f, 20.f),
+        {40.f, 40.f}
+    }));
 
     Player player(textures);
     player.setCurrentWeapon(std::make_unique<Bow>(
