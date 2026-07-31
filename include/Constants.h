@@ -1,11 +1,15 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#pragma once
 
 namespace GameConfig {
-    // 15 x 44 = 660 px, leaving room for HUD controls in a 1280 x 720 window.
-    constexpr float TILE_SIZE = 44.f;
+    constexpr float TILE_SIZE = 48.f;
+
     constexpr int DEFAULT_MAP_WIDTH = 15;
     constexpr int DEFAULT_MAP_HEIGHT = 15;
-}
 
-#endif 
+    // Map chiếm từ x = 0 đến x = 720.
+    constexpr float HUD_LEFT =
+        static_cast<float>(DEFAULT_MAP_WIDTH) * TILE_SIZE;
+
+    constexpr float WINDOW_WIDTH = 1280.f;
+    constexpr float WINDOW_HEIGHT = 720.f;
+}

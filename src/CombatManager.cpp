@@ -44,7 +44,7 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
     auto it = context.projectiles.begin();
     
     while (it != context.projectiles.end()) {
-        auto* proj = *it; 
+        Projectiles* proj = it->get();
 
         // --- LỚP BẢO VỆ CHỐNG CRASH (BẮT BUỘC PHẢI CÓ) ---
         if (proj == nullptr) {
@@ -54,7 +54,6 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
 
         // Nếu đạn đã inactive từ trước, xóa luôn khỏi danh sách và bộ nhớ
         if (!proj->isActive()) {
-            delete proj;
             it = context.projectiles.erase(it);
             continue;
         }
@@ -80,7 +79,6 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
 
         // 3. Kiểm tra lại lần nữa sau khi update/va chạm: nếu đạn đã chết (deactivate) thì xóa
         if (!proj->isActive()) {
-            delete proj; // Giải phóng bộ nhớ tránh memory leak
             it = context.projectiles.erase(it); // Xóa khỏi vector và nhận iterator mới an toàn
         } else {
             ++it; // Chỉ tăng iterator khi không có phần tử nào bị xóa

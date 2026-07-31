@@ -1,31 +1,60 @@
 #include "StateMachine.h"
 
 void StateMachine::pushState(std::unique_ptr<State> state) {
-    if (!states.empty()) states.top()->onExit();
-    state->onEnter();
+    if (!state) return;
+
+    if (!states.empty()) {
+        isDispatching = true;
+        states.top()->onExit();
+        isDispatching = false;
+    }
+
     states.push(std::move(state));
+
+    isDispatching = true;
+    states.top()->onEnter();
+    isDispatching = false;
+    applyPendingState();
 }
 
 void StateMachine::popState() {
     if (!states.empty()) {
+        isDispatching = true;
         states.top()->onExit();
+        isDispatching = false;
         states.pop();
-        if (!states.empty()) states.top()->onEnter();
+
+        if (!states.empty()) {
+            isDispatching = true;
+            states.top()->onEnter();
+            isDispatching = false;
+        }
+
+        applyPendingState();
     }
 }
 
 void StateMachine::changeState(std::unique_ptr<State> state) {
+    if (!state) return;
+
     if (isDispatching) {
         pendingState = std::move(state);
         return;
     }
 
     if (!states.empty()) {
+        isDispatching = true;
         states.top()->onExit();
+        isDispatching = false;
         states.pop();
     }
-    state->onEnter();
+
     states.push(std::move(state));
+
+    isDispatching = true;
+    states.top()->onEnter();
+    isDispatching = false;
+    applyPendingState();
 }
 
 State* StateMachine::getCurrentState() {

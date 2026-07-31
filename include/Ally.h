@@ -8,7 +8,7 @@ class GameContext;
 
 class Ally : public Entity {
 private:
-    float range = 200.f;
+    float range = 105.f;
     const sf::Texture* allyTexture = nullptr;
     sf::RectangleShape rectShape;
     Entity* target = nullptr;

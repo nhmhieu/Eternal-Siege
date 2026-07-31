@@ -1,13 +1,21 @@
 #include "Player.h"
+#include "BalanceConfig.h"
 #include "GameContext.h"
 #include <cmath>
 #include <iostream>
 #include "TextureManager.h"
 #include "Constants.h"
+#include "Map.h"
 #include <algorithm>
 
 Player::Player(TextureManager& textureManager)
-    : Entity(400.f, 300.f, 100, 100), playerTexture(nullptr) {
+    : Entity(
+          400.f,
+          300.f,
+          BalanceConfig::PLAYER_MAX_HEALTH,
+          BalanceConfig::PLAYER_MAX_HEALTH
+      ),
+      playerTexture(nullptr) {
     team = Team::Player;
 
     const float desiredSize = 80.f;
@@ -43,10 +51,11 @@ void Player::setPosition(const sf::Vector2f& pos) {
 }
 
 void Player::update(GameContext& context) {
-    // Gi?m cooldown
-    if (coolDownTimer > 0.f) {
-        coolDownTimer -= context.deltaTime;
-        if (coolDownTimer < 0.f) coolDownTimer = 0.f;
+    Entity::update(context);
+
+    if (isDead()) {
+        updateDeadTimer(context);
+        return;
     }
 
     // X? l input (di chuy?n, t?n cng)
@@ -55,27 +64,34 @@ void Player::update(GameContext& context) {
     // Di chuy?n player
     sf::Vector2f dir = getDirection();
     if (dir.x != 0.f || dir.y != 0.f) {
-        float newX = getX() + dir.x * speed * context.deltaTime;
-        float newY = getY() + dir.y * speed * context.deltaTime;
-        constexpr float halfPlayerSize = 40.f;
-        const float worldWidth =
-            GameConfig::DEFAULT_MAP_WIDTH * GameConfig::TILE_SIZE;
-        const float worldHeight =
-            GameConfig::DEFAULT_MAP_HEIGHT * GameConfig::TILE_SIZE;
-        newX = std::clamp(newX, halfPlayerSize, worldWidth - halfPlayerSize);
-        newY = std::clamp(newY, halfPlayerSize, worldHeight - halfPlayerSize);
-        setPosition({ newX, newY });
-    }
+        constexpr float collisionHalfSize = 18.f;
+        sf::Vector2f nextPosition = getPosition();
 
-    // X? l tr?ng thi ch?t
-    if (isDying) {
-        updateDeadTimer(context);
+        const sf::Vector2f horizontal{
+            nextPosition.x + dir.x * speed * context.deltaTime,
+            nextPosition.y
+        };
+        if (!context.map ||
+            context.map->isWalkableWorld(horizontal, collisionHalfSize)) {
+            nextPosition.x = horizontal.x;
+        }
+
+        const sf::Vector2f vertical{
+            nextPosition.x,
+            nextPosition.y + dir.y * speed * context.deltaTime
+        };
+        if (!context.map ||
+            context.map->isWalkableWorld(vertical, collisionHalfSize)) {
+            nextPosition.y = vertical.y;
+        }
+
+        setPosition(nextPosition);
     }
 
     // X? l t?n cng
     if (isAttacking) {
         updateAttackTimer(context);
-        if (currentWeapon) {
+        if (currentWeapon && context.combatManager) {
             currentWeapon->triggerAction(this, context, *context.combatManager);
         }
     }

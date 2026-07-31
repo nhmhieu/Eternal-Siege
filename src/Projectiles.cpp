@@ -1,28 +1,29 @@
 #include "Projectiles.h" 
-#include "MathUtils.h"
+
+#include "Entity.h"
 #include "GameContext.h"
+#include "Map.h"
+#include "MathUtils.h"
+
+#include <cmath>
 
 
-Projectiles :: Projectiles(){
+Projectiles::Projectiles() = default;
 
-    position.x = 0 ; 
-    position.y = 0 ; 
-    speed = 0 ; 
-    direction = {0, 0} ; 
-    damage = 0 ; 
-    // shooterTeam = Neutral ; 
-}
-
-Projectiles::Projectiles(sf::Vector2f position, sf::Vector2f direction, float speed, float damage, Team team) {
+Projectiles::Projectiles(
+    sf::Vector2f startPosition,
+    sf::Vector2f travelDirection,
+    float projectileSpeed,
+    float projectileDamage,
+    Team team
+)
+    : position(startPosition),
+      direction(travelDirection),
+      speed(projectileSpeed),
+      damage(projectileDamage),
+      shooterTeam(team) {
     // Viết logic khởi tạo các thuộc tính của projectile ở đây (nếu có)
     // Ví dụ:
-    this->position = position;
-    this->direction = direction;
-    this->speed = speed;
-    this->damage = damage;
-    this->shooterTeam = team;
-
-
     // 1. Khởi tạo kích thước hình chữ nhật (Dài x Rộng)
     shape.setSize(sf::Vector2f(24.f, 6.f));
     
@@ -56,6 +57,12 @@ void Projectiles :: update(const GameContext& context){
     if(!active) return ; 
 
     position += velocity * context.deltaTime ; 
+
+    // Dan khong duoc bay xuyen tuong.
+    if (context.map && !context.map->isWalkableWorld(position, 3.f)) {
+        active = false;
+        return;
+    }
 
     //bay ra khoi tam toi da roi thi tat active
     distanceTraveled += speed * context.deltaTime ; 

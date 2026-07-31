@@ -8,6 +8,8 @@
 #include "GameContext.h"
 #include "Ally.h"
 #include "WaveManager.h"
+#include "UpgradeManager.h"
+#include "HUD.h"
 #include "TextureManager.h"
 #include "Map.h"
 #include "Sword.h"
@@ -20,20 +22,29 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
 
-    // Entity management (dng raw pointer trong context)
+    // GameplayState la owner duy nhat. GameContext chi muon con tro.
     std::unique_ptr<Player> player;
-    // Khng c?n vector ring n?a, dng context
+    std::vector<std::unique_ptr<Ally>> allies;
+    std::vector<std::unique_ptr<Monster>> monsters;
+
     Map map;
     WaveManager waveManager;
     CombatManager combatManager;
+    UpgradeManager upgradeManager;
+    HUD hud;
+    std::vector<sf::Vector2i> allyPositions;
+    GameContext context;
     bool paused = false;
 
-    // Context (ch?a t?t c? entity)
-    GameContext context;
+    void rebuildContext();
+    void collectRewardsAndRemoveDead();
+    void startNextWave();
 
 public:
-    GameplayState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager,const Map& setupMap, const std::vector<sf::Vector2i>& allyPositions = {});
-    ~GameplayState() override;
+    GameplayState(StateMachine& machine, sf::RenderWindow& window,
+                  TextureManager& textureManager, const Map& setupMap,
+                  const std::vector<sf::Vector2i>& allyPositions = {});
+    ~GameplayState() override = default;
 
     void onEnter() override;
     void onExit() override;

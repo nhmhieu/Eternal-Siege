@@ -1,9 +1,11 @@
 #include "Ally.h"
+#include "BalanceConfig.h"
 #include "GameContext.h"
 #include "MathUtils.h"
 #include <cmath>
 #include <iostream>
 #include "TextureManager.h"
+#include "Weapon.h"
 
 // ===============================
 // CONSTRUCTORS
@@ -11,7 +13,13 @@
 
 
 Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& textureName)
-    : Entity(x, y, 50, 50), allyTexture(nullptr) {
+    : Entity(
+          x,
+          y,
+          BalanceConfig::ALLY_MAX_HEALTH,
+          BalanceConfig::ALLY_MAX_HEALTH
+      ),
+      allyTexture(nullptr) {
     team = Team::Player;
     attackCoolDown = 2.f;
     coolDownTimer = 0.f;
@@ -46,21 +54,19 @@ Ally::Ally(float x, float y, TextureManager& textureManager, const std::string& 
 // ===============================
 
 void Ally::update(GameContext& context) {
-    if (isDying) {
+    Entity::update(context);
+
+    if (isDead()) {
+        if (!isDying) startDying();
         updateDeadTimer(context);
         rectShape.setPosition(getPosition());
         return;
     }
 
-    // 1. Giảm cooldown
-    if (coolDownTimer > 0.f) {
-        coolDownTimer -= context.deltaTime;
-    }
-
-    // 2. Cập nhật mục tiêu
+    // 1. Cập nhật mục tiêu
     updateTarget(context);
 
-    // 3. Nếu có mục tiêu hợp lệ
+    // 2. Nếu có mục tiêu hợp lệ
     if (target && !target->isDead()) {
         sf::Vector2f dir = target->getPosition() - this->getPosition();
         float length = std::sqrt(dir.x * dir.x + dir.y * dir.y);
@@ -72,21 +78,15 @@ void Ally::update(GameContext& context) {
         }
         this->setAttackDirection(dir);
 
-        if (isInRange(target) && coolDownTimer <= 0.f) {
+        if (currentWeapon && isInRange(target) && coolDownTimer <= 0.f) {
             startAttacking();
         }
     }
 
     if (isAttacking) {
         updateAttackTimer(context);
-        if (currentWeapon) {
+        if (currentWeapon && context.combatManager) {
             currentWeapon->triggerAction(this, context, *context.combatManager);
-        }
-        else {
-            if (target && !target->isDead() && isInRange(target)) {
-                target->takeDamage(10.f);
-                std::cout << "Ally attacked (fallback)! Target health: " << target->getHealth() << std::endl;
-            }
         }
     }
 

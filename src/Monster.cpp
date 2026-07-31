@@ -1,167 +1,135 @@
 #include "Monster.h"
+#include "CombatManager.h"
 #include "GameContext.h"
+#include "Map.h"
+#include "Weapon.h"
+
 #include <cmath>
-#include <iostream>
 #include <limits>
 
-// ===============================
-// CONSTRUCTORS
-// ===============================
-
-Monster::Monster() {
-    team = Team::Enemy;
+namespace {
+float lengthSquared(sf::Vector2f value) {
+    return value.x * value.x + value.y * value.y;
 }
 
-Monster::Monster(float x, float y, float health, float maxHealth,
-    float range, float cooldown, float spd, float dmg)
-    : Entity(x, y, health, maxHealth),
-    attackRange(range),
-    attackCooldown(cooldown),
-    attackDamage(dmg),
-    speed(spd) {
+sf::Vector2f normalized(sf::Vector2f value) {
+    const float length = std::sqrt(lengthSquared(value));
+    return length > 0.0001f ? value / length : sf::Vector2f{};
+}
+}
 
-    // Khởi tạo shape màu đỏ (fallback)
-    monsterShape.setFillColor(sf::Color::Red);
-    monsterShape.setSize(sf::Vector2f(30.f, 30.f));
-    monsterShape.setOrigin(sf::Vector2f(15.f, 15.f));
-    monsterShape.setPosition(sf::Vector2f(x, y));
-
-    setPosition(x, y);
+Monster::Monster(float x, float y, float hp, float maximumHealth,
+                 float range, float cooldown, float speed, float damage)
+    : Entity(x, y, hp, maximumHealth),
+      attackRange(range), moveSpeed(speed) {
     team = Team::Enemy;
-    isAlive = true;
-    attackPower = dmg;
+    attackPower = damage;
     attackCoolDown = cooldown;
-    coolDownTimer = cooldown;
-}
+    coolDownTimer = 0.f;
+    attackDuration = 0.22f;
 
-// ===============================
-// TARGET MANAGEMENT
-// ===============================
+    monsterShape.setSize({32.f, 32.f});
+    monsterShape.setOrigin({16.f, 16.f});
+    monsterShape.setFillColor(sf::Color(205, 65, 65));
+    monsterShape.setPosition(position);
+}
 
 void Monster::updateTarget(const std::vector<Entity*>& targets) {
-    if (targets.empty()) {
-        // std::cout << "Monster: targets is empty" << std::endl;
-        currentTarget = nullptr;
-        return;
-    }
-
     Entity* closest = nullptr;
-    float minDistSq = std::numeric_limits<float>::max();
-
-    for (auto* target : targets) {
-        if (!target || target->isDead()) continue;
-        float dx = target->getX() - getX();
-        float dy = target->getY() - getY();
-        float distSq = dx * dx + dy * dy;
-        if (distSq < minDistSq) {
-            minDistSq = distSq;
-            closest = target;
+    float bestDistance = std::numeric_limits<float>::max();
+    for (Entity* candidate : targets) {
+        if (!candidate || candidate->isDead()) continue;
+        const float distance = lengthSquared(candidate->getPosition() - position);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            closest = candidate;
         }
     }
-
     currentTarget = closest;
-
-    // Cập nhật hướng tấn công nếu có mục tiêu
-    if (currentTarget) {
-        sf::Vector2f attackDir = currentTarget->getPosition() - this->getPosition();
-        float length = std::sqrt(attackDir.x * attackDir.x + attackDir.y * attackDir.y);
-        if (length != 0.f) {
-            attackDir /= length;
-        }
-        this->setAttackDirection(attackDir);
-    }
 }
 
-void Monster::moveToward(float deltaTime) {
+void Monster::rebuildPath(const Map& map) {
     if (!currentTarget) {
-        // std::cout << "Monster: no target!" << std::endl;
+        path.clear();
+        waypointIndex = 0;
         return;
     }
 
-    float dx = currentTarget->getX() - getX();
-    float dy = currentTarget->getY() - getY();
-    float distance = std::sqrt(dx * dx + dy * dy);
+    const auto start = map.worldToGrid(position);
+    const auto goal = map.worldToGrid(currentTarget->getPosition());
 
-    // Cập nhật gap (khoảng cách đến mục tiêu)
-    gap = distance;
-
-    if (distance <= 1.f) return;
-
-    // Trong tầm đánh thì dừng di chuyển; update() sẽ kiểm tra cooldown
-    // trước khi bật trạng thái tấn công.
-    if (distance <= attackRange) {
-        return;
-    }
-
-    // Di chuyển về phía mục tiêu
-    float moveX = (dx / distance) * speed * deltaTime;
-    float moveY = (dy / distance) * speed * deltaTime;
-    setX(getX() + moveX);
-    setY(getY() + moveY);
-    monsterShape.setPosition(getPosition());
+    path = map.findPathBFS(start, goal);
+    waypointIndex = path.size() > 1 ? 1 : 0;
+    lastGoalCell = goal;
 }
 
-// ===============================
-// UPDATE & DRAW
-// ===============================
+void Monster::followPath(float dt, const Map& map) {
+    if (!currentTarget) return;
+
+    const sf::Vector2f toTarget = currentTarget->getPosition() - position;
+    gap = std::sqrt(lengthSquared(toTarget));
+    attackDirection = normalized(toTarget);
+    if (gap <= attackRange) return;
+
+    if (path.empty() || waypointIndex >= path.size()) rebuildPath(map);
+    if (path.empty()) return;
+
+    sf::Vector2f waypoint = map.gridToWorld(path[waypointIndex]);
+    sf::Vector2f toWaypoint = waypoint - position;
+    float waypointDistance = std::sqrt(lengthSquared(toWaypoint));
+    if (waypointDistance <= 4.f) {
+        ++waypointIndex;
+        if (waypointIndex >= path.size()) return;
+        waypoint = map.gridToWorld(path[waypointIndex]);
+        toWaypoint = waypoint - position;
+        waypointDistance = std::sqrt(lengthSquared(toWaypoint));
+    }
+
+    const sf::Vector2f moveDirection = normalized(toWaypoint);
+    const float step = std::min(moveSpeed * dt, waypointDistance);
+    const sf::Vector2f candidate = position + moveDirection * step;
+    if (map.isWalkableWorld(candidate, 14.f)) {
+        setPosition(candidate.x, candidate.y);
+    } else {
+        path.clear();
+    }
+}
 
 void Monster::update(GameContext& context) {
-    // 1. Giảm cooldown
-    if (coolDownTimer > 0.f) {
-        coolDownTimer -= context.deltaTime;
-    }
-
-    // 2. Nếu chết, cập nhật timer chết và thoát
-    if (isDying) {
+    Entity::update(context);
+    if (isDead()) {
+        if (!isDying) startDying();
         updateDeadTimer(context);
-        monsterShape.setPosition(getPosition());
         return;
     }
 
-    // Re-evaluate before dereferencing the previous raw target. A target may
-    // have been removed during the previous frame's cleanup.
+    // Luôn chọn lại từ danh sách sống: không giữ con trỏ tới Ally đã bị xóa.
     updateTarget(context.players);
-    targetTimer += context.deltaTime;
-    if (targetTimer >= 0.5f) {
-        targetTimer = 0.f;
-    }
+    if (!currentTarget || !context.map) return;
 
-    // 4. Di chuyển về phía mục tiêu
-    if (currentTarget && !currentTarget->isDead()) {
-        moveToward(context.deltaTime);
+    pathRefreshTimer -= context.deltaTime;
+    const auto goalCell = context.map->worldToGrid(currentTarget->getPosition());
+    if (pathRefreshTimer <= 0.f || goalCell != lastGoalCell) {
+        pathRefreshTimer = 0.35f;
+        path.clear();
+        rebuildPath(*context.map);
     }
-    else {
-        currentTarget = nullptr;
-    }
+    followPath(context.deltaTime, *context.map);
 
-    // 5. Xử lý tấn công
-    if (currentTarget && !currentTarget->isDead() && canAttack()) {
+    if (gap <= attackRange && coolDownTimer <= 0.f && !isAttacking) {
         startAttacking();
     }
-
     if (isAttacking) {
         updateAttackTimer(context);
-        if (getCurrentWeapon() != nullptr) {
-            getCurrentWeapon()->triggerAction(this, context, *(context.combatManager));
-        }
-        else {
-            // Fallback: gây sát thương trực tiếp
-            if (currentTarget && !currentTarget->isDead() && gap <= attackRange) {
-                currentTarget->takeDamage(attackDamage);
-                std::cout << "Monster attacked (fallback)! Target health: " << currentTarget->getHealth() << std::endl;
-            }
+        if (currentWeapon && context.combatManager) {
+            currentWeapon->triggerAction(this, context, *context.combatManager);
         }
     }
-
-    // 6. Cập nhật trạng thái (tự tắt isAttacking nếu hết thời gian)
     updateStatus();
-
-    // 7. Đồng bộ vị trí shape
-    monsterShape.setPosition(getPosition());
+    monsterShape.setPosition(position);
 }
 
 void Monster::draw(sf::RenderWindow& window) {
-    // Vẽ shape (có thể thay bằng sprite sau)
     window.draw(monsterShape);
 }
 
@@ -171,4 +139,10 @@ sf::FloatRect Monster::getCollisionBox() const {
 
 sf::FloatRect Monster::getHurtBox() const {
     return monsterShape.getGlobalBounds();
+}
+
+int Monster::claimGoldReward() {
+    if (rewardClaimed || !isDead()) return 0;
+    rewardClaimed = true;
+    return goldReward;
 }

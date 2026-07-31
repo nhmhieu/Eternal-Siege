@@ -1,20 +1,19 @@
 #pragma once 
 #include <SFML/Graphics.hpp>
-#include "GameContext.h"
 #include "Entity.h"
 #include "GameTypes.h"
 
-class GameContext ; 
+class GameContext;
 
 class Projectiles{ 
 
 private : 
 
-    sf :: Vector2f position ; 
-    sf :: Vector2f direction ; 
-    sf :: Vector2f velocity ;
-    float speed ; 
-    float damage ; 
+    sf::Vector2f position{};
+    sf::Vector2f direction{};
+    sf::Vector2f velocity{};
+    float speed = 0.f;
+    float damage = 0.f;
     Team shooterTeam = Team::Neutral;
     bool active = true ; 
     float maxRange = 800.f ; 
@@ -38,7 +37,7 @@ public :
     Team getShooterTeam() const { return shooterTeam; }
     bool isHitting(Entity* target) ;
 
-    sf :: RectangleShape getShape(){return this->shape ;} 
+    const sf::RectangleShape& getShape() const { return shape; }
 
 
 

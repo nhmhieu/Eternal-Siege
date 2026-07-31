@@ -1,7 +1,9 @@
 #include "Bow.h"
 #include "Arrow.h"
 #include "CombatManager.h"
+#include "GameContext.h"
 #include <iostream>
+#include <memory>
 
 Bow::Bow() {}
 
@@ -25,8 +27,8 @@ bool Bow::isHitting(sf::Vector2f attackerPos, sf::Vector2f, sf::Vector2f targetP
 }
 
 void Bow::fire(sf::Vector2f position, sf::Vector2f direction, Team shooterTeam, GameContext& context) {
-    Arrow* newArrow = new Arrow(position, direction, projectTileSpeed, damage, shooterTeam);
-    context.projectiles.push_back(newArrow);
+    context.projectiles.push_back(
+        std::make_unique<Arrow>(position, direction, projectTileSpeed, damage, shooterTeam));
     std::cout << "Da ban !!!" << std::endl;
 }
 

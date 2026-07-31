@@ -1,36 +1,38 @@
 ﻿#pragma once
 
+#include <memory>
 #include <vector>
-#include "CombatManager.h"
-#include "Projectiles.h" 
-#include "Entity.h" 
-#include "Ally.h" 
-#include "Monster.h"  
 
-class Projectiles;
+#include "Projectiles.h"
+
 class Entity;
+class Monster;
+class Ally;
+class CombatManager;
+class Map;
+
 class GameContext {
 public:
     float deltaTime = 0.f;
-    std::vector<Entity*> allEntity;
 
-    // Các danh sách chuyên biệt
+    // Các con trỏ quan sát, không sở hữu Entity.
+    std::vector<Entity*> allEntity;
     std::vector<Entity*> players;
     std::vector<Entity*> enemies;
     std::vector<Monster*> monsters;
     std::vector<Ally*> allies;
-    std::vector<Projectiles*> projectiles;
+
+    // GameContext sở hữu projectile.
+    std::vector<std::unique_ptr<Projectiles>> projectiles;
 
     CombatManager* combatManager = nullptr;
+
+    // Map do GameplayState sở hữu, GameContext chỉ quan sát.
+    const Map* map = nullptr;
 
     GameContext() = default;
     ~GameContext() = default;
 
-    // Ngăn copy để tránh double-free
     GameContext(const GameContext&) = delete;
     GameContext& operator=(const GameContext&) = delete;
-
-    GameContext(float dt, const std::vector<Entity*>& entities)
-        : deltaTime(dt), allEntity(entities) {
-    }
 };

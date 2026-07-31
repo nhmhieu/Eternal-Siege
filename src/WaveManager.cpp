@@ -1,108 +1,208 @@
-﻿#include "WaveManager.h"
-#include "GameContext.h"
-#include "Weapon.h"
+#include "WaveManager.h"
+
+#include "Boss.h"
+#include "Elite.h"
+#include "EnemyConfig.h"
+#include "Map.h"
 #include "Sword.h"
+
+#include <algorithm>
+#include <chrono>
 #include <iostream>
-#include <cstdlib>
-#include <memory>   // Cho std::make_unique
-#include "Constants.h"
+#include <memory>
 
 WaveManager::WaveManager()
-    : totalMonstersSpawned(0), spawnTimer(0.f), spawnInterval(0.5f), monstersPerWave(5),
-    currentWave(0), waveActive(false), waveDelay(1.f), waveDelayTimer(0.f) {
+    : randomEngine(static_cast<std::mt19937::result_type>(
+          std::chrono::steady_clock::now().time_since_epoch().count())) {
+    wavePlans[0] = {
+        {EnemyType::Normal, 1}
+    };
+    wavePlans[1] = {
+        {EnemyType::Normal, 2},
+        {EnemyType::Normal, 2}
+    };
+    wavePlans[2] = {
+        {EnemyType::Normal, 2},
+        {EnemyType::Normal, 2},
+        {EnemyType::Elite, 2}
+    };
+    wavePlans[3] = {
+        {EnemyType::Normal, 2},
+        {EnemyType::Elite, 2},
+        {EnemyType::Elite, 2},
+        {EnemyType::Boss, 1}
+    };
 }
 
-void WaveManager::update(const GameContext& context, std::vector<Monster*>& monsterList) {
-    if (gameCompleted) return;
+const WaveManager::WavePlan& WaveManager::getCurrentWavePlan() const {
+    return wavePlans[static_cast<std::size_t>(currentWave - 1)];
+}
 
-    // 1. Đợi giữa các wave
-    if (!waveActive) {
-        waveDelayTimer += context.deltaTime;
-        if (waveDelayTimer >= waveDelay) {
-            waveDelayTimer = 0.f;
-            startWave();
+const WaveManager::BatchSpec& WaveManager::getCurrentBatch() const {
+    return getCurrentWavePlan()[currentBatchIndex];
+}
+
+float WaveManager::getRestTimeBeforeNextBatch() const {
+    const std::size_t nextBatchIndex = currentBatchIndex + 1;
+    if (nextBatchIndex < getCurrentWavePlan().size() &&
+        getCurrentWavePlan()[nextBatchIndex].enemyType == EnemyType::Boss) {
+        return BOSS_PREPARATION_TIME;
+    }
+    return BATCH_REST_TIME;
+}
+
+void WaveManager::resetWaveProgress() {
+    currentBatchIndex = 0;
+    spawnedInCurrentBatch = 0;
+    spawnTimer = 0.f;
+    phaseTimer = 0.f;
+    batchPhase = BatchPhase::Preparing;
+}
+
+void WaveManager::completeCurrentWave() {
+    if (currentWave >= maxWaves) {
+        state = WaveState::Completed;
+        std::cout << "All waves completed!\n";
+    } else {
+        state = WaveState::Intermission;
+        std::cout << "Wave " << currentWave << " completed!\n";
+    }
+}
+
+std::unique_ptr<Monster> WaveManager::createMonster(
+    EnemyType enemyType,
+    const Map& map
+) {
+    const auto& spawnCells = map.getEnemySpawnCells();
+    if (spawnCells.empty()) {
+        return nullptr;
+    }
+
+    std::uniform_int_distribution<std::size_t> spawnDistribution(
+        0, spawnCells.size() - 1);
+    const sf::Vector2f spawnPosition =
+        map.gridToWorld(spawnCells[spawnDistribution(randomEngine)]);
+
+    EnemyConfig::Stats stats{};
+    std::unique_ptr<Monster> monster;
+
+    switch (enemyType) {
+    case EnemyType::Normal:
+        stats = EnemyConfig::normalStats(currentWave);
+        monster = std::make_unique<Monster>(
+            spawnPosition.x,
+            spawnPosition.y,
+            stats.maxHealth,
+            stats.maxHealth,
+            stats.attackRange,
+            stats.cooldown,
+            stats.speed,
+            static_cast<float>(stats.effectiveDamage)
+        );
+        monster->setGoldReward(8 + currentWave * 3);
+        break;
+
+    case EnemyType::Elite:
+        stats = EnemyConfig::eliteStats(currentWave);
+        monster = std::make_unique<Elite>(
+            spawnPosition.x,
+            spawnPosition.y,
+            currentWave
+        );
+        monster->setGoldReward(8 + currentWave * 3);
+        break;
+
+    case EnemyType::Boss:
+        stats = EnemyConfig::bossStats(currentWave);
+        monster = std::make_unique<Boss>(
+            spawnPosition.x,
+            spawnPosition.y,
+            currentWave
+        );
+        break;
+    }
+
+    monster->setCurrentWeapon(std::make_unique<Sword>(
+        stats.effectiveDamage,
+        stats.attackRange
+    ));
+    return monster;
+}
+
+std::unique_ptr<Monster> WaveManager::update(
+    float deltaTime,
+    const Map& map,
+    bool noMonstersAlive
+) {
+    if (state != WaveState::Active) {
+        return nullptr;
+    }
+
+    const float elapsed = std::max(0.f, deltaTime);
+
+    if (batchPhase == BatchPhase::WaitingForClear) {
+        if (!noMonstersAlive) {
+            return nullptr;
         }
+
+        if (currentBatchIndex + 1 >= getCurrentWavePlan().size()) {
+            completeCurrentWave();
+        } else {
+            batchPhase = BatchPhase::Resting;
+            phaseTimer = 0.f;
+        }
+        return nullptr;
+    }
+
+    if (batchPhase == BatchPhase::Preparing) {
+        phaseTimer += elapsed;
+        if (phaseTimer < WAVE_PREPARATION_TIME) {
+            return nullptr;
+        }
+        phaseTimer = 0.f;
+        batchPhase = BatchPhase::Spawning;
+    } else if (batchPhase == BatchPhase::Resting) {
+        phaseTimer += elapsed;
+        if (phaseTimer < getRestTimeBeforeNextBatch()) {
+            return nullptr;
+        }
+
+        ++currentBatchIndex;
+        spawnedInCurrentBatch = 0;
+        spawnTimer = 0.f;
+        phaseTimer = 0.f;
+        batchPhase = BatchPhase::Spawning;
+    }
+
+    if (batchPhase != BatchPhase::Spawning) {
+        return nullptr;
+    }
+
+    if (spawnedInCurrentBatch > 0) {
+        spawnTimer += elapsed;
+        if (spawnTimer < SPAWN_INTERVAL) {
+            return nullptr;
+        }
+    }
+
+    const EnemyType enemyType = getCurrentBatch().enemyType;
+    ++spawnedInCurrentBatch;
+    spawnTimer = 0.f;
+
+    if (spawnedInCurrentBatch >= getCurrentBatch().count) {
+        batchPhase = BatchPhase::WaitingForClear;
+    }
+
+    return createMonster(enemyType, map);
+}
+
+void WaveManager::startNextWave() {
+    if (state != WaveState::Intermission || currentWave >= maxWaves) {
         return;
     }
 
-    // 2. Sinh quái nếu chưa đủ số lượng
-    if (totalMonstersSpawned < monstersPerWave) {
-        spawnTimer += context.deltaTime;
-        if (spawnTimer >= spawnInterval) {
-            spawnTimer = 0.f;
-            const int mapWidth = static_cast<int>(
-                GameConfig::DEFAULT_MAP_WIDTH * GameConfig::TILE_SIZE);
-            const int mapHeight = static_cast<int>(
-                GameConfig::DEFAULT_MAP_HEIGHT * GameConfig::TILE_SIZE);
-            constexpr int margin = 20;
-
-            float x = 0.f;
-            float y = 0.f;
-            switch (rand() % 4) {
-            case 0:
-                x = static_cast<float>(margin);
-                y = static_cast<float>(margin + rand() % (mapHeight - 2 * margin));
-                break;
-            case 1:
-                x = static_cast<float>(mapWidth - margin);
-                y = static_cast<float>(margin + rand() % (mapHeight - 2 * margin));
-                break;
-            case 2:
-                x = static_cast<float>(margin + rand() % (mapWidth - 2 * margin));
-                y = static_cast<float>(margin);
-                break;
-            default:
-                x = static_cast<float>(margin + rand() % (mapWidth - 2 * margin));
-                y = static_cast<float>(mapHeight - margin);
-                break;
-            }
-
-            // Tạo Monster và gán vũ khí (dùng unique_ptr)
-            Monster* m = new Monster(x, y, 100.f, 100.f, 50.f, 1.f, 100.f, 10.f);
-            m->setCurrentWeapon(std::make_unique<Sword>(10, 50));
-            monsterList.push_back(m);
-            totalMonstersSpawned++;   //biến đếm
-
-            std::cout << "Spawned monster! Total: " << monsterList.size()
-                << ", spawned this wave: " << totalMonstersSpawned << std::endl;
-        }
-        return;   // Đang sinh, chưa kết thúc wave
-    }
-
-    // 3. Kiểm tra hoàn thành wave (khi đã spawn đủ và tất cả quái chết)
-    if (monsterList.empty() && totalMonstersSpawned >= monstersPerWave) {
-        waveActive = false;
-        currentWave++;
-        std::cout << "Wave " << currentWave << " completed!" << std::endl;
-
-        if (currentWave >= maxWaves) {
-            gameCompleted = true;
-            std::cout << "All waves completed! Game finished!" << std::endl;
-        }
-    }
-}
-
-void WaveManager::draw(sf::RenderWindow& window, const std::vector<Monster*>& monsterList) {
-    for (auto* monster : monsterList) {
-        monster->draw(window);
-    }
-}
-
-void WaveManager::startWave() {
-    waveActive = true;
-    spawnTimer = 0.f;
-    totalMonstersSpawned = 0;
-    std::cout << "Wave " << currentWave + 1 << " started!" << std::endl;
-}
-
-bool WaveManager::isWaveActive() const {
-    return waveActive;
-}
-
-void WaveManager::setSpawnInterval(float interval) {
-    spawnInterval = interval;
-}
-
-bool WaveManager::isGameCompleted() const {
-    return currentWave >= maxWaves;
+    ++currentWave;
+    resetWaveProgress();
+    state = WaveState::Active;
+    std::cout << "Wave " << currentWave << " started!\n";
 }

@@ -22,10 +22,17 @@ void Game::run() {
 
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>())
+            if (event->is<sf::Event::Closed>()) {
                 window.close();
+                break;
+            }
             stateMachine.handleEvent(*event);
         }
+
+        if (!window.isOpen()) {
+            break;
+        }
+
         // Avoid a huge simulation jump after dragging/debug-pausing the window.
         const float dt = std::min(clock.restart().asSeconds(), 0.1f);
 
