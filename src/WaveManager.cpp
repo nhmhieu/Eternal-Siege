@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <iostream>
 #include <memory>
 
 WaveManager::WaveManager()
@@ -62,10 +61,8 @@ void WaveManager::resetWaveProgress() {
 void WaveManager::completeCurrentWave() {
     if (currentWave >= maxWaves) {
         state = WaveState::Completed;
-        std::cout << "All waves completed!\n";
     } else {
         state = WaveState::Intermission;
-        std::cout << "Wave " << currentWave << " completed!\n";
     }
 }
 
@@ -213,5 +210,4 @@ void WaveManager::startNextWave() {
     ++currentWave;
     resetWaveProgress();
     state = WaveState::Active;
-    std::cout << "Wave " << currentWave << " started!\n";
 }

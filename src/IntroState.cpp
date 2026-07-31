@@ -57,8 +57,6 @@ void IntroState::setupPositions() {
 }
 
 void IntroState::onEnter() {
-    std::cout << "--- DANG MO INTRO STATE ---" << std::endl;
-
     if (!font.openFromFile("assets/fonts/Font.ttf")) {
         std::cerr << "IntroState: Failed to load font!" << std::endl;
         stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
@@ -74,7 +72,6 @@ void IntroState::onEnter() {
 }
 
 void IntroState::onExit() {
-    std::cout << "--- DANG ROI INTRO STATE ---" << std::endl;
 }
 
 void IntroState::handleEvent(const sf::Event& event) {

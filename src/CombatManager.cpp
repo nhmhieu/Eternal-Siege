@@ -1,7 +1,6 @@
 #include "CombatManager.h"
 #include "GameContext.h" 
 #include "Projectiles.h"
-#include <iostream>
 
 void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<Entity*>& targets) {
     if (!attacker || !weapon || !attacker->getIsAttacking()) return;
@@ -25,8 +24,6 @@ void CombatManager::processAttack(Entity* attacker, Weapon* weapon, std::vector<
             target->takeDamage(static_cast<float>(weapon->getDamage()));
             weapon->addHit(target);
             hitEntities.insert(target);
-            std :: cout << "Current health : " << target->getHealth() << std :: endl ; 
-             std::cout << "Da danh trung quai!" << std::endl;
         }
     }
 
@@ -73,9 +70,6 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
 
             if (proj->isHitting(target)) {
                 target->takeDamage(proj->getDamage());
-                
-                // Hạn chế std::cout nếu không thực sự cần thiết để tránh lag
-                // std::cout << "Da ban trung quai, mau quai hien tai : " << target->getHealth() << std::endl; 
                 
                 proj->deactivate(); // Đánh dấu đạn đã trúng mục tiêu
                 break; // Trúng 1 mục tiêu là dừng vòng lặp check quái

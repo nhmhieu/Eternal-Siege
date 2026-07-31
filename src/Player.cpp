@@ -2,7 +2,6 @@
 #include "BalanceConfig.h"
 #include "GameContext.h"
 #include <cmath>
-#include <iostream>
 #include "TextureManager.h"
 #include "Constants.h"
 #include "Map.h"

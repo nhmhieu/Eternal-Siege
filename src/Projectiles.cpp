@@ -85,8 +85,6 @@ bool Projectiles :: isHitting(Entity* target){
     if(!isActive()) return false ; 
     if(!target || target->isDead()) return false ; 
 
-    // std :: cout << "Kiem tra va cham giua hurtBox va hitbox" << std :: endl ;
-
     return getBounds().findIntersection(target->getHurtBox()).has_value() ; 
 
 }

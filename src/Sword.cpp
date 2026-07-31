@@ -1,7 +1,6 @@
 #include "Sword.h"
 #include "GameContext.h" 
 #include "CombatManager.h"
-#include <iostream>
 // #include "GameTypes.h"
 
 
@@ -44,8 +43,5 @@ void Sword :: triggerAction(Entity* attacker, GameContext& context, CombatManage
     }
     else if(attacker->getTeam() == Team :: Enemy){
         combatManager.processAttack(attacker, this, context.players) ; 
-    }
-    else{
-        std :: cout << "Truong hop ngoai le (Neutral) !!" << std :: endl ; 
     }
 }

@@ -11,8 +11,6 @@ WinState::WinState(StateMachine& machine, sf::RenderWindow& window, TextureManag
 }
 
 void WinState::onEnter() {
-    std::cout << "--- WIN STATE ---" << std::endl;
-
     if (!font.openFromFile("assets/fonts/Font.ttf")) {
         std::cerr << "Failed to load font in WinState!" << std::endl;
         return;
@@ -51,7 +49,6 @@ void WinState::onEnter() {
 }
 
 void WinState::onExit() {
-    std::cout << "--- EXIT WIN STATE ---" << std::endl;
 }
 
 void WinState::handleEvent(const sf::Event& event) {
@@ -60,13 +57,11 @@ void WinState::handleEvent(const sf::Event& event) {
             sf::Vector2f mousePos = sf::Vector2f(mousePressed->position);
 
             if (restartButton && restartButton->getGlobalBounds().contains(mousePos)) {
-                std::cout << "Restart game!" << std::endl;
                 stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window, textureManager));
                 return;
             }
 
             if (menuButton && menuButton->getGlobalBounds().contains(mousePos)) {
-                std::cout << "Back to menu!" << std::endl;
                 stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
                 return;
             }

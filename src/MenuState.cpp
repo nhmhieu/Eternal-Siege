@@ -52,13 +52,11 @@ void MenuState::handleEvent(const sf::Event& event) {
 
             // Dùng dấu -> vì startButton giờ là biến thông thường
             if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
-                std::cout << "Start button clicked!" << std::endl;
                 stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window, textureManager));
                 return;
             }
 
             if (exitButton && exitButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
-                std::cout << "Exit button clicked!" << std::endl;
                 window.close();
             }
         }

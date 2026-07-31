@@ -11,7 +11,6 @@
 #include "GameContext.h"
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 
 using namespace GameConfig;
 
@@ -39,7 +38,6 @@ GameplayState::GameplayState(
 }
 
 void GameplayState::onEnter() {
-    std::cout << "=== Gameplay Start ===\n";
     paused = false;
     transitionRequested = false;
     hud.load();
@@ -74,7 +72,6 @@ void GameplayState::onEnter() {
 }
 
 void GameplayState::onExit() {
-    std::cout << "GameplayState: Exited!\n";
 }
 
 void GameplayState::rebuildContext() {

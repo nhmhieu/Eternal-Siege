@@ -33,7 +33,7 @@ bool TextureManager::loadTexture(const std::string& name,
         return true;
     }
 
-    std::cout << "Failed to load texture: " << path << std::endl;
+    std::cerr << "Failed to load texture: " << path << std::endl;
     return false;
 }
 

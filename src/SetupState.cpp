@@ -35,7 +35,6 @@ void SetupState::onEnter()
 
 void SetupState::onExit()
 {
-    std::cout << "Thoat SetupState!" << std::endl;
 }
 
 void SetupState::handleEvent(const sf::Event& event)
@@ -48,7 +47,6 @@ void SetupState::handleEvent(const sf::Event& event)
 
             if (canStart && startButton.getGlobalBounds().contains(sf::Vector2f(mousePos)))
             {
-                std::cout << "Bat dau game voi " << selectedPositions.size() << " tuong!" << std::endl;
                 stateMachine.changeState(std::make_unique<GameplayState>(
                     stateMachine, window, textureManager, map, selectedPositions));
                 return;
@@ -56,9 +54,6 @@ void SetupState::handleEvent(const sf::Event& event)
 
             map.handleMouseClick(mousePos.x, mousePos.y, selectedPositions, maxAllies);
             canStart = static_cast<int>(selectedPositions.size()) == maxAllies;
-            if (canStart) {
-                std::cout << "Da du 4 tuong!" << std::endl;
-            }
         }
     }
 }

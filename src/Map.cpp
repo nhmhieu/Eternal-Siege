@@ -13,6 +13,105 @@ namespace {
 int flatten(sf::Vector2i cell, int width) {
     return cell.y * width + cell.x;
 }
+
+sf::Vector2f depenetrate(
+    const Map& map,
+    sf::Vector2f center,
+    sf::Vector2f halfExtents
+) {
+    const sf::FloatRect original{
+        center - halfExtents,
+        halfExtents * 2.f
+    };
+    if (!map.collidesWithSolid(original)) {
+        return center;
+    }
+
+    constexpr float clearance = 0.001f;
+    std::vector<float> xOffsets{0.f};
+    std::vector<float> yOffsets{0.f};
+    const sf::FloatRect world = map.getWorldBounds();
+    const float left = original.position.x;
+    const float top = original.position.y;
+    const float right = left + original.size.x;
+    const float bottom = top + original.size.y;
+    const float worldRight = world.position.x + world.size.x;
+    const float worldBottom = world.position.y + world.size.y;
+
+    if (left < world.position.x) {
+        xOffsets.push_back(world.position.x - left + clearance);
+    }
+    if (right > worldRight) {
+        xOffsets.push_back(worldRight - right - clearance);
+    }
+    if (top < world.position.y) {
+        yOffsets.push_back(world.position.y - top + clearance);
+    }
+    if (bottom > worldBottom) {
+        yOffsets.push_back(worldBottom - bottom - clearance);
+    }
+
+    const int minX = std::max(
+        0, static_cast<int>(std::floor(left / TILE_SIZE)));
+    const int maxX = std::min(
+        map.getWidth() - 1,
+        static_cast<int>(std::floor(
+            std::nextafter(
+                right, -std::numeric_limits<float>::infinity()
+            ) / TILE_SIZE
+        )));
+    const int minY = std::max(
+        0, static_cast<int>(std::floor(top / TILE_SIZE)));
+    const int maxY = std::min(
+        map.getHeight() - 1,
+        static_cast<int>(std::floor(
+            std::nextafter(
+                bottom, -std::numeric_limits<float>::infinity()
+            ) / TILE_SIZE
+        )));
+
+    for (int y = minY; y <= maxY; ++y) {
+        for (int x = minX; x <= maxX; ++x) {
+            if (!map.isSolid({x, y})) continue;
+
+            const float tileLeft = static_cast<float>(x) * TILE_SIZE;
+            const float tileTop = static_cast<float>(y) * TILE_SIZE;
+            const float tileRight = tileLeft + TILE_SIZE;
+            const float tileBottom = tileTop + TILE_SIZE;
+            xOffsets.push_back(tileLeft - right - clearance);
+            xOffsets.push_back(tileRight - left + clearance);
+            yOffsets.push_back(tileTop - bottom - clearance);
+            yOffsets.push_back(tileBottom - top + clearance);
+        }
+    }
+
+    sf::Vector2f best = center;
+    float bestDistanceSquared = std::numeric_limits<float>::infinity();
+    constexpr float maxCorrection = TILE_SIZE * 2.f;
+    const float maxCorrectionSquared = maxCorrection * maxCorrection;
+    for (const float xOffset : xOffsets) {
+        for (const float yOffset : yOffsets) {
+            const float distanceSquared =
+                xOffset * xOffset + yOffset * yOffset;
+            if (distanceSquared <= 0.f ||
+                distanceSquared >= bestDistanceSquared ||
+                distanceSquared > maxCorrectionSquared) {
+                continue;
+            }
+
+            const sf::Vector2f candidate =
+                center + sf::Vector2f{xOffset, yOffset};
+            if (!map.collidesWithSolid({
+                    candidate - halfExtents,
+                    halfExtents * 2.f
+                })) {
+                best = candidate;
+                bestDistanceSquared = distanceSquared;
+            }
+        }
+    }
+    return best;
+}
 }
 
 Map::Map(int mapWidth, int mapHeight)
@@ -156,6 +255,7 @@ sf::Vector2f Map::resolveMovement(
 
     halfExtents.x = std::max(0.5f, halfExtents.x);
     halfExtents.y = std::max(0.5f, halfExtents.y);
+    center = depenetrate(*this, center, halfExtents);
     constexpr float maxStep = TILE_SIZE * 0.25f;
     const float longestAxis =
         std::max(std::abs(displacement.x), std::abs(displacement.y));

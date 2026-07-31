@@ -11,8 +11,6 @@ GameOverState::GameOverState(StateMachine& machine, sf::RenderWindow& window, Te
 }
 
 void GameOverState::onEnter() {
-    std::cout << "--- GAME OVER STATE ---" << std::endl;
-
     if (!font.openFromFile("assets/fonts/Font.ttf")) {
         std::cerr << "Failed to load font in GameOverState!" << std::endl;
         return;
@@ -51,7 +49,6 @@ void GameOverState::onEnter() {
 }
 
 void GameOverState::onExit() {
-    std::cout << "--- EXIT GAME OVER STATE ---" << std::endl;
 }
 
 void GameOverState::handleEvent(const sf::Event& event) {
@@ -60,13 +57,11 @@ void GameOverState::handleEvent(const sf::Event& event) {
             sf::Vector2f mousePos = sf::Vector2f(mousePressed->position);
 
             if (restartButton && restartButton->getGlobalBounds().contains(mousePos)) {
-                std::cout << "Restart game!" << std::endl;
                 stateMachine.changeState(std::make_unique<SetupState>(stateMachine, window, textureManager));
                 return;
             }
 
             if (menuButton && menuButton->getGlobalBounds().contains(mousePos)) {
-                std::cout << "Back to menu!" << std::endl;
                 stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
                 return;
             }

@@ -3,7 +3,6 @@
 #include "GameContext.h"
 #include "MathUtils.h"
 #include <cmath>
-#include <iostream>
 #include "TextureManager.h"
 #include "Weapon.h"
 

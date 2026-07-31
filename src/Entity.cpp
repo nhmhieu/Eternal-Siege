@@ -4,7 +4,6 @@
 #include "Weapon.h"
 
 #include <algorithm>
-#include <iostream>
 #include <utility>
 
 // ===============================
@@ -87,8 +86,6 @@ void Entity::takeDamage(float damage) {
 
         // Bắt đầu đếm thời gian animation chết.
         startDying();
-
-        std::cout << "Entity died!\n";
     }
 }
 
