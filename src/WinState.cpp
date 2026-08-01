@@ -27,7 +27,7 @@ void WinState::onEnter() {
 
     std::cout << "--- WIN STATE ---" << std::endl;
 
-    if (!font.openFromFile("assets/fonts/Font.ttf")) {
+    if (!font.openFromFile("assets/fonts/Kings.ttf")) {
         std::cerr << "Failed to load font in WinState!" << std::endl;
         return;
     }
@@ -46,7 +46,7 @@ void WinState::onEnter() {
                              restartBounds.position.y + restartBounds.size.y / 2.f });
     restartText->setPosition({ 640.f, 380.f });
 
-    menuText = std::make_unique<sf::Text>(font, "VE MENU", 30);
+    menuText = std::make_unique<sf::Text>(font, "MENU", 30);
     menuText->setFillColor(sf::Color::White);
     sf::FloatRect menuBounds = menuText->getLocalBounds();
     menuText->setOrigin({ menuBounds.position.x + menuBounds.size.x / 2.f,

@@ -15,11 +15,14 @@ Game::Game()
     //textureManager.loadTexture("player", "Assets/player.png");
     TextureManager::getInstance().loadTexture("intro", "assets/images/intro.png");
     TextureManager::getInstance().loadTexture("menu", "assets/images/menu.png");
-    TextureManager::getInstance().loadTexture("player", "assets/images/player.png");
+    TextureManager::getInstance().loadTexture("player", "assets/images/tower2.png");
     TextureManager::getInstance().loadTexture("gameplay", "assets/images/gameplay.png");
     TextureManager::getInstance().loadTexture("gameover", "assets/images/gameover.png");
     TextureManager::getInstance().loadTexture("setup", "assets/images/setup.png");
     TextureManager::getInstance().loadTexture("win", "assets/images/win.png");
+    TextureManager::getInstance().loadTexture("title", "assets/images/title.png");
+    TextureManager::getInstance().loadTexture("monster", "assets/images/monster.png");
+
 
 
     //stateMachine.changeState(std::make_unique<DummyState>(textureManager));

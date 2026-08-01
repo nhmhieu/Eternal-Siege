@@ -16,8 +16,23 @@ Player::Player()
         std::cerr << "Failed to load Ash texture!" << std::endl;
         useFallback = true;
         fallbackShape.setFillColor(sf::Color::Blue);
-        fallbackShape.setSize(sf::Vector2f(desiredSize, desiredSize));
-        fallbackShape.setOrigin(sf::Vector2f(desiredSize / 2.f, desiredSize / 2.f));
+        // Tính toán và thiết lập origin ở trung tâm ảnh
+            sf::Vector2u size = playerTexture->getSize();
+        this->sprite->setOrigin({ static_cast<float>(size.x) / 2.f, static_cast<float>(size.y) / 2.f });
+
+        // Đặt vị trí ban đầu
+        this->sprite->setPosition({ 400.f, 300.f });
+
+        // >>> CHÈN CODE SCALE Ở ĐÂY <<<
+        // Ví dụ muốn player hiển thị ở kích thước 100x50 pixel
+        float desiredWidth = 100.f;
+        float desiredHeight = 50.f;
+
+        float scaleX = desiredWidth / static_cast<float>(size.x);
+        float scaleY = desiredHeight / static_cast<float>(size.y);
+
+        this->sprite->setScale(sf::Vector2f(scaleX, scaleY));
+        fallbackShape.setSize(sf::Vector2f(desiredHeight, desiredHeight));
         fallbackShape.setPosition(sf::Vector2f(400.f, 300.f));
     } else {
         std::cout << "Ash texture loaded OK!" << std::endl;
@@ -32,6 +47,20 @@ Player::Player()
         // Tính toán và thiết lập origin ở trung tâm ảnh
         sf::Vector2u size = playerTexture->getSize();
         this->sprite->setOrigin({ static_cast<float>(size.x) / 2.f, static_cast<float>(size.y) / 2.f });
+
+        // Đặt vị trí ban đầu
+        this->sprite->setPosition({ 400.f, 300.f });
+
+        // >>> CHÈN CODE SCALE Ở ĐÂY <<<
+        // Ví dụ muốn player hiển thị ở kích thước 100x50 pixel
+        float desiredWidth =80.f;
+        float desiredHeight = 160.f;
+
+        float scaleX = desiredWidth / static_cast<float>(size.x);
+        float scaleY = desiredHeight / static_cast<float>(size.y);
+
+        this->sprite->setScale(sf::Vector2f(scaleX, scaleY));
+        fallbackShape.setSize(sf::Vector2f(desiredHeight, desiredHeight));
 
         // Đặt vị trí ban đầu và tốc độa
         this->sprite->setPosition({ 400.f, 300.f });

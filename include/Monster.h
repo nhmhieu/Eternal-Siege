@@ -14,7 +14,8 @@ private:
     Entity* currentTarget = nullptr;
     float targetTimer = 0.f;
     float attackTimer = 0.f;
-    sf::RectangleShape monsterShape;
+    //sf::RectangleShape monsterShape;
+    std::unique_ptr<sf::Sprite> monsterSprite;
 
 public:
     Monster(float x, float y, float health = 100, float maxHealth = 100,

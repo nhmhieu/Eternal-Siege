@@ -1,5 +1,6 @@
 #include "Monster.h"
 #include "GameContext.h"
+#include "TextureManager.h"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -12,13 +13,36 @@ Monster::Monster(float x, float y, float health, float maxHealth,
     attackDamage(dmg),
     speed(spd) {
     // Monster luôn dùng shape màu đỏ
-    monsterShape.setFillColor(sf::Color::Red);
-    monsterShape.setSize(sf::Vector2f(30.f, 30.f));
-    monsterShape.setOrigin(sf::Vector2f(15.f, 15.f));
-    monsterShape.setPosition(sf::Vector2f(x, y));
-    
+    //monsterShape.setFillColor(sf::Color::Red);
+    //monsterShape.setSize(sf::Vector2f(30.f, 30.f));
+    //monsterShape.setOrigin(sf::Vector2f(15.f, 15.f));
+    //monsterShape.setPosition(sf::Vector2f(x, y));
+
     setPosition(x, y);
     team = Team::Enemy;
+
+    // Nạp texture cho monster
+    auto& monsterTexture = TextureManager::getInstance().getTexture("monster");
+    monsterSprite = std::make_unique<sf::Sprite>(monsterTexture);
+
+    // Đặt vị trí ban đầu
+    monsterSprite->setPosition(sf::Vector2f(static_cast<float>(x), static_cast<float>(y)));
+
+    // Lấy kích thước gốc của texture
+    sf::Vector2u texSize = monsterTexture.getSize();
+
+    // Giả sử ENtiny hiển thị ở kích thước 64x64
+    float desiredWidth = 75.f;
+    float desiredHeight = 60.f;
+
+    // Tính hệ số scale
+    float scaleX = desiredWidth / static_cast<float>(texSize.x);
+    float scaleY = desiredHeight / static_cast<float>(texSize.y);
+
+    // Áp dụng scale (chú ý cú pháp Vector2f)
+    monsterSprite->setScale(sf::Vector2f(scaleX, scaleY));
+
+    monsterSprite->setPosition(sf::Vector2f(x, y));
 }
 
 void Monster::updateTarget(const std::vector<Entity*>& targets) {
@@ -71,7 +95,7 @@ void Monster::moveToward(float deltaTime) {
     float moveY = (dy / distance) * speed * deltaTime;
     setX(getX() + moveX);
     setY(getY() + moveY);
-    monsterShape.setPosition(position);
+    if (monsterSprite) monsterSprite->setPosition(position);
 }
 
 void Monster::update(const GameContext& context) {
@@ -96,13 +120,14 @@ void Monster::update(const GameContext& context) {
 }
 
 void Monster::draw(sf::RenderWindow& window) {
-    window.draw(monsterShape);
+    if (monsterSprite) 
+        window.draw(*monsterSprite);
 }
 
 sf::FloatRect Monster::getCollisionBox() const {
-    return monsterShape.getGlobalBounds();
+    return monsterSprite ? monsterSprite->getGlobalBounds() : sf::FloatRect();
 }
 
 sf::FloatRect Monster::getHurtBox() const {
-    return monsterShape.getGlobalBounds();
+    return monsterSprite ? monsterSprite->getGlobalBounds() : sf::FloatRect();
 }

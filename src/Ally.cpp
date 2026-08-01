@@ -19,8 +19,8 @@ Ally::Ally(float x, float y, const std::string& textureName)
     sf::Texture& tex = TextureManager::getInstance().getTexture(textureName);
     allyTexture = &tex;
 
-    const float desiredWidth = 40.f;
-    const float desiredHeight = 40.f;
+    const float desiredWidth = 60.f;
+    const float desiredHeight = 60.f;
     const sf::Vector2u textureSize = allyTexture->getSize();
 
     float scaleX = desiredWidth / static_cast<float>(textureSize.x);

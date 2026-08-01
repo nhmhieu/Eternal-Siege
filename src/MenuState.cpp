@@ -22,6 +22,17 @@ void MenuState::onEnter() {
         1280.f / size.x,
         720.f / size.y
     });
+    //if (!titleFont.openFromFile("assets/fonts/Kings.ttf")) {
+    //    std::cerr << "Failed to load title font!" << std::endl;
+    //    return;
+    //}
+
+    auto& titleTexture = TextureManager::getInstance().getTexture("title");
+    titleSprite = std::make_unique<sf::Sprite>(titleTexture);
+    titleSprite->setPosition({ 300.f, 150.f });
+    titleSprite->setScale(sf::Vector2f(0.8f, 0.8f));
+
+
 
     if (!font.openFromFile("assets/fonts/Font.ttf")){
         std::cerr << "Failed to load font!" << std::endl;
@@ -30,15 +41,16 @@ void MenuState::onEnter() {
 
     
     // BƯỚC 2: Font đã nạp xong, giờ mới an toàn tạo các đối tượng sf::Text
-    titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 68);
-    titleText->setFillColor(sf::Color::Yellow);
-    titleText->setPosition({ 300.f, 150.f });
+    //titleText = std::make_unique<sf::Text>(titleFont, "ETERNAL SIEGE", 72);
+    //titleText->setFillColor(sf::Color::Yellow);
+    //titleText->setPosition({ 300.f, 150.f });
 
-    startText = std::make_unique<sf::Text>(font, "BAT DAU", 30);
+
+    startText = std::make_unique<sf::Text>(font, "Start", 30);
     startText->setFillColor(sf::Color::White);
     startText->setPosition({ 595.f, 360.f });
 
-    exitText = std::make_unique<sf::Text>(font, "THOAT", 30);
+    exitText = std::make_unique<sf::Text>(font, "Exit", 30);
     exitText->setFillColor(sf::Color::White);
     exitText->setPosition({ 605.f, 460.f });
 
@@ -91,6 +103,7 @@ void MenuState::render(sf::RenderWindow& window) {
 
     // Dùng dấu * để giải băm unique_ptr khi vẽ
    if (titleText) window.draw(*titleText);
+   if (titleSprite) window.draw(*titleSprite);
    if (startButton) window.draw(*startButton);
    if (startText) window.draw(*startText);
    if (exitButton) window.draw(*exitButton);

@@ -10,8 +10,11 @@ private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
     sf::Font font;
+    sf::Font titleFont;
+
     //TextureManager& textureManager;
     std::unique_ptr<sf::Sprite> background;
+    std::unique_ptr<sf::Sprite> titleSprite;
 
     // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;

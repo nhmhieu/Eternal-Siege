@@ -32,7 +32,7 @@ void GameOverState::onEnter() {
         return;
     }
 
-    titleText = std::make_unique<sf::Text>(font, "GAME OVER", 72);
+    titleText = std::make_unique<sf::Text>(font, "GAME OVER!", 72);
     titleText->setFillColor(sf::Color::Red);
     sf::FloatRect titleBounds = titleText->getLocalBounds();
     titleText->setOrigin({ titleBounds.position.x + titleBounds.size.x / 2.f,
@@ -46,7 +46,7 @@ void GameOverState::onEnter() {
                              restartBounds.position.y + restartBounds.size.y / 2.f });
     restartText->setPosition({ 640.f, 380.f });
 
-    menuText = std::make_unique<sf::Text>(font, "VE MENU", 30);
+    menuText = std::make_unique<sf::Text>(font, "MENU", 30);
     menuText->setFillColor(sf::Color::White);
     sf::FloatRect menuBounds = menuText->getLocalBounds();
     menuText->setOrigin({ menuBounds.position.x + menuBounds.size.x / 2.f,
