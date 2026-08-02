@@ -2,16 +2,9 @@
 #include "Arrow.h"
 #include "CombatManager.h"
 #include "GameContext.h"
+#include "Effects.h"
+#include "AudioManager.h"
 #include <memory>
-
-Bow::Bow() {}
-
-Bow::Bow(float dmg, float cooldown) {
-    this->damage = static_cast<int>(dmg);
-    this->cooldown = cooldown;
-}
-
-Bow::~Bow() {}
 
 sf::FloatRect Bow::getHitbox(sf::Vector2f entityCenter, sf::Vector2f) {
     // Tạm thời: hitbox nhỏ xung quanh entity
@@ -22,26 +15,32 @@ bool Bow::isHitting(sf::Vector2f attackerPos, sf::Vector2f, sf::Vector2f targetP
     // Kiểm tra khoảng cách đơn giản
     float dx = targetPos.x - attackerPos.x;
     float dy = targetPos.y - attackerPos.y;
-    return (dx * dx + dy * dy) <= 250.f * 250.f;
+    return (dx * dx + dy * dy) <= attackRange * attackRange;
 }
 
-void Bow::fire(sf::Vector2f position, sf::Vector2f direction, Team shooterTeam, GameContext& context) {
+void Bow::fire(
+    sf::Vector2f position,
+    sf::Vector2f direction,
+    Team shooterTeam,
+    float damage,
+    GameContext& context
+) {
     context.projectiles.push_back(
         std::make_unique<Arrow>(position, direction, projectTileSpeed, damage, shooterTeam));
 }
 
-void Bow::setDamage(int dmg) {
-    damage = dmg;
-}
-
-int Bow::getDamage() const {
-    return damage;
-}
-
 void Bow::triggerAction(Entity* attacker, GameContext& context, CombatManager&) {
-    if (attacker->getIsAttacking() && !hasAttacked) {
+    if (attacker && !attacker->isDead() &&
+        attacker->getIsAttacking() && !hasAttacked) {
         this->fire(attacker->getPosition(), attacker->getAttackDirection(),
-            attacker->getTeam(), context);
+            attacker->getTeam(), attacker->getAttackPower(), context);
+        if (context.effects) {
+            context.effects->spawnShot(
+                attacker->getPosition(), attacker->getAttackDirection(), false);
+        }
+        if (context.audioManager) {
+            context.audioManager->playSound("bow_shot");
+        }
         hasAttacked = true;
     }
 }

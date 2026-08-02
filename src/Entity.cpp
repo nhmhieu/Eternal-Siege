@@ -62,6 +62,25 @@ void Entity::setCurrentWeapon(
     currentWeapon = std::move(weapon);
 }
 
+void Entity::setIsAttacking(bool value) {
+    if (value) {
+        startAttacking();
+        return;
+    }
+
+    isAttacking = false;
+    attackTimer = 0.f;
+    if (currentWeapon) {
+        currentWeapon->clearHitList();
+        currentWeapon->setHasAttacked(false);
+    }
+}
+
+void Entity::beginAttackCooldown() {
+    setIsAttacking(false);
+    coolDownTimer = attackCoolDown;
+}
+
 void Entity::forgetEntity(const Entity* entity) {
     if (currentWeapon) {
         currentWeapon->forgetEntity(entity);
@@ -79,10 +98,12 @@ void Entity::takeDamage(float damage) {
         return;
     }
 
+    hurtFlashTimer = 0.11f;
     health = std::max(0.f, health - damage);
 
     if (health <= 0.f) {
         isAlive = false;
+        setIsAttacking(false);
 
         // Bắt đầu đếm thời gian animation chết.
         startDying();
@@ -162,6 +183,13 @@ void Entity::updateStatus() {
     }
 }
 
+float Entity::getAttackAnimationProgress() const {
+    if (!isAttacking || attackDuration <= 0.f) {
+        return 0.f;
+    }
+    return std::clamp(attackTimer / attackDuration, 0.f, 1.f);
+}
+
 // ===============================
 // DEAD TIMER
 // ===============================
@@ -181,6 +209,15 @@ void Entity::updateDeadTimer(
 // ===============================
 
 void Entity::update(GameContext& context) {
+    if (context.paused) {
+        return;
+    }
+
+    visualTime += context.deltaTime;
+    hurtFlashTimer = std::max(0.f, hurtFlashTimer - context.deltaTime);
+    healingFlashTimer = std::max(
+        0.f, healingFlashTimer - context.deltaTime);
+
     // Entity lớp con gọi Entity::update(context)
     // để cập nhật cooldown dùng chung.
     if (coolDownTimer > 0.f) {
@@ -199,18 +236,16 @@ void Entity::update(GameContext& context) {
 void Entity::drawHealthBar(
     sf::RenderWindow& window
 ) const {
-    constexpr float barWidth = 50.f;
     constexpr float barHeight = 6.f;
-    constexpr float offsetY = -40.f;
 
     const sf::Vector2f barPosition(
-        position.x - barWidth / 2.f,
-        position.y + offsetY
+        position.x - healthBarWidth / 2.f,
+        position.y + healthBarOffsetY
     );
 
     // Nền thanh máu.
     sf::RectangleShape background(
-        sf::Vector2f(barWidth, barHeight)
+        sf::Vector2f(healthBarWidth, barHeight)
     );
 
     background.setFillColor(
@@ -235,7 +270,7 @@ void Entity::drawHealthBar(
 
     sf::RectangleShape healthBar(
         sf::Vector2f(
-            barWidth * healthPercent,
+            healthBarWidth * healthPercent,
             barHeight
         )
     );

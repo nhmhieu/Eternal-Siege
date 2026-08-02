@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -12,18 +13,33 @@ enum class UpgradeType {
     FireRate
 };
 
+struct UpgradePreview {
+    int level = 0;
+    int nextLevel = 0;
+    int cost = 0;
+    bool affordable = false;
+    bool maxLevel = false;
+    const char* name = "";
+    const char* effectLine1 = "";
+    const char* effectLine2 = "";
+};
+
 class UpgradeManager {
 public:
     void addGold(int amount) { gold += amount; }
     int getGold() const { return gold; }
     int getLevel(UpgradeType type) const;
     int getCost(UpgradeType type) const;
+    UpgradePreview preview(UpgradeType type) const;
 
     bool purchase(UpgradeType type, Player& player,
                   std::vector<std::unique_ptr<Ally>>& allies);
     bool undoLastPurchase(Player& player,
                           std::vector<std::unique_ptr<Ally>>& allies);
     bool canUndo() const { return !purchaseHistory.empty(); }
+    std::size_t getPendingPurchaseCount() const {
+        return purchaseHistory.size();
+    }
     void clearUndoHistory() { purchaseHistory.clear(); }
 
 private:

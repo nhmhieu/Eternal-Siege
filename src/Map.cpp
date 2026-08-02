@@ -1,19 +1,57 @@
 ﻿#include "Map.h"
 #include "Constants.h"
+#include "TextureManager.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
 #include <queue>
+#include <cstdint>
+#include <iostream>
 
 using namespace GameConfig;
 
 namespace {
+std::size_t visualTileIndex(TileType type) {
+    if (type == TILE_WALL) return 2;
+    if (type == TILE_PATH || type == TILE_SPAWN) return 1;
+    return 0;
+}
+
 int flatten(sf::Vector2i cell, int width) {
     return cell.y * width + cell.x;
 }
+}
 
+std::array<std::string_view, 2> mapTextureKeys(TileType type) {
+    static constexpr std::array<std::string_view, 2> grass{{
+        "MapGrass01", "MapGrass02"}};
+    static constexpr std::array<std::string_view, 2> path{{
+        "MapPath01", "MapPath02"}};
+    static constexpr std::array<std::string_view, 2> wall{{
+        "MapWall01", "MapWall02"}};
+    if (type == TILE_WALL) return wall;
+    if (type == TILE_PATH || type == TILE_SPAWN) return path;
+    return grass;
+}
+
+std::size_t selectTileVariant(int row, int column, TileType type,
+                              std::size_t variantCount) noexcept {
+    if (variantCount == 0) return 0;
+    std::uint32_t hash = 0x9e3779b9u;
+    hash ^= static_cast<std::uint32_t>(row) + 0x85ebca6bu +
+            (hash << 6u) + (hash >> 2u);
+    hash ^= static_cast<std::uint32_t>(column) + 0xc2b2ae35u +
+            (hash << 6u) + (hash >> 2u);
+    hash ^= static_cast<std::uint32_t>(visualTileIndex(type)) * 0x27d4eb2du;
+    hash ^= hash >> 16u;
+    hash *= 0x7feb352du;
+    hash ^= hash >> 15u;
+    return static_cast<std::size_t>(hash) % variantCount;
+}
+
+namespace {
 sf::Vector2f depenetrate(
     const Map& map,
     sf::Vector2f center,
@@ -117,6 +155,39 @@ sf::Vector2f depenetrate(
 Map::Map(int mapWidth, int mapHeight)
     : width(mapWidth), height(mapHeight) {
     generate();
+}
+
+void Map::setTextureManager(TextureManager& manager) {
+    textureManager = &manager;
+    loadTileTextures();
+}
+
+void Map::loadTileTextures() {
+    if (!textureManager) return;
+    static constexpr std::array<std::array<std::string_view, 2>, 3> paths{{
+        {{"assets/images/map/GrassTile01.png",
+          "assets/images/map/GrassTile02.png"}},
+        {{"assets/images/map/PathTile01.png",
+          "assets/images/map/PathTile02.png"}},
+        {{"assets/images/map/WallTile01.png",
+          "assets/images/map/WallTile02.png"}},
+    }};
+    const std::array<TileType, 3> types{{
+        TILE_GRASS, TILE_PATH, TILE_WALL}};
+    for (std::size_t kind = 0; kind < paths.size(); ++kind) {
+        const auto keys = mapTextureKeys(types[kind]);
+        for (std::size_t variant = 0; variant < 2; ++variant) {
+            const std::string key(keys[variant]);
+            const std::string path(paths[kind][variant]);
+            if (!textureManager->loadTexture(key, path)) {
+                std::cerr << "Missing map texture " << key
+                          << ": " << path << '\n';
+                tileTextures[kind][variant] = nullptr;
+                continue;
+            }
+            tileTextures[kind][variant] = textureManager->findTexture(key);
+        }
+    }
 }
 
 void Map::generate() {
@@ -424,17 +495,23 @@ void Map::handleMouseClick(
 
 void Map::draw(sf::RenderWindow& window) const {
     sf::RectangleShape tile({TILE_SIZE, TILE_SIZE});
-    tile.setOutlineColor(sf::Color(25, 30, 28));
-    tile.setOutlineThickness(-1.f);
+    tile.setOutlineThickness(0.f);
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            switch (tiles[y][x]) {
-            case TILE_WALL:   tile.setFillColor(sf::Color(68, 73, 78)); break;
-            case TILE_PATH:   tile.setFillColor(sf::Color(91, 80, 58)); break;
-            case TILE_SPAWN:  tile.setFillColor(sf::Color(130, 45, 55)); break;
-            case TILE_DEPLOY: tile.setFillColor(sf::Color(41, 125, 155)); break;
-            default:          tile.setFillColor(sf::Color(44, 92, 58)); break;
+            const TileType type = tiles[y][x];
+            const std::size_t kind = visualTileIndex(type);
+            const std::size_t variant = selectTileVariant(y, x, type, 2);
+            const sf::Texture* texture = tileTextures[kind][variant];
+            tile.setTexture(texture, true);
+            if (texture) {
+                tile.setFillColor(sf::Color::White);
+            } else if (type == TILE_WALL) {
+                tile.setFillColor(sf::Color(68, 73, 78));
+            } else if (type == TILE_PATH || type == TILE_SPAWN) {
+                tile.setFillColor(sf::Color(91, 80, 58));
+            } else {
+                tile.setFillColor(sf::Color(44, 92, 58));
             }
             tile.setPosition({x * TILE_SIZE, y * TILE_SIZE});
             window.draw(tile);

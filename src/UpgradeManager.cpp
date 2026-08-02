@@ -1,7 +1,6 @@
 #include "UpgradeManager.h"
 #include "Ally.h"
 #include "Player.h"
-#include "Weapon.h"
 
 #include <algorithm>
 
@@ -18,6 +17,32 @@ int UpgradeManager::getCost(UpgradeType type) const {
     return 20 + getLevel(type) * 15;
 }
 
+UpgradePreview UpgradeManager::preview(UpgradeType type) const {
+    const int level = getLevel(type);
+    const int cost = getCost(type);
+    UpgradePreview result{
+        level, std::min(level + 1, 5), cost,
+        gold >= cost && level < 5, level >= 5, "", "", ""};
+    switch (type) {
+    case UpgradeType::Damage:
+        result.name = "TEAM DAMAGE";
+        result.effectLine1 = "Player Damage +4";
+        result.effectLine2 = "Ally Damage +3";
+        break;
+    case UpgradeType::Vitality:
+        result.name = "TEAM VITALITY";
+        result.effectLine1 = "Player Max HP +25";
+        result.effectLine2 = "Ally Max HP +15";
+        break;
+    case UpgradeType::FireRate:
+        result.name = "TEAM FIRE RATE";
+        result.effectLine1 = "Player Cooldown x0.84";
+        result.effectLine2 = "Ally Cooldown x0.88";
+        break;
+    }
+    return result;
+}
+
 bool UpgradeManager::purchase(
     UpgradeType type, Player& player,
     std::vector<std::unique_ptr<Ally>>& allies) {
@@ -28,15 +53,9 @@ bool UpgradeManager::purchase(
     switch (type) {
     case UpgradeType::Damage:
         ++damageLevel;
-        if (player.getCurrentWeapon()) {
-            player.getCurrentWeapon()->setDamage(
-                player.getCurrentWeapon()->getDamage() + 4);
-        }
+        player.setAttackPower(player.getAttackPower() + 4.f);
         for (auto& ally : allies) {
-            if (ally->getCurrentWeapon()) {
-                ally->getCurrentWeapon()->setDamage(
-                    ally->getCurrentWeapon()->getDamage() + 3);
-            }
+            ally->setAttackPower(ally->getAttackPower() + 3.f);
         }
         break;
 
@@ -69,15 +88,11 @@ bool UpgradeManager::undoLastPurchase(
     case UpgradeType::Damage:
         if (damageLevel <= 0) return false;
         --damageLevel;
-        if (player.getCurrentWeapon()) {
-            player.getCurrentWeapon()->setDamage(
-                std::max(0, player.getCurrentWeapon()->getDamage() - 4));
-        }
+        player.setAttackPower(
+            std::max(0.f, player.getAttackPower() - 4.f));
         for (auto& ally : allies) {
-            if (ally->getCurrentWeapon()) {
-                ally->getCurrentWeapon()->setDamage(
-                    std::max(0, ally->getCurrentWeapon()->getDamage() - 3));
-            }
+            ally->setAttackPower(
+                std::max(0.f, ally->getAttackPower() - 3.f));
         }
         break;
 

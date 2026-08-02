@@ -2,7 +2,11 @@
 
 #include <SFML/Graphics.hpp>
 #include <optional>
+#include <array>
+#include <string_view>
 #include <vector>
+
+class TextureManager;
 
 enum TileType {
     TILE_GRASS = 0,
@@ -12,11 +16,16 @@ enum TileType {
     TILE_DEPLOY
 };
 
+std::array<std::string_view, 2> mapTextureKeys(TileType type);
+std::size_t selectTileVariant(
+    int row, int column, TileType type, std::size_t variantCount) noexcept;
+
 class Map {
 public:
     Map(int width, int height);
 
     void generate();
+    void setTextureManager(TextureManager& manager);
     void draw(sf::RenderWindow& window) const;
     void handleMouseClick(int mouseX, int mouseY,
                           std::vector<sf::Vector2i>& selectedPositions,
@@ -28,6 +37,7 @@ public:
     bool isSolid(sf::Vector2i cell) const;
     bool isWalkable(int x, int y) const;
     bool isWalkable(sf::Vector2i cell) const;
+    TileType getTileType(int x, int y) const { return tiles[y][x]; }
     bool isWalkableWorld(sf::Vector2f center, float halfSize = 14.f) const;
     bool collidesWithSolid(const sf::FloatRect& bounds) const;
     sf::FloatRect getWorldBounds() const;
@@ -52,8 +62,11 @@ public:
     }
 
 private:
+    void loadTileTextures();
     int width;
     int height;
     std::vector<std::vector<TileType>> tiles;
     std::vector<sf::Vector2i> enemySpawnCells;
+    TextureManager* textureManager = nullptr;
+    std::array<std::array<const sf::Texture*, 2>, 3> tileTextures{};
 };

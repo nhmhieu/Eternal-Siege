@@ -119,10 +119,7 @@ std::unique_ptr<Monster> WaveManager::createMonster(
         break;
     }
 
-    monster->setCurrentWeapon(std::make_unique<Sword>(
-        stats.effectiveDamage,
-        stats.attackRange
-    ));
+    monster->setCurrentWeapon(std::make_unique<Sword>(stats.attackRange));
 
     const sf::FloatRect spawnBounds = monster->getCollisionBox();
     const sf::Vector2f halfExtents = spawnBounds.size / 2.f;

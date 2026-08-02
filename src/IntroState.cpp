@@ -1,181 +1,111 @@
 #include "IntroState.h"
+
+#include "AssetLocator.h"
 #include "MenuState.h"
-#include <iostream>
-#include <algorithm> // Bổ sung để dùng std::clamp
 
-IntroState::IntroState(
-    StateMachine& machine,
-    sf::RenderWindow& window,
-    TextureManager& textureManager
-)
-    : stateMachine(machine),
-      window(window),
-      textureManager(textureManager) {
+#include <array>
+
+namespace {
+const std::array<const char*, 4> STORY_FRAMES{{
+    "ETERNAL SIEGE",
+    "For centuries, the Eternal Gate protected the realm\n"
+    "from the armies of the Abyss.",
+    "Now the seal is breaking.\n"
+    "The Spirit Warden and four guardians must hold the final stronghold.",
+    "Defend the gate.\nSurvive four waves.\nDefeat the Abyssal Lord."
+}};
 }
 
-void IntroState::setupPositions() {
-    float windowWidth = static_cast<float>(window.getSize().x);
-    float windowHeight = static_cast<float>(window.getSize().y);
-
-    // ===================================================
-    // 1. NHÓM 1: CÙNG 1 DÒNG ("From nowhere of the universe")
-    // ===================================================
-    if (line1aText && line1bText) {
-        float spacing = 12.f; // Khoảng cách giữa 2 đoạn chữ
-
-        sf::FloatRect bounds1a = line1aText->getLocalBounds();
-        sf::FloatRect bounds1b = line1bText->getLocalBounds();
-
-        float totalWidth = bounds1a.size.x + spacing + bounds1b.size.x;
-        float startX = (windowWidth - totalWidth) / 2.f;
-        float centerY = windowHeight / 2.f;
-
-        // --- Dòng 1a: "From nowhere" ---
-        line1aText->setOrigin({ bounds1a.position.x, bounds1a.position.y + bounds1a.size.y / 2.f });
-        line1aText->setPosition({ startX, centerY });
-
-        // --- Dòng 1b: "of the universe" ---
-        float startX_1b = startX + bounds1a.size.x + spacing;
-        line1bText->setOrigin({ bounds1b.position.x, bounds1b.position.y + bounds1b.size.y / 2.f });
-        line1bText->setPosition({ startX_1b, centerY });
-    }
-
-    // ===================================================
-    // 2. NHÓM 2: 2 DÒNG TRÊN DƯỚI ("Created by" & "Ngo0Group")
-    // ===================================================
-    if (createdByText) {
-        sf::FloatRect b2a = createdByText->getLocalBounds();
-        createdByText->setOrigin({ b2a.position.x + b2a.size.x / 2.f, b2a.position.y + b2a.size.y / 2.f });
-        createdByText->setPosition({ windowWidth / 2.f, windowHeight / 2.f - 30.f });
-    }
-
-    if (groupNameText) {
-        sf::FloatRect b2b = groupNameText->getLocalBounds();
-        groupNameText->setOrigin({ b2b.position.x + b2b.size.x / 2.f, b2b.position.y + b2b.size.y / 2.f });
-        groupNameText->setPosition({ windowWidth / 2.f, windowHeight / 2.f + 35.f });
-    }
-}
+IntroState::IntroState(StateMachine& machine, sf::RenderWindow& gameWindow,
+                       TextureManager& textures, AudioManager& audio)
+    : stateMachine(machine), window(gameWindow), textureManager(textures),
+      audioManager(audio) {}
 
 void IntroState::onEnter() {
-    if (!font.openFromFile("assets/fonts/Font.ttf")) {
-        std::cerr << "IntroState: Failed to load font!" << std::endl;
-        stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
+    audioManager.playMusic("assets/audio/music/menu_theme.ogg");
+    const auto fontPath = AssetLocator::find("assets/fonts/Font.ttf");
+    if (!fontPath || !font.openFromFile(*fontPath)) {
+        finishIntro();
         return;
     }
+    storyText.emplace(font, "", 38);
+    storyText->setFillColor(sf::Color(235, 225, 195));
+    hintText.emplace(font, "Space / Enter: next    Escape: skip", 18);
+    hintText->setFillColor(sf::Color(150, 150, 150));
+    const auto hintBounds = hintText->getLocalBounds();
+    hintText->setOrigin({hintBounds.position.x + hintBounds.size.x / 2.f,
+                         hintBounds.position.y + hintBounds.size.y / 2.f});
+    hintText->setPosition({640.f, 665.f});
 
-    line1aText.emplace(font, "From nowhere", 32);
-    line1bText.emplace(font, "of the universe", 32);
-    createdByText.emplace(font, "Created by", 24);
-    groupNameText.emplace(font, "Ngo0Group", 52);
-
-    setupPositions();
+    if (textureManager.loadTexture("Logo", "assets/images/ui/logo.png")) {
+        if (const sf::Texture* logo = textureManager.findTexture("Logo")) {
+            logoSprite.emplace(*logo);
+            const sf::Vector2u size = logo->getSize();
+            const float scale = std::min(600.f / static_cast<float>(size.x),
+                                         225.f / static_cast<float>(size.y));
+            logoSprite->setScale({scale, scale});
+            logoSprite->setOrigin({static_cast<float>(size.x) / 2.f,
+                                   static_cast<float>(size.y) / 2.f});
+            logoSprite->setPosition({640.f, 250.f});
+        }
+    }
+    showFrame();
 }
 
-void IntroState::onExit() {
+void IntroState::onExit() {}
+
+void IntroState::showFrame() {
+    frameTimer = 0.f;
+    if (!storyText) return;
+    storyText->setString(STORY_FRAMES[static_cast<std::size_t>(frameIndex)]);
+    storyText->setCharacterSize(frameIndex == 0 ? 72u : 38u);
+    const sf::FloatRect bounds = storyText->getLocalBounds();
+    storyText->setOrigin({bounds.position.x + bounds.size.x / 2.f,
+                          bounds.position.y + bounds.size.y / 2.f});
+    storyText->setPosition({640.f, frameIndex == 0 && logoSprite ? 455.f : 330.f});
+}
+
+void IntroState::finishIntro() {
+    if (transitionRequested) return;
+    transitionRequested = true;
+    stateMachine.changeState(std::make_unique<MenuState>(
+        stateMachine, window, textureManager, audioManager));
 }
 
 void IntroState::handleEvent(const sf::Event& event) {
-    if (event.is<sf::Event::KeyPressed>() || event.is<sf::Event::MouseButtonPressed>()) {
-        stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
+    if (const auto* released = event.getIf<sf::Event::KeyReleased>()) {
+        if (released->code == sf::Keyboard::Key::Space ||
+            released->code == sf::Keyboard::Key::Enter) {
+            advanceKeyHeld = false;
+        }
+        return;
+    }
+    const auto* key = event.getIf<sf::Event::KeyPressed>();
+    if (!key) return;
+    if (key->code == sf::Keyboard::Key::Escape) {
+        finishIntro();
+    } else if (key->code == sf::Keyboard::Key::Space ||
+               key->code == sf::Keyboard::Key::Enter) {
+        if (advanceKeyHeld) return;
+        advanceKeyHeld = true;
+        if (++frameIndex >= static_cast<int>(STORY_FRAMES.size())) finishIntro();
+        else showFrame();
     }
 }
 
 void IntroState::update(float dt) {
-    switch (currentPhase) {
-    case TextPhase::Line1a_FadeIn:
-        alpha1a += fadeSpeed * dt;
-        if (alpha1a >= 255.f) {
-            alpha1a = 255.f;
-            currentPhase = TextPhase::Line1b_FadeIn;
-        }
-        break;
-
-    case TextPhase::Line1b_FadeIn:
-        alpha1b += fadeSpeed * dt;
-        if (alpha1b >= 255.f) {
-            alpha1b = 255.f;
-            currentPhase = TextPhase::Line1_Hold;
-            holdTimer = 0.f;
-        }
-        break;
-
-    case TextPhase::Line1_Hold:
-        holdTimer += dt;
-        if (holdTimer >= holdDuration) {
-            currentPhase = TextPhase::Line1_FadeOut;
-        }
-        break;
-
-    case TextPhase::Line1_FadeOut:
-        alpha1a -= fadeSpeed * dt;
-        alpha1b -= fadeSpeed * dt;
-        if (alpha1a <= 0.f) {
-            alpha1a = 0.f;
-            alpha1b = 0.f;
-            currentPhase = TextPhase::Line2a_FadeIn;
-        }
-        break;
-
-    case TextPhase::Line2a_FadeIn:
-        alpha2a += fadeSpeed * dt;
-        if (alpha2a >= 255.f) {
-            alpha2a = 255.f;
-            currentPhase = TextPhase::Line2b_FadeIn;
-        }
-        break;
-
-    case TextPhase::Line2b_FadeIn:
-        alpha2b += fadeSpeed * dt;
-        if (alpha2b >= 255.f) {
-            alpha2b = 255.f;
-            currentPhase = TextPhase::Line2_Hold;
-            holdTimer = 0.f;
-        }
-        break;
-
-    case TextPhase::Line2_Hold:
-        holdTimer += dt;
-        if (holdTimer >= holdDuration) {
-            currentPhase = TextPhase::Line2_FadeOut;
-        }
-        break;
-
-    case TextPhase::Line2_FadeOut:
-        alpha2a -= fadeSpeed * dt;
-        alpha2b -= fadeSpeed * dt;
-        if (alpha2a <= 0.f) {
-            alpha2a = 0.f;
-            alpha2b = 0.f;
-            currentPhase = TextPhase::Finished;
-        }
-        break;
-
-    case TextPhase::Finished:
-        // Chuyển state và ngắt switch ngay lập tức
-        stateMachine.changeState(std::make_unique<MenuState>(stateMachine, window, textureManager));
+    if (transitionRequested) return;
+    frameTimer += dt;
+    if (frameTimer < FRAME_DURATIONS[static_cast<std::size_t>(frameIndex)]) {
         return;
     }
-
-    // Ép giá trị Alpha an toàn trong [0, 255] tránh chớp nháy màn hình
-    auto getAlpha = [](float a) {
-        return static_cast<std::uint8_t>(std::clamp(a, 0.f, 255.f));
-        };
-
-    if (line1aText) line1aText->setFillColor(sf::Color(255, 255, 255, getAlpha(alpha1a)));
-    if (line1bText) line1bText->setFillColor(sf::Color(255, 255, 255, getAlpha(alpha1b)));
-    if (createdByText) createdByText->setFillColor(sf::Color(200, 200, 200, getAlpha(alpha2a)));
-    if (groupNameText) groupNameText->setFillColor(sf::Color(255, 215, 0, getAlpha(alpha2b)));
+    if (++frameIndex >= static_cast<int>(STORY_FRAMES.size())) finishIntro();
+    else showFrame();
 }
 
-void IntroState::render(sf::RenderWindow& window) {
-    window.clear(sf::Color::Black);
-
-    if (currentPhase <= TextPhase::Line1_FadeOut) {
-        if (line1aText) window.draw(*line1aText);
-        if (line1bText) window.draw(*line1bText);
-    }
-    else if (currentPhase < TextPhase::Finished) {
-        if (createdByText) window.draw(*createdByText);
-        if (groupNameText) window.draw(*groupNameText);
-    }
+void IntroState::render(sf::RenderWindow& target) {
+    target.clear(sf::Color(7, 8, 15));
+    if (frameIndex == 0 && logoSprite) target.draw(*logoSprite);
+    if (storyText) target.draw(*storyText);
+    if (hintText) target.draw(*hintText);
 }

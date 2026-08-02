@@ -43,6 +43,14 @@ protected:
 
     float gap = 0.f;
 
+    // Presentation-only state. These values never affect gameplay position,
+    // collision, damage, or targeting.
+    float visualTime = 0.f;
+    float hurtFlashTimer = 0.f;
+    float healingFlashTimer = 0.f;
+    float healthBarOffsetY = -40.f;
+    float healthBarWidth = 50.f;
+
     // ---------- WEAPON ----------
     std::unique_ptr<Weapon> currentWeapon;
 
@@ -50,6 +58,8 @@ protected:
     bool isDying = false;
     float deadTimer = 0.f;
     float deadAnimationDuration = 0.5f;
+
+    void beginAttackCooldown();
 
 public:
     // ===============================
@@ -128,12 +138,18 @@ public:
         return !isAlive;
     }
 
-    void heal(float amount) {
+    float heal(float amount) {
         if (amount <= 0.f || isDead()) {
-            return;
+            return 0.f;
         }
 
+        const float previousHealth = health;
         health = std::min(health + amount, maxHealth);
+        const float restored = health - previousHealth;
+        if (restored > 0.f) {
+            healingFlashTimer = 0.22f;
+        }
+        return restored;
     }
 
     void increaseMaxHealth(float amount) {
@@ -181,14 +197,7 @@ public:
         return isAttacking;
     }
 
-    void setIsAttacking(bool value) {
-        if (value) {
-            startAttacking();
-        } else {
-            isAttacking = false;
-            attackTimer = 0.f;
-        }
-    }
+    void setIsAttacking(bool value);
 
     float getAttackPower() const {
         return attackPower;
@@ -279,6 +288,20 @@ public:
     // ATTACK STATE
     // ===============================
     void updateStatus();
+
+    float getAttackAnimationProgress() const;
+
+    float getVisualTime() const {
+        return visualTime;
+    }
+
+    float getHurtFlashRemaining() const {
+        return hurtFlashTimer;
+    }
+
+    float getHealingFlashRemaining() const {
+        return healingFlashTimer;
+    }
 
     void updateAttackTimer(
         const GameContext& context

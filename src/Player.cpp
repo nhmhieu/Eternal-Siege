@@ -5,7 +5,60 @@
 #include "TextureManager.h"
 #include "Constants.h"
 #include "Map.h"
+#include "Effects.h"
+#include "SpiritStaff.h"
 #include <algorithm>
+#include <cstdint>
+#include <iostream>
+
+namespace {
+struct PlayerGeometry {
+    sf::IntRect visible{};
+    sf::Vector2f gripNormalized{0.845f, 0.541f};
+};
+
+PlayerGeometry findPlayerGeometry(const sf::Texture& texture) {
+    const sf::Image image = texture.copyToImage();
+    const sf::Vector2u size = image.getSize();
+    if (size.x == 0 || size.y == 0) return {};
+    unsigned minX = size.x;
+    unsigned minY = size.y;
+    unsigned maxX = 0;
+    unsigned maxY = 0;
+    bool found = false;
+    for (unsigned y = 0; y < size.y; ++y) {
+        for (unsigned x = 0; x < size.x; ++x) {
+            if (image.getPixel({x, y}).a <= 32) continue;
+            found = true;
+            minX = std::min(minX, x);
+            minY = std::min(minY, y);
+            maxX = std::max(maxX, x);
+            maxY = std::max(maxY, y);
+        }
+    }
+    if (!found) return {};
+    const unsigned rawWidth = maxX - minX + 1;
+    const unsigned rawHeight = maxY - minY + 1;
+    const sf::Vector2f gripPixel{
+        static_cast<float>(minX) + 0.845f * rawWidth,
+        static_cast<float>(minY) + 0.541f * rawHeight};
+    constexpr unsigned padding = 6;
+    minX = minX > padding ? minX - padding : 0;
+    minY = minY > padding ? minY - padding : 0;
+    maxX = std::min(size.x - 1, maxX + padding);
+    maxY = std::min(size.y - 1, maxY + padding);
+    PlayerGeometry result;
+    result.visible = {{static_cast<int>(minX), static_cast<int>(minY)},
+                      {static_cast<int>(maxX - minX + 1),
+                       static_cast<int>(maxY - minY + 1)}};
+    result.gripNormalized = {
+        (gripPixel.x - static_cast<float>(minX)) /
+            static_cast<float>(result.visible.size.x),
+        (gripPixel.y - static_cast<float>(minY)) /
+            static_cast<float>(result.visible.size.y)};
+    return result;
+}
+}
 
 Player::Player(TextureManager& textureManager)
     : Entity(
@@ -17,14 +70,31 @@ Player::Player(TextureManager& textureManager)
       playerTexture(nullptr) {
     team = Team::Player;
 
-    const float desiredSize = 80.f;
+    const float desiredHeight = 86.f;
 
-    playerTexture = &textureManager.getTexture("Ash");
-    playerShape.setSize(sf::Vector2f(desiredSize, desiredSize));
-    playerShape.setOrigin(sf::Vector2f(desiredSize / 2.f, desiredSize / 2.f));
-    playerShape.setTexture(playerTexture);
-    playerShape.setPosition(sf::Vector2f(400.f, 300.f));
-    
+    playerTexture = textureManager.findTexture(std::string(TEXTURE_KEY));
+    const PlayerGeometry geometry = playerTexture
+        ? findPlayerGeometry(*playerTexture) : PlayerGeometry{};
+    const sf::IntRect visible = geometry.visible;
+    if (playerTexture && visible.size.x > 0 && visible.size.y > 0) {
+        const float aspect = static_cast<float>(visible.size.x) /
+                             static_cast<float>(visible.size.y);
+        const sf::Vector2f displaySize{
+            desiredHeight * aspect, desiredHeight};
+        playerShape.setSize(displaySize);
+        playerShape.setOrigin({displaySize.x / 2.f, displaySize.y});
+        playerShape.setTexture(playerTexture);
+        playerShape.setTextureRect(visible);
+        playerGripNormalized = geometry.gripNormalized;
+    } else {
+        std::cerr << "PlayerMage texture is missing; rendering an explicit "
+                     "primitive fallback.\n";
+        playerShape.setSize({50.f, desiredHeight});
+        playerShape.setOrigin({25.f, desiredHeight});
+        playerShape.setFillColor(sf::Color(70, 150, 230));
+    }
+    playerShape.setPosition(sf::Vector2f(400.f, 318.f));
+    previousPosition = position;
 
 }
 
@@ -46,7 +116,28 @@ void Player::handleInput() {
 
 void Player::setPosition(const sf::Vector2f& pos) {
     Entity::setPosition(pos.x, pos.y);
-    playerShape.setPosition(pos);
+    playerShape.setPosition(pos + sf::Vector2f(0.f, 18.f));
+}
+
+void Player::setAimDirection(sf::Vector2f aim) {
+    const float length = std::sqrt(aim.x * aim.x + aim.y * aim.y);
+    if (length > 0.0001f) setAttackDirection(aim / length);
+}
+
+sf::Vector2f Player::getSpiritStaffTip() const {
+    if (const auto* staff = dynamic_cast<const SpiritStaff*>(
+            currentWeapon.get())) {
+        return staff->getTipPosition(
+            getSpiritStaffAnchor(), attackDirection);
+    }
+    return getSpiritStaffAnchor();
+}
+
+sf::Vector2f Player::getSpiritStaffAnchor() const {
+    const sf::Vector2f localGrip{
+        playerShape.getSize().x * playerGripNormalized.x,
+        playerShape.getSize().y * playerGripNormalized.y};
+    return playerShape.getTransform().transformPoint(localGrip);
 }
 
 void Player::moveWithCollision(
@@ -59,10 +150,12 @@ void Player::moveWithCollision(
 }
 
 void Player::update(GameContext& context) {
+    if (context.paused) return;
     Entity::update(context);
 
     if (isDead()) {
         updateDeadTimer(context);
+        updatePresentation(context.effects);
         return;
     }
 
@@ -91,10 +184,83 @@ void Player::update(GameContext& context) {
 
     // C?p nh?t tr?ng thi t?n cng (t? t?t)
     updateStatus();
+    updatePresentation(context.effects);
 }
 
 void Player::draw(sf::RenderWindow& window) {
+    const auto* staff = dynamic_cast<const SpiritStaff*>(currentWeapon.get());
+    const sf::Vector2f handAnchor = getSpiritStaffAnchor();
+    if (staff) staff->draw(window, handAnchor, attackDirection);
     window.draw(playerShape);
+    if (staff) {
+        staff->drawGlow(window, handAnchor, attackDirection, visualTime);
+    }
+}
+
+void Player::drawShadow(sf::RenderWindow& window) const {
+    const float shadowRadius = std::max(14.f, playerShape.getSize().x * 0.24f);
+    sf::CircleShape shadow(shadowRadius);
+    shadow.setOrigin({shadowRadius, shadowRadius});
+    shadow.setScale({1.25f, 0.36f});
+    shadow.setPosition({position.x, position.y + 18.f});
+    shadow.setFillColor(sf::Color(8, 5, 15, isDying ? 35 : 95));
+    window.draw(shadow);
+}
+
+void Player::updatePresentation(Effects* effects) {
+    const sf::Vector2f moved = position - previousPosition;
+    const float movedDistance = std::sqrt(
+        moved.x * moved.x + moved.y * moved.y);
+    visuallyMoving = movedDistance > 0.001f;
+    footstepDistance += movedDistance;
+    if (effects && footstepDistance >= 22.f) {
+        effects->spawnFootstep(
+            position + sf::Vector2f(0.f, 18.f), FootstepStyle::Player);
+        footstepDistance = std::fmod(footstepDistance, 22.f);
+    }
+    previousPosition = position;
+
+    const float bob = visuallyMoving
+        ? std::abs(std::sin(visualTime * 12.f)) * 3.f
+        : std::sin(visualTime * 3.2f) * 0.7f;
+    float rotation = visuallyMoving ? std::sin(visualTime * 12.f) * 2.f : 0.f;
+    sf::Vector2f visualPosition = position - sf::Vector2f(0.f, bob);
+    float scaleX = 1.f;
+    float scaleY = 1.f;
+
+    if (isAttacking) {
+        const float progress = getAttackAnimationProgress();
+        const float pulse = progress <= 0.10f
+            ? std::sin((progress / 0.10f) * 3.14159265358979323846f)
+            : 0.f;
+        visualPosition -= attackDirection * 4.f * pulse;
+        scaleX += 0.08f * pulse;
+        scaleY -= 0.05f * pulse;
+        rotation -= attackDirection.x * 5.f * pulse;
+    }
+
+    const float facing = (direction.x < -0.05f ||
+        (direction.x == 0.f && attackDirection.x < -0.05f)) ? -1.f : 1.f;
+    sf::Color tint = playerTexture
+        ? sf::Color::White
+        : sf::Color(70, 150, 230);
+    if (isDying) {
+        const float progress = std::clamp(
+            deadTimer / std::max(0.01f, deadAnimationDuration), 0.f, 1.f);
+        rotation += facing * 75.f * progress;
+        scaleX *= 1.f - progress * 0.25f;
+        scaleY *= 1.f - progress * 0.45f;
+        tint.a = static_cast<std::uint8_t>(255.f * (1.f - progress));
+    } else if (healingFlashTimer > 0.f) {
+        tint = sf::Color(125, 255, 205);
+    } else if (hurtFlashTimer > 0.f) {
+        tint = sf::Color(255, 135, 135);
+    }
+
+    playerShape.setPosition(visualPosition + sf::Vector2f(0.f, 18.f));
+    playerShape.setScale({facing * scaleX, scaleY});
+    playerShape.setRotation(sf::degrees(rotation));
+    playerShape.setFillColor(tint);
 }
 
 sf::FloatRect Player::getCollisionBox() const {
@@ -103,5 +269,6 @@ sf::FloatRect Player::getCollisionBox() const {
 }
 
 sf::FloatRect Player::getHurtBox() const {
-    return playerShape.getGlobalBounds();
+    constexpr sf::Vector2f hurtSize{80.f, 80.f};
+    return {getPosition() - hurtSize / 2.f, hurtSize};
 }

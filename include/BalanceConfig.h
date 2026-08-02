@@ -20,4 +20,6 @@ namespace BalanceConfig {
     constexpr float ALLY_DAMAGE_MULTIPLIER = 1.25f;
     constexpr int ALLY_DAMAGE = static_cast<int>(
         ALLY_BASE_DAMAGE * ALLY_DAMAGE_MULTIPLIER + 0.5f);
+
+    constexpr float ALLY_ATTACK_COOLDOWN = 2.f;
 }

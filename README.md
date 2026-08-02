@@ -1,52 +1,51 @@
 # Eternal Siege
 
-Eternal Siege là game phòng thủ thời gian thực viết bằng C++17 và SFML 3.
-Người chơi cùng bốn đồng minh phải vượt qua bốn đợt quái theo từng nhóm nhỏ;
-các wave sau có Elite và đợt cuối có boss.
+Eternal Siege là game phòng thủ thời gian thực 2D viết bằng C++17 và SFML 3.0.2. Người chơi điều khiển pháp sư hỗ trợ Spirit Warden, phối hợp với bốn đồng minh để vượt qua bốn wave gồm Normal, Elite và Boss ba phase.
 
-## Yêu cầu
+## Yêu cầu và build
 
-- CMake 3.20 trở lên
-- Trình biên dịch hỗ trợ C++17
-- SFML 3 (Graphics, Window, System)
+- CMake 3.20 trở lên.
+- Trình biên dịch hỗ trợ C++17.
+- SFML 3.0.2: Audio, Graphics, Window và System.
 
 Ví dụ với MSYS2 UCRT64 trên Windows:
 
 ```powershell
 $env:Path = "C:\msys64\ucrt64\bin;$env:Path"
-cmake -S . -B build -G "MinGW Makefiles" `
+cmake -S . -B build -DBUILD_TESTING=ON -G "MinGW Makefiles" `
   -DCMAKE_PREFIX_PATH=C:\msys64\ucrt64
-cmake --build build -j 4
+cmake --build build --parallel 4
 ctest --test-dir build --output-on-failure
 .\build\my_game.exe
 ```
 
-CMake tự chép thư mục `assets/` và các DLL runtime mà SFML khai báo vào thư
-mục chứa executable sau khi build.
+CMake tự chép `assets/` và các DLL runtime do SFML khai báo vào thư mục chứa executable. Có thể dùng `BUILD_WINDOWS.bat` để build nhanh trên cấu hình Windows đã hỗ trợ.
 
-## Cách chơi
+## Điều khiển và luồng game
 
-1. Có thể nhấn phím hoặc chuột để bỏ qua intro.
-2. Chọn **BAT DAU** tại menu.
-3. Chọn đúng bốn ô hợp lệ trên bản đồ, sau đó chọn **BAT DAU**.
-4. Trong trận:
-   - `W A S D`: di chuyển.
-   - Chuột trái: bắn theo hướng con trỏ.
-   - `P`: tạm dừng/tiếp tục.
-   - Giữa các wave, dùng `1`, `2`, `3` để nâng sát thương, sinh lực hoặc tốc độ
-     đánh; nhấn `Backspace` để hoàn tác lần mua gần nhất; nhấn `Enter` để bắt
-     đầu wave kế tiếp.
+- Intro → Menu → Setup (chọn đúng 4 vị trí Ally) → Gameplay.
+- `W A S D`: di chuyển PlayerMage.
+- Chuột trái: bắn Spirit Bolt theo hướng con trỏ.
+- `Q`: Radiant Pulse, hồi 18% max HP cho Ally sống, bị thương và trong bán kính.
+- `H`: mở/đóng hướng dẫn trong trận.
+- `M`: bật/tắt âm thanh.
+- `P`: tạm dừng/tiếp tục.
+- Giữa các wave: `1`, `2`, `3` mua nâng cấp; `Backspace` hoàn tác giao dịch gần nhất; `Enter` bắt đầu wave kế tiếp.
+- Màn Victory/Defeat: `Enter` chơi lại, `Escape` về menu; cũng hỗ trợ chuột.
 
-Người chơi thua khi hết máu và thắng sau khi tiêu diệt boss ở wave 4.
+Player sử dụng Spirit Staff/Spirit Bolt màu xanh–vàng. Junior dùng Wand/Magic tím, Damian dùng Bow, Evangeline và Lucas dùng Sword. Wave 4 kết thúc bằng Boss ba phase: Beam mở ở ngưỡng 50% HP và Enraged mở khi vượt ngưỡng 25% HP. Tiêu diệt Boss dẫn tới Victory; Player hết HP dẫn tới Defeat.
 
 ## Cấu trúc
 
 - `src/`, `include/`: mã nguồn và header.
-- `assets/`: font và hình nhân vật.
-- `tests/`: kiểm thử state machine, map, wave và boss.
-- `docs/architecture.md`: sơ đồ lớp và sơ đồ trình tự.
-- `build/`: kết quả build cục bộ, không đưa vào Git.
+- `assets/`: hình ảnh, tile map, font, nhạc và SFX; nguồn gốc được ghi tại `assets/ATTRIBUTION.md`.
+- `tests/`: 12 executable test được đăng ký với CTest.
+- `tools/validate_project.py`: kiểm tra asset, cấu hình và tính di động của project.
+- `docs/architecture.md`: kiến trúc và ownership.
+- `docs/project-report.md`: bản thảo báo cáo đồ án.
 
-Thiết kế dùng các lớp trừu tượng `State`, `Entity`, `Weapon`; các lớp con triển
-khai hành vi riêng qua hàm `virtual`. Quyền sở hữu entity, weapon và projectile
-được quản lý bằng `std::unique_ptr`.
+Thiết kế sử dụng các lớp trừu tượng `State`, `Entity`, `Weapon`; ownership entity, weapon và projectile được quản lý bằng `std::unique_ptr`. Collision/pathfinding dựa trên dữ liệu logic, độc lập với sprite và hiệu ứng.
+
+## Trạng thái xác minh
+
+Clean build và 12/12 CTest là điều kiện bắt buộc trước khi phát hành. Kiểm thử tự động không thay thế playtest trực quan: cần tự kiểm tra animation, thứ tự render, HUD, âm thanh, pause/resume, Boss Beam/Enrage và luồng restart trên máy có cửa sổ SFML.

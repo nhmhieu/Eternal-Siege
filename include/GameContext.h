@@ -10,6 +10,8 @@ class Monster;
 class Ally;
 class CombatManager;
 class Map;
+class Effects;
+class AudioManager;
 
 class GameContext {
 public:
@@ -26,6 +28,10 @@ public:
     std::vector<std::unique_ptr<Projectiles>> projectiles;
 
     CombatManager* combatManager = nullptr;
+    Effects* effects = nullptr;
+    AudioManager* audioManager = nullptr;
+    bool allySkillsEnabled = false;
+    bool paused = false;
 
     // Map do GameplayState sở hữu, GameContext chỉ quan sát.
     const Map* map = nullptr;

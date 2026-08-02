@@ -8,22 +8,19 @@ class CombatManager ;
 class Bow : public Weapon{
 
     private : 
-        int damage = 5 ; 
         float projectTileSpeed = 500.f ; 
-        float cooldown = 0 ; 
+        static constexpr float attackRange = 250.f;
 
     public : 
-        Bow(float dmg, float cooldown) ; 
-        Bow() ; 
-        ~Bow() ; 
+        Bow() = default;
+        ~Bow() override = default;
 
         void fire(sf :: Vector2f position, sf :: Vector2f direction, 
-        Team shooterTeam, GameContext& context) ; 
+        Team shooterTeam, float damage, GameContext& context) ;
 
         sf::FloatRect getHitbox(sf::Vector2f entityCenter, sf::Vector2f attackDir) override;
         bool isHitting(sf::Vector2f attackerPos, sf::Vector2f attackDir, sf::Vector2f targetPos) override;
-        int getDamage() const override;
-        void setDamage(int damage) override;
+        float getAttackRange() const override { return attackRange; }
         void triggerAction(Entity* attacker, GameContext& context, CombatManager& combatManager) override;
 
 } ;

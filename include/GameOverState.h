@@ -4,23 +4,21 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include "TextureManager.h"
+#include "AudioManager.h"
+#include "EndScreenView.h"
 
 class GameOverState : public State {
 private:
     StateMachine& stateMachine;
     sf::RenderWindow& window;
     TextureManager& textureManager;
+    AudioManager& audioManager;
 
-    sf::RectangleShape background;
-    sf::Font font;
-    std::unique_ptr<sf::Text> titleText;
-    std::unique_ptr<sf::Text> restartText;
-    std::unique_ptr<sf::Text> menuText;
-    std::unique_ptr<sf::RectangleShape> restartButton;
-    std::unique_ptr<sf::RectangleShape> menuButton;
+    EndScreenView view;
 
 public:
-    GameOverState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
+    GameOverState(StateMachine& machine, sf::RenderWindow& window,
+                  TextureManager& textureManager, AudioManager& audioManager);
     ~GameOverState() override = default;
 
     void onEnter() override;

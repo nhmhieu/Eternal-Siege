@@ -3,6 +3,8 @@
 #include "GameplayState.h"
 #include "GameContext.h"
 #include "IntroState.h"
+#include "AssetLocator.h"
+#include "Constants.h"
 #include <optional>
 #include <algorithm>
 
@@ -10,7 +12,16 @@
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Eternal Siege") {
     window.setFramerateLimit(60);
-    stateMachine.changeState(std::make_unique<IntroState>(stateMachine, window, textureManager));
+    window.setKeyRepeatEnabled(GameConfig::KEY_REPEAT_ENABLED);
+    if (const auto iconPath =
+            AssetLocator::find("assets/images/ui/window_icon.png")) {
+        sf::Image icon;
+        if (icon.loadFromFile(*iconPath)) {
+            window.setIcon(icon.getSize(), icon.getPixelsPtr());
+        }
+    }
+    stateMachine.changeState(std::make_unique<IntroState>(
+        stateMachine, window, textureManager, audioManager));
 }
 
 
@@ -26,6 +37,16 @@ void Game::run() {
                 window.close();
                 break;
             }
+            if (const auto* key = event->getIf<sf::Event::KeyPressed>();
+                key && key->code == sf::Keyboard::Key::M) {
+                audioManager.handleMuteKeyPressed();
+                continue;
+            }
+            if (const auto* key = event->getIf<sf::Event::KeyReleased>();
+                key && key->code == sf::Keyboard::Key::M) {
+                audioManager.handleMuteKeyReleased();
+                continue;
+            }
             stateMachine.handleEvent(*event);
         }
 
@@ -36,6 +57,7 @@ void Game::run() {
         // Avoid a huge simulation jump after dragging/debug-pausing the window.
         const float dt = std::min(clock.restart().asSeconds(), 0.1f);
 
+        audioManager.update(dt);
         stateMachine.update(dt);
         window.clear();
         stateMachine.render(window);

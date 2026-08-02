@@ -5,12 +5,16 @@
 #include "Entity.h"
 #include "Weapon.h"
 
+class Effects;
+
 class CombatManager {
 private:
     std::unordered_set<Entity*> hitEntities;
 
 public:
-    void processAttack(Entity* attacker, Weapon* weapon, std::vector<Entity*>& targets);
+    void processAttack(Entity* attacker, Weapon* weapon,
+                       std::vector<Entity*>& targets,
+                       Effects* effects = nullptr);
     void resetAttack();
     bool hasHit(Entity* target) const;
     void forgetEntity(const Entity* entity);

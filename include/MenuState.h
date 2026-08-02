@@ -3,7 +3,9 @@
 #include "StateMachine.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <optional>
 #include "TextureManager.h"
+#include "AudioManager.h"
 
 class MenuState : public State {
 private:
@@ -11,18 +13,21 @@ private:
     sf::RenderWindow& window;
     sf::Font font;
     TextureManager& textureManager;
+    AudioManager& audioManager;
 
     // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
     std::unique_ptr<sf::Text> startText;
     std::unique_ptr<sf::Text> exitText;
+    std::optional<sf::Sprite> logoSprite;
 
     // Biến thông thường cho các đối tượng không cần Font
     std::unique_ptr<sf::RectangleShape> startButton;
     std::unique_ptr<sf::RectangleShape> exitButton;
 
 public:
-    MenuState(StateMachine& machine, sf::RenderWindow& window, TextureManager& textureManager);
+    MenuState(StateMachine& machine, sf::RenderWindow& window,
+              TextureManager& textureManager, AudioManager& audioManager);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;
