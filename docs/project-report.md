@@ -30,7 +30,7 @@ vượt qua bốn wave gồm Normal, Elite và Boss.
 | Chức năng | Đầu vào | Xử lý | Kết quả |
 |---|---|---|---|
 | Menu | Click Bắt đầu/Thoát | `MenuState` kiểm tra vùng nút | Sang Setup hoặc đóng game |
-| Bố trí Ally | Click các tile hợp lệ | `Map` thêm/bỏ vị trí | Bốn Ally được tạo khi bắt đầu |
+| Bố trí Ally | Chọn Hero Card, click trái/phải hoặc R | `AllyPlacementModel` giữ slot riêng theo `AllyType`; `Map` chỉ xác thực tile | Bốn Ally được tạo đúng identity/vị trí khi bắt đầu |
 | Điều khiển Player | WASD, chuột trái, Q | Movement collision, Spirit Staff/Spirit Bolt và Radiant Pulse | Player di chuyển, bắn và hỗ trợ Ally |
 | Wave | `deltaTime`, số quái sống | `WaveManager` chạy batch | Normal/Elite/Boss xuất hiện |
 | Combat | Hitbox và team | `CombatManager` áp damage | HP giảm, entity chết logic |

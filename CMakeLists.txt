@@ -188,6 +188,10 @@ if(BUILD_TESTING)
         ${CORE_LOGIC_SOURCES}
     )
 
+    add_executable(setup_placement_tests
+        tests/SetupPlacementTests.cpp
+    )
+
     target_include_directories(core_logic_tests PRIVATE
         "${CMAKE_SOURCE_DIR}/include"
     )
@@ -229,6 +233,10 @@ if(BUILD_TESTING)
     )
 
     target_include_directories(full_game_integration_tests PRIVATE
+        "${CMAKE_SOURCE_DIR}/include"
+    )
+
+    target_include_directories(setup_placement_tests PRIVATE
         "${CMAKE_SOURCE_DIR}/include"
     )
 
@@ -319,6 +327,11 @@ if(BUILD_TESTING)
     )
     enable_project_asan(full_game_integration_tests)
 
+    target_link_libraries(setup_placement_tests PRIVATE
+        SFML::System
+    )
+    enable_project_asan(setup_placement_tests)
+
     add_test(NAME core_logic_tests COMMAND core_logic_tests)
     add_test(NAME ally_combat_tests COMMAND ally_combat_tests)
     add_test(NAME combat_regression_tests COMMAND combat_regression_tests)
@@ -330,6 +343,7 @@ if(BUILD_TESTING)
     add_test(NAME intermission_tests COMMAND intermission_tests)
     add_test(NAME boss_enrage_tests COMMAND boss_enrage_tests)
     add_test(NAME full_game_integration_tests COMMAND full_game_integration_tests)
+    add_test(NAME setup_placement_tests COMMAND setup_placement_tests)
 endif()
 
 add_custom_command(

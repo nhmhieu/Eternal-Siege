@@ -23,7 +23,9 @@ CMake tự chép `assets/` và các DLL runtime do SFML khai báo vào thư mụ
 
 ## Điều khiển và luồng game
 
-- Intro → Menu → Setup (chọn đúng 4 vị trí Ally) → Gameplay.
+- Intro → Menu → Setup (chọn từng Ally rồi đặt đủ 4 vị trí) → Gameplay.
+- Trong Setup: click thẻ để chọn Ally, click trái để đặt/di chuyển, click phải
+  để thu hồi và nhấn `R` để reset đội hình. `START BATTLE` chỉ mở khi đủ 4 Ally.
 - `W A S D`: di chuyển PlayerMage.
 - Chuột trái: bắn Spirit Bolt theo hướng con trỏ.
 - `Q`: Radiant Pulse, hồi 18% max HP cho Ally sống, bị thương và trong bán kính.

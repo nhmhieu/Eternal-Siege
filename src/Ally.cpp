@@ -57,6 +57,25 @@ const char* getAllyName(AllyType type) {
     return "Damian";
 }
 
+const char* getAllyRole(AllyType type) {
+    switch (type) {
+    case AllyType::Damian:     return "Ranged Striker";
+    case AllyType::Evangeline: return "Guardian";
+    case AllyType::Junior:     return "Arcane Support";
+    case AllyType::Lucas:      return "Frontline Bruiser";
+    }
+    return "Ally";
+}
+
+const char* getWeaponName(WeaponType type) {
+    switch (type) {
+    case WeaponType::Sword: return "Sword";
+    case WeaponType::Bow:   return "Bow";
+    case WeaponType::Wand:  return "Wand / Magic";
+    }
+    return "Weapon";
+}
+
 AllyType getAllyType(std::string_view name) {
     if (name == "Evangeline") return AllyType::Evangeline;
     if (name == "Junior") return AllyType::Junior;

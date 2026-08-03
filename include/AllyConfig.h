@@ -46,4 +46,6 @@ struct AllySkillConfig {
 const AllyStats& getAllyStats(AllyType type);
 const AllySkillConfig& getAllySkillConfig(AllyType type);
 const char* getAllyName(AllyType type);
+const char* getAllyRole(AllyType type);
+const char* getWeaponName(WeaponType type);
 AllyType getAllyType(std::string_view name);
