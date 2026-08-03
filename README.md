@@ -46,6 +46,4 @@ Player sử dụng Spirit Staff/Spirit Bolt màu xanh–vàng. Junior dùng Wand
 
 Thiết kế sử dụng các lớp trừu tượng `State`, `Entity`, `Weapon`; ownership entity, weapon và projectile được quản lý bằng `std::unique_ptr`. Collision/pathfinding dựa trên dữ liệu logic, độc lập với sprite và hiệu ứng.
 
-## Trạng thái xác minh
 
-Clean build và 12/12 CTest là điều kiện bắt buộc trước khi phát hành. Kiểm thử tự động không thay thế playtest trực quan: cần tự kiểm tra animation, thứ tự render, HUD, âm thanh, pause/resume, Boss Beam/Enrage và luồng restart trên máy có cửa sổ SFML.
