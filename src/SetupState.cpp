@@ -53,9 +53,11 @@ sf::Vector2f fittedSize(const sf::IntRect& visible, float maximum) {
 }
 
 SetupState::SetupState(StateMachine& machine, sf::RenderWindow& gameWindow,
-                       TextureManager& textures, AudioManager& audio)
+                       TextureManager& textures, AudioManager& audio,
+                       GameProgress& gameProgress, LevelId levelId)
     : stateMachine(machine), window(gameWindow), map(15, 15),
-      textureManager(textures), audioManager(audio) {
+      textureManager(textures), audioManager(audio), progress(gameProgress),
+      selectedLevelId(levelId) {
     map.setTextureManager(textureManager);
 }
 
@@ -341,7 +343,8 @@ void SetupState::startBattle() {
     audioManager.playSound("ui_click");
     const std::vector<sf::Vector2i> positions(ordered->begin(), ordered->end());
     stateMachine.changeState(std::make_unique<GameplayState>(
-        stateMachine, window, textureManager, audioManager, map, positions));
+        stateMachine, window, textureManager, audioManager, progress,
+        selectedLevelId, map, positions));
 }
 
 void SetupState::handleEvent(const sf::Event& event) {

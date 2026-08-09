@@ -3,6 +3,7 @@
 #include "StateMachine.h"
 #include "TextureManager.h"
 #include "AudioManager.h"
+#include "GameProgress.h"
 
 class Game {
 public:
@@ -13,6 +14,7 @@ public:
 private:
     TextureManager textureManager;
     AudioManager audioManager;
+    GameProgress progress;
     sf::RenderWindow window;
     StateMachine stateMachine;
     sf::Clock clock;

@@ -17,9 +17,10 @@ const std::array<const char*, 4> STORY_FRAMES{{
 }
 
 IntroState::IntroState(StateMachine& machine, sf::RenderWindow& gameWindow,
-                       TextureManager& textures, AudioManager& audio)
+                       TextureManager& textures, AudioManager& audio,
+                       GameProgress& gameProgress)
     : stateMachine(machine), window(gameWindow), textureManager(textures),
-      audioManager(audio) {}
+      audioManager(audio), progress(gameProgress) {}
 
 void IntroState::onEnter() {
     audioManager.playMusic("assets/audio/music/menu_theme.ogg");
@@ -69,7 +70,7 @@ void IntroState::finishIntro() {
     if (transitionRequested) return;
     transitionRequested = true;
     stateMachine.changeState(std::make_unique<MenuState>(
-        stateMachine, window, textureManager, audioManager));
+        stateMachine, window, textureManager, audioManager, progress));
 }
 
 void IntroState::handleEvent(const sf::Event& event) {

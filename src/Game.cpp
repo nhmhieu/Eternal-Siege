@@ -21,7 +21,7 @@ Game::Game()
         }
     }
     stateMachine.changeState(std::make_unique<IntroState>(
-        stateMachine, window, textureManager, audioManager));
+        stateMachine, window, textureManager, audioManager, progress));
 }
 
 

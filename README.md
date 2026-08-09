@@ -1,6 +1,6 @@
 # Eternal Siege
 
-Eternal Siege là game phòng thủ thời gian thực 2D viết bằng C++17 và SFML 3.0.2. Người chơi điều khiển pháp sư hỗ trợ Spirit Warden, phối hợp với bốn đồng minh để vượt qua bốn wave gồm Normal, Elite và Boss ba phase.
+Eternal Siege là game phòng thủ thời gian thực 2D viết bằng C++17 và SFML 3.0.2. Luồng chơi đi từ Main Menu đến Kingdom Hub, cửa hầm, Level Select, Setup rồi chiến dịch bốn wave và Boss.
 
 ## Yêu cầu và build
 
@@ -27,7 +27,9 @@ CMake tự chép `assets/` và các DLL runtime do SFML khai báo vào thư mụ
 - Trong Setup: click thẻ để chọn Ally, click trái để đặt/di chuyển, click phải
   để thu hồi và nhấn `R` để reset đội hình. `START BATTLE` chỉ mở khi đủ 4 Ally.
 - `W A S D`: di chuyển PlayerMage.
-- Chuột trái: bắn Spirit Bolt theo hướng con trỏ.
+- Nhấp chuột trái: bắn Spirit Bolt khi thả nút.
+- Giữ chuột trái rồi thả: nạp và bắn Charged Heavy Spirit Bolt.
+- Chuột phải hoặc `Shift`: Dash ngay khi nhấn.
 - `Q`: Radiant Pulse, hồi 18% max HP cho Ally sống, bị thương và trong bán kính.
 - `H`: mở/đóng hướng dẫn trong trận.
 - `M`: bật/tắt âm thanh.
@@ -41,7 +43,12 @@ Player sử dụng Spirit Staff/Spirit Bolt màu xanh–vàng. Junior dùng Wand
 
 - `src/`, `include/`: mã nguồn và header.
 - `assets/`: hình ảnh, tile map, font, nhạc và SFX; nguồn gốc được ghi tại `assets/ATTRIBUTION.md`.
-- `tests/`: 12 executable test được đăng ký với CTest.
+- `tests/`: 15 executable test được đăng ký với CTest, gồm regression cho Dash/Heavy và Kingdom flow.
+
+Manual playtest Dash/Heavy: xác nhận Shift/RMB phản hồi ngay; LMB tap chỉ bắn
+Spirit Bolt; LMB hold/release chỉ bắn Heavy; hướng WASD ưu tiên hơn aim; dash không xuyên
+tường; i-frame hết hạn trả lại damage; pause/tutorial/alt-tab hủy gesture;
+charge làm chậm di chuyển và chặn LMB/Q; restart không giữ timer phiên cũ.
 - `tools/validate_project.py`: kiểm tra asset, cấu hình và tính di động của project.
 - `docs/architecture.md`: kiến trúc và ownership.
 - `docs/project-report.md`: bản thảo báo cáo đồ án.

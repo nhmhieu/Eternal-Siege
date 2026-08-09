@@ -109,6 +109,10 @@ void CombatManager::processProjectiles(GameContext& context, const std::vector<E
                     } else if (proj->getStyle() == ProjectileStyle::Spirit) {
                         impactStyle = ImpactStyle::Spirit;
                     } else if (proj->getStyle() ==
+                               ProjectileStyle::HeavySpirit) {
+                        impactStyle = ImpactStyle::Strong;
+                        context.effects->requestScreenShake(3.5f);
+                    } else if (proj->getStyle() ==
                                ProjectileStyle::ExplosiveArrow) {
                         impactStyle = ImpactStyle::Strong;
                     } else if (proj->getShooterTeam() == Team::Enemy) {

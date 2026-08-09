@@ -151,7 +151,7 @@ void EndScreenView::buildText() {
     centerText(*menuLabel, menuButton.getPosition());
 
     controlsHint = std::make_unique<sf::Text>(
-        font, "ENTER: PLAY AGAIN     ESC: MAIN MENU", 14);
+        font, "ENTER: PLAY AGAIN   K: KINGDOM   ESC: MAIN MENU", 14);
     controlsHint->setFillColor(sf::Color(137, 149, 176));
     centerText(*controlsHint, {640.f, 588.f});
 }

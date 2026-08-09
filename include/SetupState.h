@@ -6,6 +6,8 @@
 #include "State.h"
 #include "StateMachine.h"
 #include "TextureManager.h"
+#include "GameProgress.h"
+#include "LevelDefinition.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -28,6 +30,8 @@ private:
     Map map;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
+    LevelId selectedLevelId;
     AllyPlacementModel placements;
     std::optional<AllyType> selectedAlly;
 
@@ -72,7 +76,9 @@ private:
 
 public:
     SetupState(StateMachine& machine, sf::RenderWindow& window,
-               TextureManager& textureManager, AudioManager& audioManager);
+               TextureManager& textureManager, AudioManager& audioManager,
+               GameProgress& progress,
+               LevelId selectedLevelId = LevelId::RuinedCatacombs);
     ~SetupState() override = default;
 
     void onEnter() override;

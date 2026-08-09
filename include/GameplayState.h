@@ -20,6 +20,9 @@
 #include "TutorialOverlay.h"
 #include "IntermissionOverlay.h"
 #include "GameplayTransitionGate.h"
+#include "PlayerActionController.h"
+#include "GameProgress.h"
+#include "LevelDefinition.h"
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -32,6 +35,8 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
+    LevelId selectedLevelId;
 
     // GameplayState la owner duy nhat. GameContext chi muon con tro.
     std::unique_ptr<Player> player;
@@ -54,6 +59,7 @@ private:
     std::vector<sf::Vector2i> allyPositions;
     GameContext context;
     bool paused = false;
+    PlayerActionController actionController;
     GameplayTransitionGate transitionGate;
     sf::Font presentationFont;
     std::optional<sf::Text> bannerText;
@@ -80,6 +86,7 @@ private:
 public:
     GameplayState(StateMachine& machine, sf::RenderWindow& window,
                   TextureManager& textureManager, AudioManager& audioManager,
+                  GameProgress& progress, LevelId selectedLevelId,
                   const Map& setupMap,
                   const std::vector<sf::Vector2i>& allyPositions = {});
     ~GameplayState() override = default;

@@ -5,7 +5,9 @@
 #include <memory>
 #include "TextureManager.h"
 #include "AudioManager.h"
-#include "EndScreenView.h"
+#include "GameProgress.h"
+#include <array>
+#include <memory>
 
 class WinState : public State {
 private:
@@ -13,12 +15,22 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
+    RunResult result;
+    sf::Font resultFont;
+    float rewardAnimation = 0.f;
+    std::size_t selected = 0;
+    bool transitioning = false;
+    std::array<sf::RectangleShape, 4> buttons;
+    std::array<std::unique_ptr<sf::Text>, 11> labels;
 
-    EndScreenView view;
+    void activate(std::size_t index);
+    static void center(sf::Text& text, sf::Vector2f position);
 
 public:
     WinState(StateMachine& machine, sf::RenderWindow& window,
-             TextureManager& textureManager, AudioManager& audioManager);
+             TextureManager& textureManager, AudioManager& audioManager,
+             GameProgress& progress, RunResult result);
     ~WinState() override = default;
 
     void onEnter() override;

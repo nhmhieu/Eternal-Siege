@@ -1,10 +1,16 @@
-﻿cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
 project(EternalSiege LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_ASAN "Enable AddressSanitizer for game and tests" OFF)
+
+# The test executables use the standard assert macro as their test runner.
+# Keep those checks enabled for the requested Release verification build.
+if(BUILD_TESTING AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-UNDEBUG)
+endif()
 
 if(ENABLE_ASAN)
     include(CheckCXXSourceCompiles)
@@ -118,6 +124,8 @@ if(BUILD_TESTING)
         src/MagicBolt.cpp
         src/Monster.cpp
         src/Player.cpp
+        src/PlayerActionController.cpp
+        src/HeavySpiritBolt.cpp
         src/Projectiles.cpp
         src/RadiantPulse.cpp
         src/SpiritBolt.cpp
@@ -190,6 +198,24 @@ if(BUILD_TESTING)
 
     add_executable(setup_placement_tests
         tests/SetupPlacementTests.cpp
+    )
+
+    add_executable(player_action_tests
+        tests/PlayerActionTests.cpp
+        src/PlayerActionController.cpp
+    )
+    add_executable(kingdom_flow_tests
+        tests/KingdomFlowTests.cpp
+        src/KingdomMap.cpp
+    )
+    target_include_directories(kingdom_flow_tests PRIVATE
+        "${CMAKE_SOURCE_DIR}/include"
+    )
+    target_link_libraries(kingdom_flow_tests PRIVATE
+        SFML::Graphics SFML::Window SFML::System
+    )
+    target_include_directories(player_action_tests PRIVATE
+        "${CMAKE_SOURCE_DIR}/include"
     )
 
     target_include_directories(core_logic_tests PRIVATE
@@ -344,6 +370,8 @@ if(BUILD_TESTING)
     add_test(NAME boss_enrage_tests COMMAND boss_enrage_tests)
     add_test(NAME full_game_integration_tests COMMAND full_game_integration_tests)
     add_test(NAME setup_placement_tests COMMAND setup_placement_tests)
+    add_test(NAME player_action_tests COMMAND player_action_tests)
+    add_test(NAME kingdom_flow_tests COMMAND kingdom_flow_tests)
 endif()
 
 add_custom_command(

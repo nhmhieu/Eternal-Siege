@@ -264,10 +264,10 @@ void HUD::draw(sf::RenderWindow& window) const {
 
     drawCard(window, layout.controlsCard, sf::Color(79, 94, 105, 100),
              sf::Color(14, 25, 35, 180));
-    drawLabel(window, "WASD MOVE   LMB SHOOT   P PAUSE",
+    drawLabel(window, "LMB TAP BOLT   HOLD LMB HEAVY",
               layout.controlsCard.position + sf::Vector2f(10.f, 9.f),
               10, MUTED);
-    drawLabel(window, soundMuted ? "M: SOUND OFF" : "M: SOUND ON",
+    drawLabel(window, soundMuted ? "RMB/SHIFT DASH  Q PULSE  M: OFF" : "RMB/SHIFT DASH  Q PULSE  M: ON",
               layout.controlsCard.position + sf::Vector2f(10.f, 27.f),
               10, soundMuted ? sf::Color(151, 132, 132)
                               : sf::Color(112, 205, 181));

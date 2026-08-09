@@ -10,6 +10,7 @@ enum class ProjectileStyle {
     Arrow,
     Magic,
     Spirit,
+    HeavySpirit,
     ExplosiveArrow
 };
 
@@ -56,7 +57,8 @@ public :
     sf::Vector2f getPosition() const { return position; }
     ProjectileStyle getStyle() const { return style; }
     bool isStrongAttack() const {
-        return style == ProjectileStyle::ExplosiveArrow;
+        return style == ProjectileStyle::ExplosiveArrow ||
+               style == ProjectileStyle::HeavySpirit;
     }
     std::size_t getTrailPointCount() const { return trailPositions.size(); }
     bool hasExplosion() const {

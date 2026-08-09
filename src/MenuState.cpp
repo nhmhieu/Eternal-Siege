@@ -1,14 +1,15 @@
 #include "MenuState.h"
-#include "SetupState.h"
+#include "KingdomState.h"
 #include "AssetLocator.h"
 #include <algorithm>
 #include <iostream>
 
 // Constructor bây giờ rất sạch sẽ, không gọi font rỗng nữa
 MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window,
-                     TextureManager& textureManager, AudioManager& audioManager)
+                     TextureManager& textureManager, AudioManager& audioManager,
+                     GameProgress& gameProgress)
     : stateMachine(machine), window(window), textureManager(textureManager),
-      audioManager(audioManager) {
+      audioManager(audioManager), progress(gameProgress) {
 }
 
 
@@ -83,8 +84,8 @@ void MenuState::handleEvent(const sf::Event& event) {
             // Dùng dấu -> vì startButton giờ là biến thông thường
             if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 audioManager.playSound("ui_click");
-                stateMachine.changeState(std::make_unique<SetupState>(
-                    stateMachine, window, textureManager, audioManager));
+                stateMachine.changeState(std::make_unique<KingdomState>(
+                    stateMachine, window, textureManager, audioManager, progress));
                 return;
             }
 

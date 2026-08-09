@@ -7,6 +7,7 @@
 #include "Map.h"
 #include "Effects.h"
 #include "SpiritStaff.h"
+#include "HeavySpiritBolt.h"
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -152,6 +153,8 @@ void Player::moveWithCollision(
 void Player::update(GameContext& context) {
     if (context.paused) return;
     Entity::update(context);
+    invulnerabilityTimer = std::max(0.f, invulnerabilityTimer - context.deltaTime);
+    heavyCooldownTimer = std::max(0.f, heavyCooldownTimer - context.deltaTime);
 
     if (isDead()) {
         updateDeadTimer(context);
@@ -164,9 +167,25 @@ void Player::update(GameContext& context) {
 
     // Di chuy?n player
     sf::Vector2f dir = getDirection();
+    if (dashing) {
+        constexpr float dashSpeed = 900.f;
+        constexpr float maxStep = 10.f;
+        float distance = dashSpeed * context.deltaTime;
+        while (distance > 0.f) {
+            const float step = std::min(distance, maxStep);
+            if (context.map) moveWithCollision(dashDirection * step, *context.map);
+            else setPosition(getPosition() + dashDirection * step);
+            distance -= step;
+        }
+        dashTimer -= context.deltaTime;
+        if (dashTimer <= 0.f) dashing = false;
+        updateStatus();
+        updatePresentation(context.effects);
+        return;
+    }
     if (dir.x != 0.f || dir.y != 0.f) {
         const sf::Vector2f displacement =
-            dir * speed * context.deltaTime;
+            dir * speed * (chargingHeavy ? 0.45f : 1.f) * context.deltaTime;
         if (context.map) {
             moveWithCollision(displacement, *context.map);
         } else {
@@ -187,6 +206,46 @@ void Player::update(GameContext& context) {
     updatePresentation(context.effects);
 }
 
+void Player::beginDash(sf::Vector2f move, sf::Vector2f aim, Effects* effects) {
+    sf::Vector2f chosen = move;
+    float length = std::sqrt(chosen.x * chosen.x + chosen.y * chosen.y);
+    if (length <= 0.0001f) { chosen = aim; length = std::sqrt(aim.x*aim.x + aim.y*aim.y); }
+    if (length <= 0.0001f) { chosen = attackDirection; length = std::sqrt(chosen.x*chosen.x + chosen.y*chosen.y); }
+    dashDirection = length > 0.0001f ? chosen / length : sf::Vector2f{1.f, 0.f};
+    chargingHeavy = false;
+    isAttacking = false;
+    dashing = true;
+    dashTimer = 0.15f;
+    invulnerabilityTimer = std::max(invulnerabilityTimer, 0.17f);
+    if (effects) effects->spawnImpact(position, ImpactStyle::Spirit);
+}
+
+void Player::setHeavyCharging(bool charging, float ratio) {
+    chargingHeavy = charging;
+    chargeRatio = std::clamp(ratio, 0.f, 1.f);
+}
+
+bool Player::releaseHeavy(GameContext& context, float ratio) {
+    chargingHeavy = false;
+    if (heavyCooldownTimer > 0.f || isDead()) return false;
+    ratio = std::clamp(ratio, 0.f, 1.f);
+    const float multiplier = 1.8f + (3.f - 1.8f) * ratio;
+    const float damage = getAttackPower() * multiplier;
+    context.projectiles.push_back(std::make_unique<HeavySpiritBolt>(
+        getSpiritStaffTip(), attackDirection, damage, team, damage * 0.40f, 72.f));
+    heavyCooldownTimer = std::max(0.85f, getAttackCooldown() * 1.8f);
+    if (context.effects) {
+        context.effects->spawnSpiritMuzzle(getSpiritStaffTip(), attackDirection);
+        context.effects->requestScreenShake(3.f);
+    }
+    return true;
+}
+
+void Player::takeDamage(float damage) {
+    if (invulnerabilityTimer > 0.f) return;
+    Entity::takeDamage(damage);
+}
+
 void Player::draw(sf::RenderWindow& window) {
     const auto* staff = dynamic_cast<const SpiritStaff*>(currentWeapon.get());
     const sf::Vector2f handAnchor = getSpiritStaffAnchor();
@@ -195,6 +254,18 @@ void Player::draw(sf::RenderWindow& window) {
     if (staff) {
         staff->drawGlow(window, handAnchor, attackDirection, visualTime);
     }
+    if (chargingHeavy) {
+        const float radius = 10.f + chargeRatio * 13.f;
+        sf::CircleShape chargeRing(radius);
+        chargeRing.setOrigin({radius, radius});
+        chargeRing.setPosition(getSpiritStaffTip());
+        chargeRing.setFillColor(sf::Color::Transparent);
+        chargeRing.setOutlineThickness(2.f + chargeRatio * 2.f);
+        chargeRing.setOutlineColor(chargeRatio >= 1.f
+            ? sf::Color(255, 220, 95, 245)
+            : sf::Color(72, 235, 202, 185));
+        window.draw(chargeRing);
+    }
 }
 
 void Player::drawShadow(sf::RenderWindow& window) const {
@@ -202,10 +273,21 @@ void Player::drawShadow(sf::RenderWindow& window) const {
     sf::CircleShape shadow(shadowRadius);
     shadow.setOrigin({shadowRadius, shadowRadius});
     shadow.setScale({1.25f, 0.36f});
-    shadow.setPosition({position.x, position.y + 18.f});
-    shadow.setFillColor(sf::Color(8, 5, 15, isDying ? 35 : 95));
+    shadow.setPosition({position.x, position.y + 2.f});
+    shadow.setFillColor(sf::Color(8, 5, 15, isDying ? 30 : 65));
     window.draw(shadow);
 }
+
+void Player::updateNonCombatPresentation(float deltaTime,
+                                         sf::Vector2f movement) {
+    const sf::Vector2f actual=position-previousPosition;
+    visualTime += std::max(0.f, deltaTime);
+    setDirection(movement);
+    updatePresentation(nullptr);
+    if(walkTexture){const bool moving=std::abs(actual.x)+std::abs(actual.y)>.001f;if(moving){FacingDirection next=walkFacing;if(std::abs(movement.x)>std::abs(movement.y))next=movement.x<0?FacingDirection::Left:FacingDirection::Right;else next=movement.y<0?FacingDirection::Up:FacingDirection::Down;if(next!=walkFacing){walkFacing=next;AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,static_cast<int>(walkFacing)*256},{256,256}});walkAnimation.setClip(std::move(clip));}walkAnimation.update(deltaTime);}else walkAnimation.reset();if(const auto* frame=walkAnimation.currentFrame())playerShape.setTextureRect(*frame);}
+}
+
+void Player::useWalkSpriteSheet(const sf::Texture& texture){walkTexture=&texture;playerShape.setTexture(walkTexture,true);AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,0},{256,256}});walkAnimation.setClip(std::move(clip));playerShape.setTextureRect({{0,0},{256,256}});playerShape.setSize({86.f,86.f});playerShape.setOrigin({43.f,86.f});}
 
 void Player::updatePresentation(Effects* effects) {
     const sf::Vector2f moved = position - previousPosition;
@@ -221,9 +303,9 @@ void Player::updatePresentation(Effects* effects) {
     previousPosition = position;
 
     const float bob = visuallyMoving
-        ? std::abs(std::sin(visualTime * 12.f)) * 3.f
+        ? std::abs(std::sin(visualTime * 12.f)) * 2.f
         : std::sin(visualTime * 3.2f) * 0.7f;
-    float rotation = visuallyMoving ? std::sin(visualTime * 12.f) * 2.f : 0.f;
+    float rotation = visuallyMoving ? std::sin(visualTime * 12.f) : 0.f;
     sf::Vector2f visualPosition = position - sf::Vector2f(0.f, bob);
     float scaleX = 1.f;
     float scaleY = 1.f;
@@ -257,7 +339,7 @@ void Player::updatePresentation(Effects* effects) {
         tint = sf::Color(255, 135, 135);
     }
 
-    playerShape.setPosition(visualPosition + sf::Vector2f(0.f, 18.f));
+    playerShape.setPosition(visualPosition);
     playerShape.setScale({facing * scaleX, scaleY});
     playerShape.setRotation(sf::degrees(rotation));
     playerShape.setFillColor(tint);

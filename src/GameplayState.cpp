@@ -24,12 +24,16 @@ GameplayState::GameplayState(
     sf::RenderWindow& gameWindow,
     TextureManager& textures,
     AudioManager& audio,
+    GameProgress& gameProgress,
+    LevelId levelId,
     const Map& setupMap,
     const std::vector<sf::Vector2i>& selectedAllyPositions)
     : stateMachine(machine),
       window(gameWindow),
       textureManager(textures),
       audioManager(audio),
+      progress(gameProgress),
+      selectedLevelId(levelId),
       map(setupMap),
       allyPositions(selectedAllyPositions) {
 
@@ -63,6 +67,7 @@ GameplayState::GameplayState(
 }
 
 void GameplayState::onEnter() {
+    actionController.reset();
     paused = false;
     context.paused = false;
     transitionGate.reset();
@@ -120,6 +125,7 @@ void GameplayState::onEnter() {
 }
 
 void GameplayState::onExit() {
+    actionController.cancel();
 }
 
 void GameplayState::rebuildContext() {
@@ -226,18 +232,23 @@ void GameplayState::showBanner(const std::string& text, float duration) {
 }
 
 void GameplayState::handleEvent(const sf::Event& event) {
+    if (event.is<sf::Event::FocusLost>()) {
+        actionController.cancel();
+        player->setHeavyCharging(false);
+        return;
+    }
     if (const auto* released = event.getIf<sf::Event::KeyReleased>()) {
         if (released->code == sf::Keyboard::Key::Enter) {
             tutorialController.handleKeyReleased(TutorialKey::Enter);
             intermissionController.handleEnterReleased();
-        } else if (released->code == sf::Keyboard::Key::H) {
+        } else if (released->code == sf::Keyboard::Key::R) {
             tutorialController.handleKeyReleased(TutorialKey::Help);
         }
     }
 
     if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
         if (key->code == sf::Keyboard::Key::Enter ||
-            key->code == sf::Keyboard::Key::H) {
+            key->code == sf::Keyboard::Key::R) {
             const TutorialKey tutorialKey =
                 key->code == sf::Keyboard::Key::Enter
                     ? TutorialKey::Enter : TutorialKey::Help;
@@ -247,7 +258,13 @@ void GameplayState::handleEvent(const sf::Event& event) {
                 showWaveBanner(waveManager.getCurrentWave());
                 audioManager.playSound("wave_start");
             }
-            if (transition != TutorialTransition::Ignored) return;
+            if (transition != TutorialTransition::Ignored) {
+                if (tutorialController.blocksGameplayInput()) {
+                    actionController.cancel();
+                    player->setHeavyCharging(false);
+                }
+                return;
+            }
         }
 
         if (tutorialController.blocksGameplayInput()) return;
@@ -255,12 +272,23 @@ void GameplayState::handleEvent(const sf::Event& event) {
         if (key->code == sf::Keyboard::Key::P) {
             paused = !paused;
             context.paused = paused;
-            if (paused) audioManager.pauseMusic();
+            if (paused) {
+                actionController.cancel();
+                player->setHeavyCharging(false);
+                audioManager.pauseMusic();
+            }
             else audioManager.resumeMusic();
             return;
         }
 
         if (paused) {
+            return;
+        }
+
+        if (key->code == sf::Keyboard::Key::LShift ||
+            key->code == sf::Keyboard::Key::RShift) {
+            actionController.pressDash();
+            player->setHeavyCharging(false);
             return;
         }
 
@@ -300,7 +328,8 @@ void GameplayState::handleEvent(const sf::Event& event) {
             }
         }
 
-        if (key->code == sf::Keyboard::Key::Q) {
+        if (key->code == sf::Keyboard::Key::Q &&
+            !actionController.hasActivePrimary()) {
             const RadiantPulseResult result = radiantPulse.tryActivate(
                 *player, context.allies, waveManager.isWaveActive());
             if (result.activated) {
@@ -321,25 +350,23 @@ void GameplayState::handleEvent(const sf::Event& event) {
         }
     }
 
-    if (tutorialController.blocksGameplayInput() || paused) {
+    if (tutorialController.blocksGameplayInput() || paused ||
+        waveManager.isIntermission()) {
         return;
     }
 
     if (const auto* mouse = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (mouse->button != sf::Mouse::Button::Left || !player->canAttack()) {
+        if (mouse->button == sf::Mouse::Button::Right) {
+            actionController.pressDash();
+            player->setHeavyCharging(false);
             return;
         }
-
-        const sf::Vector2f mouseWorld = window.mapPixelToCoords(mouse->position);
-        sf::Vector2f attackDirection = mouseWorld - player->getPosition();
-        const float length = std::sqrt(
-            attackDirection.x * attackDirection.x +
-            attackDirection.y * attackDirection.y);
-        if (length <= 0.0001f) return;
-
-        attackDirection /= length;
-        player->setAimDirection(attackDirection);
-        player->setIsAttacking(true);
+        if (mouse->button == sf::Mouse::Button::Left)
+            actionController.pressPrimary();
+    }
+    if (const auto* mouse = event.getIf<sf::Event::MouseButtonReleased>()) {
+        if (mouse->button == sf::Mouse::Button::Left)
+            actionController.releasePrimary();
     }
 }
 
@@ -363,6 +390,24 @@ void GameplayState::update(float dt) {
     const sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
     aimWorldPosition = window.mapPixelToCoords(mousePixel);
     player->setAimDirection(aimWorldPosition - player->getPosition());
+    if (waveManager.isIntermission()) actionController.cancel();
+    else actionController.update(context.deltaTime, false);
+    player->setHeavyCharging(actionController.isCharging(),
+                             actionController.getChargeRatio());
+    const float releaseRatio = actionController.getChargeRatio();
+    switch (actionController.consumeRequest()) {
+    case PlayerActionRequest::BasicAttack:
+        if (player->canAttack()) player->setIsAttacking(true);
+        break;
+    case PlayerActionRequest::Dash:
+        player->beginDash(player->getDirection(),
+            aimWorldPosition - player->getPosition(), &effects);
+        break;
+    case PlayerActionRequest::ReleaseHeavy:
+        player->releaseHeavy(context, releaseRatio);
+        break;
+    case PlayerActionRequest::None: break;
+    }
     radiantPulse.update(
         context.deltaTime, waveManager.isWaveActive(), false);
     lowHealthPulseTime += context.deltaTime;
@@ -454,17 +499,24 @@ void GameplayState::update(float dt) {
         findLivingBoss(), context.deltaTime, false);
 
     if (player->isDead()) {
+        actionController.cancel();
         if (transitionGate.request(GameplayEndState::GameOver)) {
             stateMachine.changeState(std::make_unique<GameOverState>(
-                stateMachine, window, textureManager, audioManager));
+                stateMachine, window, textureManager, audioManager, progress,
+                selectedLevelId));
         }
         return;
     }
 
     if (waveManager.isGameCompleted() && monsters.empty()) {
         if (transitionGate.request(GameplayEndState::Victory)) {
+            const auto& definition = LEVEL_DEFINITIONS[
+                static_cast<std::size_t>(selectedLevelId)];
+            const RunResult result = progress.grantVictory(
+                selectedLevelId, definition.clearReward);
             stateMachine.changeState(std::make_unique<WinState>(
-                stateMachine, window, textureManager, audioManager));
+                stateMachine, window, textureManager, audioManager, progress,
+                result));
         }
     }
 }
@@ -527,13 +579,16 @@ bool GameplayState::hasHeldGameplayInput() const {
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P) ||
-           sf::Keyboard::isKeyPressed(sf::Keyboard::Key::H) ||
+           sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Enter) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Num1) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Num2) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Num3) ||
            sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Backspace) ||
-           sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+           sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+           sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift) ||
+           sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) ||
+           sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
 }
 
 void GameplayState::finishTutorialInputGuardIfReleased() {

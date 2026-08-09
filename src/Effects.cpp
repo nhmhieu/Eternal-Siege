@@ -272,6 +272,23 @@ void Effects::spawnAllySkill(sf::Vector2f position, sf::Color color,
     pushRing({position, sf::Color(color.r, color.g, color.b, 150),
               radius * 0.28f, radius * 0.72f, 0.38f, 0.38f, 2.f, true});
     addBurst(position, color, 20, 25.f, 120.f, 1.5f, 4.f, 0.52f, -18.f);
+    if (name == "Shield Wall") {
+        pushRing({position, sf::Color(150, 235, 255, 210), radius * .72f,
+                  radius, .75f, .75f, 6.f, false});
+    } else if (name == "Arcane Burst") {
+        pushRing({position, sf::Color(190, 90, 255, 190), radius * .12f,
+                  radius, .62f, .62f, 5.f, true});
+        addBurst(position, sf::Color(105, 225, 255), 12, 12.f, 75.f,
+                 1.f, 2.8f, .7f, -12.f);
+    } else if (name == "Whirlwind") {
+        pushRing({position, sf::Color(255, 205, 110, 175), radius * .45f,
+                  radius, .68f, .68f, 3.f, true});
+        pushRing({position, sf::Color(245, 105, 55, 135), radius * .25f,
+                  radius * .82f, .48f, .48f, 2.f, false});
+    } else if (name == "Explosive Arrow") {
+        pushRing({position, sf::Color(255, 225, 125, 190), 5.f,
+                  radius * .75f, .35f, .35f, 5.f, false});
+    }
     FloatingText label;
     label.position = position - sf::Vector2f(0.f, 48.f);
     label.value = name;
@@ -288,6 +305,11 @@ void Effects::spawnRadiantPulse(sf::Vector2f position, float radius) {
     pushRing({position, sf::Color(255, 225, 125, 190), 24.f,
               radius * 0.72f, 0.58f, 0.58f, 2.5f, true});
     addBurst(position, teal, 32, 35.f, 155.f, 1.5f, 4.2f, 0.68f, -35.f);
+    pushRing({position, sf::Color(255, 250, 210, 225), 4.f,
+              radius * .22f, .22f, .22f, 7.f, false});
+    pushRing({position, sf::Color(75, 210, 190, 100), radius * .45f,
+              radius * 1.08f, .9f, .9f, 2.f, true});
+    requestScreenShake(1.5f);
 }
 
 void Effects::spawnHealLink(sf::Vector2f start, sf::Vector2f end) {

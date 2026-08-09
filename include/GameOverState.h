@@ -6,6 +6,8 @@
 #include "TextureManager.h"
 #include "AudioManager.h"
 #include "EndScreenView.h"
+#include "GameProgress.h"
+#include "LevelDefinition.h"
 
 class GameOverState : public State {
 private:
@@ -13,12 +15,15 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
+    LevelId selectedLevelId;
 
     EndScreenView view;
 
 public:
     GameOverState(StateMachine& machine, sf::RenderWindow& window,
-                  TextureManager& textureManager, AudioManager& audioManager);
+                  TextureManager& textureManager, AudioManager& audioManager,
+                  GameProgress& progress, LevelId selectedLevelId);
     ~GameOverState() override = default;
 
     void onEnter() override;

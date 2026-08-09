@@ -2,15 +2,19 @@
 
 #include "MenuState.h"
 #include "SetupState.h"
+#include "KingdomState.h"
+#include "LevelSelectState.h"
 
 GameOverState::GameOverState(StateMachine& machine,
                              sf::RenderWindow& gameWindow,
                              TextureManager& textures,
-                             AudioManager& audio)
+                             AudioManager& audio, GameProgress& gameProgress,
+                             LevelId levelId)
     : stateMachine(machine),
       window(gameWindow),
       textureManager(textures),
       audioManager(audio),
+      progress(gameProgress), selectedLevelId(levelId),
       view(textures) {}
 
 void GameOverState::onEnter() {
@@ -25,12 +29,13 @@ void GameOverState::handleEvent(const sf::Event& event) {
     const auto restart = [this]() {
         audioManager.playSound("ui_click");
         stateMachine.changeState(std::make_unique<SetupState>(
-            stateMachine, window, textureManager, audioManager));
+            stateMachine, window, textureManager, audioManager, progress,
+            selectedLevelId));
     };
     const auto menu = [this]() {
         audioManager.playSound("ui_click");
         stateMachine.changeState(std::make_unique<MenuState>(
-            stateMachine, window, textureManager, audioManager));
+            stateMachine, window, textureManager, audioManager, progress));
     };
 
     if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
@@ -40,6 +45,16 @@ void GameOverState::handleEvent(const sf::Event& event) {
         }
         if (key->code == sf::Keyboard::Key::Escape) {
             menu();
+            return;
+        }
+        if (key->code == sf::Keyboard::Key::K) {
+            stateMachine.changeState(std::make_unique<KingdomState>(
+                stateMachine, window, textureManager, audioManager, progress, true));
+            return;
+        }
+        if (key->code == sf::Keyboard::Key::L) {
+            stateMachine.changeState(std::make_unique<LevelSelectState>(
+                stateMachine, window, textureManager, audioManager, progress));
             return;
         }
     }

@@ -5,11 +5,13 @@
 #include "TextureManager.h"
 #include <iostream>
 #include "Weapon.h"
+#include "AnimationController.h"
 #include <string_view>
 
 class GameContext;
 class Map;
 class Effects;
+class PlayerActionController;
 
 class Player : public Entity {
 private:
@@ -20,6 +22,16 @@ private:
     sf::Vector2f previousPosition;
     bool visuallyMoving = false;
     float footstepDistance = 0.f;
+    bool dashing = false;
+    bool chargingHeavy = false;
+    float dashTimer = 0.f;
+    float invulnerabilityTimer = 0.f;
+    float heavyCooldownTimer = 0.f;
+    float chargeRatio = 0.f;
+    sf::Vector2f dashDirection{1.f, 0.f};
+    AnimationController walkAnimation;
+    const sf::Texture* walkTexture = nullptr;
+    FacingDirection walkFacing = FacingDirection::Down;
 
     void updatePresentation(Effects* effects);
 
@@ -32,7 +44,18 @@ public:
     void update(GameContext& context) override;
     void draw(sf::RenderWindow& window) override;
     void drawShadow(sf::RenderWindow& window) const;
+    void updateNonCombatPresentation(float deltaTime, sf::Vector2f movement);
+    void useWalkSpriteSheet(const sf::Texture& texture);
     void moveWithCollision(sf::Vector2f displacement, const Map& map);
+    void beginDash(sf::Vector2f movementDirection, sf::Vector2f aimDirection,
+                   Effects* effects);
+    bool releaseHeavy(GameContext& context, float ratio);
+    void setHeavyCharging(bool charging, float ratio = 0.f);
+    void takeDamage(float damage) override;
+    bool isInvulnerable() const { return invulnerabilityTimer > 0.f; }
+    float getHeavyCooldownRemaining() const { return heavyCooldownTimer; }
+    bool isHeavyReady() const { return heavyCooldownTimer <= 0.f; }
+    bool isDashing() const { return dashing; }
 
     bool canAttack() {
         return !isAttacking && coolDownTimer <= 0.f;
@@ -45,4 +68,7 @@ public:
 
     sf::FloatRect getCollisionBox() const override;
     sf::FloatRect getHurtBox() const override;
+    sf::Vector2f getFootPosition() const { return position; }
+    sf::FloatRect getFootCollider() const { return {{position.x-14.f,position.y-8.f},{28.f,16.f}}; }
+    void setPresentationTint(sf::Color color) { playerShape.setFillColor(color); }
 };

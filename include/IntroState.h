@@ -4,6 +4,7 @@
 #include "State.h"
 #include "StateMachine.h"
 #include "TextureManager.h"
+#include "GameProgress.h"
 
 #include <SFML/Graphics.hpp>
 #include <array>
@@ -16,7 +17,8 @@ public:
     }};
 
     IntroState(StateMachine& machine, sf::RenderWindow& window,
-               TextureManager& textureManager, AudioManager& audioManager);
+               TextureManager& textureManager, AudioManager& audioManager,
+               GameProgress& progress);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;
@@ -31,6 +33,7 @@ private:
     sf::RenderWindow& window;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
     sf::Font font;
     std::optional<sf::Text> storyText;
     std::optional<sf::Text> hintText;

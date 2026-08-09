@@ -6,6 +6,7 @@
 #include <optional>
 #include "TextureManager.h"
 #include "AudioManager.h"
+#include "GameProgress.h"
 
 class MenuState : public State {
 private:
@@ -14,6 +15,7 @@ private:
     sf::Font font;
     TextureManager& textureManager;
     AudioManager& audioManager;
+    GameProgress& progress;
 
     // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
@@ -27,7 +29,8 @@ private:
 
 public:
     MenuState(StateMachine& machine, sf::RenderWindow& window,
-              TextureManager& textureManager, AudioManager& audioManager);
+              TextureManager& textureManager, AudioManager& audioManager,
+              GameProgress& progress);
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;
