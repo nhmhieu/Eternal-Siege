@@ -13,5 +13,6 @@ public:
  float normalizedTime()const{return time/CYCLE_SECONDS;}
  float nightStrength()const{const float p=normalizedTime();if(p<.5f)return 0;if(p<.75f)return(p-.5f)*4;return std::clamp(1-(p-.75f)*4,0.f,1.f);}
  sf::Color ambientOverlay()const{const float n=nightStrength();return{18,static_cast<std::uint8_t>(24+25*n),static_cast<std::uint8_t>(45+42*n),static_cast<std::uint8_t>(12+108*n)};}
+ void setNormalizedTimeForTesting(float value){time=std::clamp(value,0.f,.999999f)*CYCLE_SECONDS;}
 private: float time=CYCLE_SECONDS*.27f;
 };

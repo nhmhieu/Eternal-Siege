@@ -3,11 +3,17 @@
 #include "GameProgress.h"
 #include "KingdomGateController.h"
 #include "DayNightSystem.h"
+#include "EnvironmentSystem.h"
+#include "NpcScheduleSystem.h"
+#include "SpatialAmbienceSystem.h"
 #include <cassert>
 #include <cmath>
 
 int main(){
  KingdomMap map;
+ assert(SpatialAmbienceSystem::gain({0,0},{0,0},10,100)==1.f);assert(SpatialAmbienceSystem::gain({200,0},{0,0},10,100)==0.f);
+ EnvironmentSystem environment;assert(environment.getWeather()==KingdomWeather::Clear);environment.advanceWeather();assert(environment.getWeather()==KingdomWeather::LightRain);environment.advanceWeather();assert(environment.getWeather()==KingdomWeather::Mist);
+ assert(NpcScheduleSystem::activity(KingdomNpcRole::Citizen,DayPhase::Day)==NpcActivity::Market);assert(NpcScheduleSystem::activity(KingdomNpcRole::Citizen,DayPhase::Night)==NpcActivity::Rest);assert(NpcScheduleSystem::activity(KingdomNpcRole::Guard,DayPhase::Night)==NpcActivity::GuardPost);
  DayNightSystem cycle;const auto initial=cycle.phase();cycle.advancePhase();assert(cycle.phase()!=initial);cycle.update(DayNightSystem::CYCLE_SECONDS);assert(cycle.phase()!=initial);
  const auto start=KingdomMap::SPAWN;
  assert(!map.isBlocked(start,18.f,false));
@@ -15,6 +21,8 @@ int main(){
  assert(map.isBlocked({1300.f,520.f},18.f,true));
  const sf::Vector2f bridgeMid{1210.f,768.f};
  assert(map.isOnBridge(bridgeMid,18.f));
+ assert(map.cellAt(int(bridgeMid.x)/KingdomMap::CELL_SIZE,int(bridgeMid.y)/KingdomMap::CELL_SIZE).surface==KingdomSurface::Bridge);
+ assert(map.heightAt(bridgeMid)==1.f);
  assert(!map.isBlocked(bridgeMid,18.f,true));
  for(const auto waypoint:KingdomMap::GOLDEN_ROUTE)
   assert(map.isWalkable(waypoint));

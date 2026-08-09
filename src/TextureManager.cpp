@@ -44,7 +44,8 @@ sf::IntRect findVisibleBounds(const sf::Texture& texture) {
 
 bool TextureManager::loadTexture(const std::string& name,
                                  const std::string& filename) {
-    if (textures.find(name) != textures.end()) return true;
+    if (textures.find(name) != textures.end()) {++cacheHits;return true;}
+    ++cacheMisses;
     const auto path = AssetLocator::find(filename);
     if (!path) return false;
 

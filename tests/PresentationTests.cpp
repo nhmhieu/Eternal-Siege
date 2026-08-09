@@ -1,5 +1,6 @@
 #include "AssetLocator.h"
 #include "TextureManager.h"
+#include "KingdomAssets.h"
 #include "IntroState.h"
 #include "Effects.h"
 #include "EndScreenView.h"
@@ -54,6 +55,10 @@ int main() {
             "missing texture falls back without throwing");
     require(textures.findTexture("Missing") == nullptr,
             "missing texture is not cached as a real texture");
+    const auto hitsBefore=textures.getCacheHits();
+    require(textures.loadTexture("PlayerMage","assets/images/PlayerMage.png"),"cached texture remains available");
+    require(textures.getCacheHits()==hitsBefore+1,"second asset request is a cache hit");
+    const auto kingdomMissesBefore=textures.getCacheMisses();require(preloadKingdomAssets(textures),"Kingdom manifest preloads");const auto kingdomMissesAfterFirst=textures.getCacheMisses();require(preloadKingdomAssets(textures),"Kingdom manifest remains available on second entry");require(textures.getCacheMisses()==kingdomMissesAfterFirst&&kingdomMissesAfterFirst>kingdomMissesBefore,"second Kingdom preload performs no texture loads");
 
     const sf::Texture* playerMage = textures.findTexture("PlayerMage");
     const sf::IntRect playerMageBounds =

@@ -9,6 +9,12 @@
 #include "KingdomGateController.h"
 #include "KingdomNpc.h"
 #include "DayNightSystem.h"
+#include "KingdomRenderer.h"
+#include "EnvironmentSystem.h"
+#include "NpcScheduleSystem.h"
+#include "KingdomTransitionLatch.h"
+#include "KingdomRouteCatalog.h"
+#include "KingdomCompositor.h"
 #include <memory>
 #include <optional>
 
@@ -25,13 +31,19 @@ private:
     KingdomMap map; sf::Vector2f position; sf::Vector2f facing{0.f,-1.f};
     std::unique_ptr<Player> avatar;
     std::vector<std::unique_ptr<KingdomNpc>> npcs;
-    std::optional<sf::Sprite> worldSprite;
+    std::unique_ptr<KingdomRenderer> renderer;
     sf::View worldView;
     sf::View uiView;
     sf::Vector2f cameraCenter;
     sf::Font font; bool fontLoaded=false; bool returning=false; bool transitioning=false;
     float elapsed=0.f, fade=1.f, promptAlpha=0.f;
     bool debugCollision=false;
+    bool debugPerformance=false;
+    float lastFrameDt=0.f;
     DayNightSystem dayNight;
+    EnvironmentSystem environment;
+    KingdomTransitionLatch transitionLatch;
+    std::unique_ptr<KingdomCompositor> compositor;
+    sf::RenderTexture* sceneTarget=nullptr;
     void drawText(sf::RenderWindow&, const std::string&, sf::Vector2f, unsigned, sf::Color) const;
 };

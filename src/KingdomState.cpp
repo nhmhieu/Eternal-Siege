@@ -6,70 +6,60 @@
 #include <algorithm>
 #include <cmath>
 
-KingdomState::KingdomState(StateMachine& m, sf::RenderWindow& w,
- TextureManager& t, AudioManager& a, GameProgress& gameProgress, bool back)
- : machine(m),window(w),textures(t),audio(a),progress(gameProgress),
-   gate(gameProgress.castleGateOpen),returning(back) {}
+KingdomState::KingdomState(StateMachine&m,sf::RenderWindow&w,TextureManager&t,AudioManager&a,GameProgress&p,bool back):machine(m),window(w),textures(t),audio(a),progress(p),gate(p.castleGateOpen),returning(back){}
 
 void KingdomState::onEnter(){
- position=returning?KingdomMap::RETURN_SPAWN:KingdomMap::SPAWN; transitioning=false; fade=1.f; elapsed=0.f; promptAlpha=0.f;
- const auto p=AssetLocator::find("assets/fonts/Font.ttf"); fontLoaded=p&&font.openFromFile(*p); audio.playMusic("assets/audio/music/menu_theme.ogg");
- preloadKingdomAssets(textures);
- if(const auto* texture=textures.findTexture("KingdomWorldOpen")) worldSprite.emplace(*texture); else worldSprite.reset();
- avatar=std::make_unique<Player>(textures);if(const auto* sheet=textures.findTexture("PlayerMageWalk"))avatar->useWalkSpriteSheet(*sheet);avatar->setPosition(position);
- npcs.clear();if(const auto*g=textures.findTexture("GuardWalk")){npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Guard,*g,std::vector<sf::Vector2f>{{125,850}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Guard,*g,std::vector<sf::Vector2f>{{320,850}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Guard,*g,std::vector<sf::Vector2f>{{430,720},{610,650},{520,570}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Guard,*g,std::vector<sf::Vector2f>{{1260,330},{1360,300}}));}if(const auto*c=textures.findTexture("CitizenWalk")){npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Citizen,*c,std::vector<sf::Vector2f>{{520,470},{700,450},{650,570}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Citizen,*c,std::vector<sf::Vector2f>{{420,390},{540,350}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Citizen,*c,std::vector<sf::Vector2f>{{760,310},{900,350},{820,450}}));npcs.push_back(std::make_unique<KingdomNpc>(KingdomNpcRole::Citizen,*c,std::vector<sf::Vector2f>{{470,180},{610,190}}));}
- uiView=window.getDefaultView(); worldView=sf::View(sf::FloatRect{{0.f,0.f},{1280.f,720.f}});
- cameraCenter=position; cameraCenter.x=std::clamp(cameraCenter.x,640.f,KingdomMap::WORLD_SIZE.x-640.f); cameraCenter.y=std::clamp(cameraCenter.y,360.f,KingdomMap::WORLD_SIZE.y-360.f); worldView.setCenter(cameraCenter);
+ position=returning?KingdomMap::RETURN_SPAWN:KingdomMap::SPAWN;transitioning=false;transitionLatch.reset();fade=1;elapsed=promptAlpha=0;
+ const auto path=AssetLocator::find("assets/fonts/Font.ttf");fontLoaded=path&&font.openFromFile(*path);audio.playMusic("assets/audio/music/menu_theme.ogg");
+ preloadKingdomAssets(textures);renderer=std::make_unique<KingdomRenderer>(textures);compositor=std::make_unique<KingdomCompositor>();compositor->ensure({1280,720});
+ avatar=std::make_unique<Player>(textures);if(const auto*s=textures.findTexture("PlayerMageWalk"))avatar->useWalkSpriteSheet(*s);avatar->setPosition(position);
+ npcs.clear();for(const auto&definition:kingdomNpcRoutes()){const char*key=definition.role==KingdomNpcRole::Guard?"GuardWalk":"CitizenWalk";if(const auto*t=textures.findTexture(key))npcs.push_back(std::make_unique<KingdomNpc>(definition.role,*t,definition.route));}
+ uiView=window.getDefaultView();worldView=sf::View(sf::FloatRect{{0,0},{1280,720}});cameraCenter=position;cameraCenter.x=std::clamp(cameraCenter.x,640.f,1032.f);cameraCenter.y=std::clamp(cameraCenter.y,360.f,581.f);worldView.setCenter(cameraCenter);
 }
 void KingdomState::onExit(){}
-void KingdomState::handleEvent(const sf::Event& e){
- if(transitioning)return;
- if(const auto* k=e.getIf<sf::Event::KeyPressed>()){
-  if(k->code==sf::Keyboard::Key::Escape){ machine.changeState(std::make_unique<MenuState>(machine,window,textures,audio,progress)); return; }
-  if(k->code==sf::Keyboard::Key::F3){debugCollision=!debugCollision;return;}
-  if(k->code==sf::Keyboard::Key::F4){dayNight.advancePhase();return;}
-  if(k->code==sf::Keyboard::Key::E){
-   if(gate.tryOpen(map.canInteractWithGate(position))){audio.playSound("ui_click");return;}
-   if(gate.getState()==GateState::Open && map.canInteract(position)){ transitioning=true; audio.playSound("ui_click"); }
-  }
+void KingdomState::handleEvent(const sf::Event&e){
+ if(transitioning)return;if(const auto*k=e.getIf<sf::Event::KeyPressed>()){
+  if(k->code==sf::Keyboard::Key::Escape){machine.changeState(std::make_unique<MenuState>(machine,window,textures,audio,progress));return;}
+  if(k->code==sf::Keyboard::Key::F3){debugCollision=!debugCollision;return;}if(k->code==sf::Keyboard::Key::F4){dayNight.advancePhase();return;}if(k->code==sf::Keyboard::Key::F5){environment.advanceWeather();return;}if(k->code==sf::Keyboard::Key::F6){debugPerformance=!debugPerformance;return;}
+  if(k->code==sf::Keyboard::Key::E){if(gate.tryOpen(map.canInteractWithGate(position))){audio.playSound("ui_click");return;}if(gate.getState()==GateState::Open&&map.canInteract(position)&&transitionLatch.request()){transitioning=true;audio.playSound("ui_click");}}
  }
 }
 void KingdomState::update(float dt){
- dt=std::min(dt,1.f/30.f); elapsed+=dt; dayNight.update(dt);
- if(transitioning){ fade=std::min(1.f,fade+dt/0.32f); if(fade>=1.f) machine.changeState(std::make_unique<LevelSelectState>(machine,window,textures,audio,progress)); return; }
- gate.update(dt); if(gate.getState()==GateState::Open)progress.castleGateOpen=true;
- fade=std::max(0.f,fade-dt/0.32f);
- sf::Vector2f d;
- if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))d.y-=1;
- if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))d.y+=1;
- if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))d.x-=1;
- if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))d.x+=1;
- const float len=std::sqrt(d.x*d.x+d.y*d.y); if(len>0){d/=len;facing=d;position=map.resolveMovement(position,d*230.f*dt,18.f,!gate.blocksPassage());}
- if(avatar){avatar->setPosition(position);avatar->updateNonCombatPresentation(dt,d);}
- for(auto& npc:npcs)npc->update(dt,map);
- const sf::Vector2f lights[]={{84,875},{430,410},{845,520},{1300,205}};const float night=dayNight.nightStrength();auto tintAt=[&](sf::Vector2f p){float glow=0;for(const auto&l:lights){const float distance=std::hypot(p.x-l.x,p.y-l.y);glow=std::max(glow,std::clamp(1.f-distance/145.f,0.f,1.f));}return sf::Color(static_cast<std::uint8_t>(225-50*night+45*glow*night),static_cast<std::uint8_t>(228-48*night+32*glow*night),static_cast<std::uint8_t>(232-22*night));};if(avatar)avatar->setPresentationTint(tintAt(position));for(auto&npc:npcs)npc->setTint(tintAt(npc->getPosition()));
- sf::Vector2f cameraTarget=position; const sf::Vector2f offset=cameraTarget-cameraCenter;
- if(std::abs(offset.x)<48.f)cameraTarget.x=cameraCenter.x;if(std::abs(offset.y)<34.f)cameraTarget.y=cameraCenter.y;
- const float follow=1.f-std::exp(-7.f*dt);cameraCenter+=(cameraTarget-cameraCenter)*follow;
- cameraCenter.x=std::clamp(cameraCenter.x,640.f,KingdomMap::WORLD_SIZE.x-640.f);cameraCenter.y=std::clamp(cameraCenter.y,360.f,KingdomMap::WORLD_SIZE.y-360.f);worldView.setCenter(cameraCenter);
- const bool gatePrompt=gate.getState()==GateState::Closed&&map.canInteractWithGate(position);
- const bool cavePrompt=gate.getState()==GateState::Open&&map.canInteract(position);
- const float promptTarget=(gatePrompt||cavePrompt)?1.f:0.f; promptAlpha+=std::clamp(promptTarget-promptAlpha,-dt*5.f,dt*5.f);
+ dt=std::min(dt,1.f/30.f);lastFrameDt=dt;elapsed+=dt;dayNight.update(dt);environment.update(dt);
+ if(transitioning){fade=std::min(1.f,fade+dt/.32f);if(fade>=1)machine.changeState(std::make_unique<LevelSelectState>(machine,window,textures,audio,progress));return;}
+ gate.update(dt);if(gate.getState()==GateState::Open)progress.castleGateOpen=true;fade=std::max(0.f,fade-dt/.32f);
+ sf::Vector2f input;if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))input.y--;if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))input.y++;if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))input.x--;if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))input.x++;
+ const float len=std::hypot(input.x,input.y);const auto before=position;if(len>0){input/=len;facing=input;position=map.resolveMovement(position,input*230.f*dt,14,!gate.blocksPassage());}const auto actual=position-before;if(avatar){avatar->setPosition(position);avatar->updateNonCombatPresentation(dt,actual);}
+ for(auto&n:npcs){const auto activity=NpcScheduleSystem::activity(n->getRole(),dayNight.phase());n->setSchedulePaused(activity==NpcActivity::Rest);n->update(dt,map);}
+ for(std::size_t i=0;i<npcs.size();++i){npcs[i]->avoid(position,map,28);for(std::size_t j=0;j<i;++j)npcs[i]->avoid(npcs[j]->getPosition(),map,24);}
+ const sf::Vector2f lights[]={{84,875},{430,410},{845,520},{1300,205}};const float night=dayNight.nightStrength();auto tint=[&](sf::Vector2f p){float glow=0;for(auto l:lights)glow=std::max(glow,std::clamp(1.f-std::hypot(p.x-l.x,p.y-l.y)/145.f,0.f,1.f));return sf::Color(std::uint8_t(225-50*night+45*glow*night),std::uint8_t(228-48*night+32*glow*night),std::uint8_t(232-22*night));};if(avatar)avatar->setPresentationTint(tint(position));for(auto&n:npcs)n->setTint(tint(n->getPosition()));
+ auto target=position;const auto offset=target-cameraCenter;if(std::abs(offset.x)<48)target.x=cameraCenter.x;if(std::abs(offset.y)<34)target.y=cameraCenter.y;cameraCenter+=(target-cameraCenter)*(1-std::exp(-7*dt));cameraCenter.x=std::clamp(cameraCenter.x,640.f,1032.f);cameraCenter.y=std::clamp(cameraCenter.y,360.f,581.f);worldView.setCenter(cameraCenter);
+ const bool prompt=(gate.getState()==GateState::Closed&&map.canInteractWithGate(position))||(gate.getState()==GateState::Open&&map.canInteract(position));promptAlpha+=std::clamp((prompt?1.f:0.f)-promptAlpha,-dt*5,dt*5);
 }
-void KingdomState::drawText(sf::RenderWindow& w,const std::string& s,sf::Vector2f p,unsigned n,sf::Color c)const{if(!fontLoaded)return;sf::Text t(font,s,n);t.setPosition(p);t.setFillColor(c);w.draw(t);}
-void KingdomState::render(sf::RenderWindow& w){
- w.clear({8,15,18});w.setView(worldView);if(worldSprite)w.draw(*worldSprite);
- for(const auto&zone:map.getWaterZones())for(int i=0;i<7;++i){const float y=zone.position.y+12.f+i*zone.size.y/7.f+std::sin(elapsed*.9f+i)*4.f;const float x=zone.position.x+18.f+std::fmod(elapsed*18.f+i*47.f,std::max(24.f,zone.size.x-55.f));if(map.isOnBridge({x,y},4.f))continue;sf::RectangleShape ripple({32.f+8.f*std::sin(elapsed+i),1.5f});ripple.setPosition({x,y});ripple.setFillColor({105,225,230,static_cast<std::uint8_t>(28+16*(.5f+.5f*std::sin(elapsed*1.7f+i)))});w.draw(ripple);}
- {const float t=gate.openProgress();const float eased=1.f-std::pow(1.f-t,3.f);if(const auto*door=textures.findTexture("CastleGate")){const auto size=door->getSize();const int half=static_cast<int>(size.x/2);sf::Sprite left(*door,{{0,0},{half,static_cast<int>(size.y)}}),right(*door,{{half,0},{static_cast<int>(size.x)-half,static_cast<int>(size.y)}});const float scale=112.f/static_cast<float>(size.x);left.setScale({scale,scale});right.setScale({scale,scale});left.setPosition({164.f-55.f*eased,748.f});right.setPosition({220.f+55.f*eased,748.f});w.draw(left);w.draw(right);}if(gate.getState()==GateState::Opening){for(int i=0;i<5;++i){sf::CircleShape dust(3.f+i*.4f);dust.setPosition({175.f+i*20.f,855.f-std::sin(elapsed*5.f+i)*4.f});dust.setFillColor({190,155,105,static_cast<std::uint8_t>(80*(1.f-t))});w.draw(dust);}}}
- const float pulse=.5f+.5f*std::sin(elapsed*2.f);if(gate.getState()==GateState::Open){sf::CircleShape caveGlow(64.f);caveGlow.setOrigin({64.f,64.f});caveGlow.setPosition(KingdomMap::CAVE_CENTER);caveGlow.setFillColor({60,225,205,static_cast<std::uint8_t>(12+18*pulse)});w.draw(caveGlow);
- for(const auto& point:KingdomMap::GOLDEN_ROUTE){const float dist=std::hypot(position.x-point.x,position.y-point.y);if(dist<65.f)continue;sf::CircleShape rune(7.f+2.f*pulse);rune.setOrigin({7.f,7.f});rune.setPosition(point);rune.setFillColor({245,190,70,static_cast<std::uint8_t>(85+55*pulse)});rune.setOutlineColor({65,220,195,150});rune.setOutlineThickness(2.f);w.draw(rune);}}
- if(debugCollision){for(int y=0;y<KingdomMap::GRID_HEIGHT;++y)for(int x=0;x<KingdomMap::GRID_WIDTH;++x){sf::RectangleShape cell({31,31});cell.setPosition({float(x*KingdomMap::CELL_SIZE),float(y*KingdomMap::CELL_SIZE)});cell.setFillColor(map.cellAt(x,y).walkable?sf::Color(45,210,90,35):sf::Color(230,45,45,55));w.draw(cell);}sf::CircleShape foot(18);foot.setOrigin({18,18});foot.setPosition(position);foot.setFillColor({245,220,60,100});w.draw(foot);sf::RectangleShape gateBox(KingdomMap::GATE_BLOCKER.size);gateBox.setPosition(KingdomMap::GATE_BLOCKER.position);gateBox.setFillColor({190,70,230,100});w.draw(gateBox);sf::CircleShape zone(KingdomMap::GATE_INTERACTION_RADIUS);zone.setOrigin({KingdomMap::GATE_INTERACTION_RADIUS,KingdomMap::GATE_INTERACTION_RADIUS});zone.setPosition(KingdomMap::GATE_CENTER);zone.setFillColor({70,200,240,45});w.draw(zone);for(const auto&npc:npcs)for(const auto&p:npc->getRoute()){sf::CircleShape marker(5);marker.setOrigin({5,5});marker.setPosition(p);marker.setFillColor({180,70,240,180});w.draw(marker);}}
- {sf::RectangleShape ambient(KingdomMap::WORLD_SIZE);ambient.setFillColor(dayNight.ambientOverlay());w.draw(ambient);}
- std::sort(npcs.begin(),npcs.end(),[](const auto&a,const auto&b){return a->footY()<b->footY();});for(const auto&npc:npcs)npc->drawShadow(w);if(avatar)avatar->drawShadow(w);bool playerDrawn=false;for(const auto&npc:npcs){if(!playerDrawn&&avatar&&npc->footY()>position.y){avatar->draw(w);playerDrawn=true;}npc->draw(w);}if(avatar&&!playerDrawn)avatar->draw(w);
- sf::RectangleShape arch({190,20});arch.setPosition({130,742});arch.setFillColor({68,63,55,230});w.draw(arch);
- for(int i=0;i<7;i++){sf::CircleShape mote(2.f);mote.setPosition({1120.f+i*73.f,220.f+std::sin(elapsed*.8f+i)*38.f});mote.setFillColor({120,238,195,110});w.draw(mote);}
- w.setView(uiView);sf::RectangleShape objective({370,76});objective.setPosition({24,24});objective.setFillColor({5,14,22,205});objective.setOutlineColor({226,184,92,190});objective.setOutlineThickness(1.f);w.draw(objective);drawText(w,"OBJECTIVE",{44,34},15,{238,201,112});drawText(w,gate.getState()==GateState::Open?"Reach the Ruined Catacombs":"Open the Castle Gate",{44,61},21,{235,241,234});
- drawText(w,"WASD Move    E Interact    F3 Navigation    F4 Time    ESC Menu",{28,684},14,{220,224,215,205});
- if(promptAlpha>0){const bool openingGate=gate.getState()==GateState::Closed;sf::RectangleShape panel({330,44});panel.setPosition({475,646});panel.setFillColor({6,15,22,static_cast<std::uint8_t>(205*promptAlpha)});panel.setOutlineColor({226,184,92,static_cast<std::uint8_t>(190*promptAlpha)});panel.setOutlineThickness(1.f);w.draw(panel);sf::RectangleShape keycap({34,30});keycap.setPosition({487,653});keycap.setFillColor({33,29,22,static_cast<std::uint8_t>(240*promptAlpha)});keycap.setOutlineColor({245,207,119,static_cast<std::uint8_t>(220*promptAlpha)});keycap.setOutlineThickness(1.f);w.draw(keycap);drawText(w,"E",{498,655},18,{255,228,150,static_cast<std::uint8_t>(255*promptAlpha)});drawText(w,openingGate?"Open the Gate":"Enter Ruined Catacombs",{536,656},17,{240,239,226,static_cast<std::uint8_t>(255*promptAlpha)});}
- sf::RectangleShape veil({1280,720});veil.setFillColor({3,7,12,static_cast<std::uint8_t>(255*std::clamp(fade,0.f,1.f))});w.draw(veil);
+void KingdomState::drawText(sf::RenderWindow&w,const std::string&s,sf::Vector2f p,unsigned n,sf::Color c)const{if(fontLoaded){sf::Text t(font,s,n);t.setPosition(p);t.setFillColor(c);w.draw(t);}}
+void KingdomState::render(sf::RenderWindow&w){
+ if(!compositor)return;sceneTarget=&compositor->begin(worldView);if(renderer){renderer->drawBase(*sceneTarget);renderer->drawWater(*sceneTarget,elapsed,dayNight.nightStrength());}
+ const float open=gate.openProgress(),eased=1-std::pow(1-open,3);if(const auto*door=textures.findTexture("CastleGate")){const auto size=door->getSize();const int half=int(size.x/2);sf::Sprite l(*door,{{0,0},{half,int(size.y)}}),r(*door,{{half,0},{int(size.x)-half,int(size.y)}});const float scale=112.f/size.x;l.setScale({scale,scale});r.setScale({scale,scale});l.setPosition({164-55*eased,748});r.setPosition({220+55*eased,748});sceneTarget->draw(l);sceneTarget->draw(r);}
+ struct Item{float key;int kind;std::size_t index;};std::vector<Item>items{{position.y+map.heightAt(position)*1000,0,0}};for(std::size_t i=0;i<npcs.size();++i)items.push_back({npcs[i]->getSortKey()+map.heightAt(npcs[i]->getPosition())*1000,1,i});if(renderer)for(std::size_t i=0;i<KingdomRenderer::OCCLUDER_COUNT;++i)items.push_back({renderer->occluderSortKey(i),2,i});std::stable_sort(items.begin(),items.end(),[](auto&a,auto&b){return a.key<b.key;});
+ auto shadow=[&](sf::Vector2f p,float scale){if(map.isWater(p))return;if(const auto*t=textures.findTexture("KingdomContactShadow")){sf::Sprite s(*t);s.setOrigin({64,32});s.setPosition(p);s.setScale({scale,scale});s.setColor({255,255,255,std::uint8_t(220-70*dayNight.nightStrength())});sceneTarget->draw(s);}};
+ for(auto&i:items){if(i.kind==0&&avatar){shadow(position,.48f);avatar->draw(*sceneTarget);}else if(i.kind==1){shadow(npcs[i.index]->getPosition(),.42f);npcs[i.index]->draw(*sceneTarget);}else if(renderer)renderer->drawOccluder(*sceneTarget,i.index);}
+ if(environment.getWeather()==KingdomWeather::LightRain)for(int i=0;i<18;++i){sf::Vector2f p{std::fmod(i*137.f+elapsed*41.f,KingdomMap::WORLD_SIZE.x),std::fmod(i*83.f+elapsed*27.f,KingdomMap::WORLD_SIZE.y)};if(map.isWater(p)){sf::CircleShape ripple(5);ripple.setOrigin({5,5});ripple.setScale({1,.35f});ripple.setPosition(p);ripple.setFillColor(sf::Color::Transparent);ripple.setOutlineThickness(1);ripple.setOutlineColor({190,225,235,75});sceneTarget->draw(ripple);}}
+ compositor->applyAmbient(dayNight.ambientOverlay());if(dayNight.nightStrength()>.01f)for(std::size_t i=0;i<4;++i){const sf::Vector2f p=std::array<sf::Vector2f,4>{{{84,875},{430,410},{845,520},{1300,205}}}[i];sf::CircleShape glow(110);glow.setOrigin({110,110});glow.setPosition(p);const float flicker=.92f+.08f*std::sin(elapsed*3.1f+i*2.7f);glow.setFillColor({255,175,70,std::uint8_t(34*dayNight.nightStrength()*flicker)});sceneTarget->draw(glow,sf::BlendAdd);}
+ if(debugCollision){
+  auto rectangle=[&](sf::FloatRect r,sf::Color fill,sf::Color outline){sf::RectangleShape q(r.size);q.setPosition(r.position);q.setFillColor(fill);q.setOutlineColor(outline);q.setOutlineThickness(2);sceneTarget->draw(q);};
+  for(const auto&w:map.getWaterZones())rectangle(w,{25,90,235,45},{55,155,255,180});
+  for(const auto&f:map.getSolidFootprints())rectangle(f.bounds,{235,45,45,62},{255,95,70,215});
+  const sf::Vector2f a{1030,655},b{1390,880},ab=b-a;const float length=std::hypot(ab.x,ab.y);const sf::Vector2f n{-ab.y/length,ab.x/length};
+  sf::VertexArray deck(sf::PrimitiveType::TriangleStrip,4);deck[0].position=a-n*50.f;deck[1].position=a+n*50.f;deck[2].position=b-n*50.f;deck[3].position=b+n*50.f;for(std::size_t i=0;i<4;++i)deck[i].color={30,225,190,65};sceneTarget->draw(deck);
+  for(float side:{-61.f,61.f}){sf::VertexArray rail(sf::PrimitiveType::Lines,2);rail[0].position=a+n*side;rail[1].position=b+n*side;rail[0].color=rail[1].color={255,75,65,235};sceneTarget->draw(rail);}
+  rectangle({{158,830},{132,87}},{60,230,110,40},{80,255,145,205});
+  auto marker=[&](sf::Vector2f p,float radius,sf::Color color){sf::CircleShape c(radius);c.setOrigin({radius,radius});c.setPosition(p);c.setFillColor(color);sceneTarget->draw(c);};marker(KingdomMap::SPAWN,7,{255,220,35,245});marker(position,5,{255,255,255,250});
+  const auto foot=avatar?avatar->getFootCollider():KingdomFootModel::playerCollider(position);rectangle(foot,{255,240,45,85},{255,245,100,245});
+  if(renderer)for(std::size_t i=0;i<KingdomRenderer::OCCLUDER_COUNT;++i){const float y=renderer->occluderSortKey(i);sf::VertexArray baseline(sf::PrimitiveType::Lines,2);baseline[0].position={0,y};baseline[1].position={KingdomMap::WORLD_SIZE.x,y};baseline[0].color=baseline[1].color={215,85,255,90};sceneTarget->draw(baseline);}
+ }
+ compositor->finish();w.clear();w.setView(uiView);compositor->drawWorld(w);compositor->drawWeather(w,environment.getWeather(),elapsed);
+ sf::RectangleShape objective({370,76});objective.setPosition({24,24});objective.setFillColor({5,14,22,205});objective.setOutlineColor({226,184,92,190});objective.setOutlineThickness(1);w.draw(objective);drawText(w,"OBJECTIVE",{44,34},15,{238,201,112});drawText(w,gate.getState()==GateState::Open?"Reach the Ruined Catacombs":"Open the Castle Gate",{44,61},21,{235,241,234});drawText(w,"WASD Move    E Interact    F3 Navigation    F4 Time    F5 Weather    F6 Performance",{28,684},14,{220,224,215,205});
+ if(debugCollision)drawText(w,"F3 CALIBRATION  foot ("+std::to_string(int(position.x))+", "+std::to_string(int(position.y))+")  yellow=foot/spawn  red=solid/rail  blue=water  cyan=deck  green=entrance",{405,30},14,{255,245,190});
+ if(debugPerformance){const char*phases[]={"Dawn","Day","Sunset","Night"};const char*weather[]={"Clear","Rain","Mist"};drawText(w,"FPS "+std::to_string(int(lastFrameDt>0?1/lastFrameDt:0))+"  frame "+std::to_string(lastFrameDt*1000).substr(0,5)+" ms\nphase "+phases[int(dayNight.phase())]+"  weather "+weather[int(environment.getWeather())]+"\ncache "+std::to_string(textures.getCacheHits())+" hit / "+std::to_string(textures.getCacheMisses())+" miss",{930,28},14,{235,240,225});}
+ if(promptAlpha>0){sf::RectangleShape panel({330,44});panel.setPosition({475,646});panel.setFillColor({6,15,22,std::uint8_t(205*promptAlpha)});w.draw(panel);drawText(w,gate.getState()==GateState::Closed?"E   Open the Gate":"E   Enter Ruined Catacombs",{492,656},17,{240,239,226,std::uint8_t(255*promptAlpha)});}sf::RectangleShape veil({1280,720});veil.setFillColor({3,7,12,std::uint8_t(255*std::clamp(fade,0.f,1.f))});w.draw(veil);
 }

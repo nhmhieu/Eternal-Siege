@@ -76,6 +76,17 @@ def main() -> int:
 
     background = ROOT / "assets/images/ui/menu_background.png"
     logo = ROOT / "assets/images/ui/logo.png"
+    kingdom_layers = ROOT / "assets/images/kingdom/layers"
+    for name in ("kingdom_water_mask.png", "kingdom_water_flow_0.png",
+                 "kingdom_water_flow_1.png", "kingdom_foreground_gate_left.png",
+                 "kingdom_foreground_gate_right.png", "kingdom_foreground_gate_arch.png",
+                 "kingdom_foreground_fountain.png", "kingdom_foreground_bridge_far.png",
+                 "kingdom_foreground_bridge_near.png", "kingdom_foreground_catacomb.png",
+                 "kingdom_foreground_tree_village.png", "kingdom_foreground_tree_bridge.png",
+                 "kingdom_foreground_tree_river.png"):
+        path = kingdom_layers / name
+        check(path.exists() and png_info(path)[:2] == (1672, 941),
+              f"Kingdom layer is 1672x941: {name}", errors)
     check(background.exists() and png_info(background)[:2] == (1280, 720),
           "menu background is 1280x720", errors)
     check(logo.exists() and png_info(logo)[2] in (4, 6),

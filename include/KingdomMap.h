@@ -1,43 +1,33 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <vector>
 #include <array>
+#include <string_view>
+#include <vector>
 
-enum class KingdomTileType { Ground,Road,Bridge,Stairs,Water,Wall,Building,Cliff,DecorationBlocked };
-struct KingdomCell { KingdomTileType type=KingdomTileType::Ground;bool walkable=true;bool blocksNPC=false; };
+enum class KingdomSurface { Grass,Road,Stone,Bridge,Stairs,ShallowDecoration,Water,Wall,Building,Cliff,Blocked };
+struct KingdomCell { KingdomSurface surface=KingdomSurface::Grass;bool playerWalkable=true;bool npcWalkable=true;float heightLevel=0.f;bool walkable()const{return playerWalkable;} };
+struct KingdomSolidFootprint { sf::FloatRect bounds; std::string_view name; };
 
 class KingdomMap {
 public:
-    static constexpr sf::Vector2f WORLD_SIZE{1672.f, 941.f};
-    static constexpr sf::Vector2f SPAWN{220.f, 890.f};
-    static constexpr sf::Vector2f RETURN_SPAWN{1260.f, 330.f};
-    static constexpr sf::Vector2f CAVE_CENTER{1395.f, 190.f};
-    static constexpr float INTERACTION_RADIUS = 92.f;
-    static constexpr sf::Vector2f GATE_CENTER{220.f, 850.f};
-    static constexpr float GATE_INTERACTION_RADIUS = 88.f;
-    static constexpr int CELL_SIZE=32;
-    static constexpr int GRID_WIDTH=53,GRID_HEIGHT=30;
-    static constexpr sf::FloatRect GATE_BLOCKER{{164.f, 815.f}, {112.f, 34.f}};
-
-    KingdomMap();
-    sf::Vector2f resolveMovement(sf::Vector2f position,
-                                 sf::Vector2f displacement,
-                                 float radius = 18.f,
-                                 bool gateOpen = true) const;
-    bool canInteract(sf::Vector2f position) const;
-    bool canInteractWithGate(sf::Vector2f position) const;
-    bool isBlocked(sf::Vector2f position, float radius = 18.f,
-                   bool gateOpen = true) const;
-    const std::vector<sf::FloatRect>& getObstacles() const { return obstacles; }
-    const std::vector<sf::FloatRect>& getWaterZones() const { return waterZones; }
-    bool isOnBridge(sf::Vector2f position, float radius = 0.f) const;
-    const KingdomCell& cellAt(int x,int y)const;
-    bool isWalkable(sf::Vector2f position)const;
-    static constexpr std::array<sf::Vector2f,7> GOLDEN_ROUTE{{
-        {430,740},{560,665},{760,610},{1010,660},{1160,750},{1320,845},{1395,190}}};
+ static constexpr sf::Vector2f WORLD_SIZE{1672,941},SPAWN{224,884},RETURN_SPAWN{1360,350},CAVE_CENTER{1435,238},GATE_CENTER{224,850};
+ static constexpr float INTERACTION_RADIUS=92,GATE_INTERACTION_RADIUS=88;
+ static constexpr int CELL_SIZE=32,GRID_WIDTH=53,GRID_HEIGHT=30;
+ static constexpr sf::FloatRect GATE_BLOCKER{{164,815},{112,34}};
+ static constexpr std::array<sf::Vector2f,7> GOLDEN_ROUTE{{{430,740},{560,665},{760,610},{1010,660},{1160,750},{1320,845},{1395,190}}};
+ KingdomMap();
+ sf::Vector2f resolveMovement(sf::Vector2f,sf::Vector2f,float radius=18,bool gateOpen=true)const;
+ bool canInteract(sf::Vector2f)const;bool canInteractWithGate(sf::Vector2f)const;
+ bool isBlocked(sf::Vector2f,float radius=18,bool gateOpen=true)const;
+ bool isOnBridge(sf::Vector2f,float radius=0)const;
+ bool isNpcFootprintWalkable(sf::FloatRect)const;
+ bool isWalkable(sf::Vector2f)const;bool isNpcWalkable(sf::Vector2f)const;bool isWater(sf::Vector2f)const;float heightAt(sf::Vector2f)const;
+ const KingdomCell& cellAt(int,int)const;
+ const std::vector<sf::FloatRect>& getObstacles()const{return obstacles;}
+ const std::vector<KingdomSolidFootprint>& getSolidFootprints()const{return solidFootprints;}
+ const std::vector<sf::FloatRect>& getWaterZones()const{return waterZones;}
 private:
-    std::vector<sf::FloatRect> obstacles;
-    std::vector<sf::FloatRect> waterZones;
-    std::vector<KingdomCell> cells;
-    bool blocked(sf::Vector2f position, float radius, bool gateOpen) const;
+ std::vector<KingdomSolidFootprint> solidFootprints;
+ std::vector<sf::FloatRect> obstacles,waterZones;std::vector<KingdomCell> cells;
+ bool blocked(sf::Vector2f,float,bool)const;
 };

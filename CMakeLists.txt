@@ -208,6 +208,10 @@ if(BUILD_TESTING)
         tests/KingdomFlowTests.cpp
         src/KingdomMap.cpp
     )
+    add_executable(kingdom_qa_tests tests/KingdomQaTests.cpp src/KingdomMap.cpp src/KingdomNpc.cpp src/KingdomCompositor.cpp)
+    target_include_directories(kingdom_qa_tests PRIVATE "${CMAKE_SOURCE_DIR}/include")
+    target_compile_definitions(kingdom_qa_tests PRIVATE KINGDOM_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_link_libraries(kingdom_qa_tests PRIVATE SFML::Graphics SFML::Window SFML::System)
     target_include_directories(kingdom_flow_tests PRIVATE
         "${CMAKE_SOURCE_DIR}/include"
     )
@@ -372,6 +376,7 @@ if(BUILD_TESTING)
     add_test(NAME setup_placement_tests COMMAND setup_placement_tests)
     add_test(NAME player_action_tests COMMAND player_action_tests)
     add_test(NAME kingdom_flow_tests COMMAND kingdom_flow_tests)
+    add_test(NAME kingdom_qa_tests COMMAND kingdom_qa_tests)
 endif()
 
 add_custom_command(
