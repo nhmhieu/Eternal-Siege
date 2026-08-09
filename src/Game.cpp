@@ -31,6 +31,9 @@ Game :: ~Game(){
 
 void Game::run() {
 
+    stateMachine.consumeTransitionApplied();
+    clock.restart();
+
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -48,6 +51,7 @@ void Game::run() {
                 continue;
             }
             stateMachine.handleEvent(*event);
+            if (stateMachine.consumeTransitionApplied()) clock.restart();
         }
 
         if (!window.isOpen()) {
@@ -59,6 +63,7 @@ void Game::run() {
 
         audioManager.update(dt);
         stateMachine.update(dt);
+        if (stateMachine.consumeTransitionApplied()) clock.restart();
         window.clear();
         stateMachine.render(window);
         window.display();

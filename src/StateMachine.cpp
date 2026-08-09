@@ -14,6 +14,7 @@ void StateMachine::pushState(std::unique_ptr<State> state) {
     isDispatching = true;
     states.top()->onEnter();
     isDispatching = false;
+    transitionApplied = true;
     applyPendingState();
 }
 
@@ -29,6 +30,8 @@ void StateMachine::popState() {
             states.top()->onEnter();
             isDispatching = false;
         }
+
+        transitionApplied = true;
 
         applyPendingState();
     }
@@ -54,6 +57,7 @@ void StateMachine::changeState(std::unique_ptr<State> state) {
     isDispatching = true;
     states.top()->onEnter();
     isDispatching = false;
+    transitionApplied = true;
     applyPendingState();
 }
 
@@ -77,6 +81,12 @@ void StateMachine::update(float dt) {
 
 void StateMachine::render(sf::RenderWindow& window) {
     if (auto* cur = getCurrentState()) cur->render(window);
+}
+
+bool StateMachine::consumeTransitionApplied() {
+    const bool result = transitionApplied;
+    transitionApplied = false;
+    return result;
 }
 
 void StateMachine::applyPendingState() {

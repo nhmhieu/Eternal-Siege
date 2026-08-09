@@ -1,6 +1,7 @@
 #include "MenuState.h"
 #include "KingdomState.h"
 #include "AssetLocator.h"
+#include "KingdomAssets.h"
 #include <algorithm>
 #include <iostream>
 
@@ -15,6 +16,7 @@ MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window,
 
 void MenuState::onEnter() {
     audioManager.playMusic("assets/audio/music/menu_theme.ogg");
+    preloadKingdomAssets(textureManager);
     const auto fontPath = AssetLocator::find("assets/fonts/Font.ttf");
     if (!fontPath || !font.openFromFile(*fontPath)){
         std::cerr << "Failed to load font!" << std::endl;

@@ -8,6 +8,7 @@
 #include "GameProgress.h"
 #include "KingdomGateController.h"
 #include "KingdomNpc.h"
+#include "DayNightSystem.h"
 #include <memory>
 #include <optional>
 
@@ -31,5 +32,6 @@ private:
     sf::Font font; bool fontLoaded=false; bool returning=false; bool transitioning=false;
     float elapsed=0.f, fade=1.f, promptAlpha=0.f;
     bool debugCollision=false;
+    DayNightSystem dayNight;
     void drawText(sf::RenderWindow&, const std::string&, sf::Vector2f, unsigned, sf::Color) const;
 };

@@ -84,12 +84,15 @@ int main() {
         std::make_unique<TestState>(machine, 1, true, 2));
     assert(currentTestState(machine));
     assert(currentTestState(machine)->getId() == 2);
+    assert(machine.consumeTransitionApplied());
+    assert(!machine.consumeTransitionApplied());
 
     // The same lifetime guarantee is required during regular update dispatch.
     currentTestState(machine)->redirectDuringNextUpdate(3);
     machine.update(0.016f);
     assert(currentTestState(machine));
     assert(currentTestState(machine)->getId() == 3);
+    assert(machine.consumeTransitionApplied());
 
     machine.popState();
     assert(machine.getCurrentState() == nullptr);

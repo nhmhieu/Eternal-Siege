@@ -2,11 +2,13 @@
 #include "LevelDefinition.h"
 #include "GameProgress.h"
 #include "KingdomGateController.h"
+#include "DayNightSystem.h"
 #include <cassert>
 #include <cmath>
 
 int main(){
  KingdomMap map;
+ DayNightSystem cycle;const auto initial=cycle.phase();cycle.advancePhase();assert(cycle.phase()!=initial);cycle.update(DayNightSystem::CYCLE_SECONDS);assert(cycle.phase()!=initial);
  const auto start=KingdomMap::SPAWN;
  assert(!map.isBlocked(start,18.f,false));
  assert(map.isWalkable(start));
