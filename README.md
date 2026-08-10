@@ -66,7 +66,7 @@ Intro -> Menu -> Asterfall Kingdom -> Level Select -> Setup -> Gameplay -> Win /
 - **Boss Final (Ruined Catacombs Lord)**:
   - Phase 1: Tấn công cận chiến và tung kỹ năng thường.
   - Phase 2 (dưới ~50% HP): Kích hoạt Beam Laser càn quét diện rộng.
-  - Phase Enrage (dưới ~25% HP): Tăng tốc độ di chuyển và sát thương.
+ - Phase Enrage (dưới ~25% HP): Tăng tốc độ di chuyển và tăng khả năng chống chịu.
 
 ## 5. Công nghệ
 - **Ngôn ngữ**: C++17.
