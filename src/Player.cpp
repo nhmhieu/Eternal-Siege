@@ -286,17 +286,49 @@ void Player::drawShadow(sf::RenderTexture& target)const{const float r=std::max(1
 
 void Player::updateNonCombatPresentation(float deltaTime,
                                          sf::Vector2f movement) {
-    const sf::Vector2f actual=position-previousPosition;
+    const sf::Vector2f actual = position - previousPosition;
     visualTime += std::max(0.f, deltaTime);
+    const float movedDistance = std::hypot(actual.x, actual.y);
+    visuallyMoving = movedDistance > 0.001f;
+    previousPosition = position;
     setDirection(movement);
-    updatePresentation(nullptr);
+
+    if (walkTexture) {
+        if (visuallyMoving) {
+            FacingDirection next = walkFacing;
+            if (std::abs(movement.x) > std::abs(movement.y)) {
+                next = movement.x < 0 ? FacingDirection::Left
+                                      : FacingDirection::Right;
+            } else {
+                next = movement.y < 0 ? FacingDirection::Up
+                                      : FacingDirection::Down;
+            }
+            if (next != walkFacing) {
+                walkFacing = next;
+                AnimationClip clip;
+                for (int i = 0; i < 6; ++i) {
+                    clip.frames.push_back(
+                        {{i * 256, static_cast<int>(walkFacing) * 256},
+                         {256, 256}});
+                }
+                walkAnimation.setClip(std::move(clip));
+            }
+            walkAnimation.update(movedDistance / 230.f);
+        } else {
+            walkAnimation.reset();
+        }
+        if (const auto* frame = walkAnimation.currentFrame()) {
+            playerShape.setTextureRect(*frame);
+        }
+        applyWalkFrameGeometry();
+    }
+
     playerShape.setPosition(position);
     playerShape.setRotation(sf::degrees(0.f));
-    playerShape.setScale({1.f,1.f});
-    if(walkTexture){const float distance=std::hypot(actual.x,actual.y);const bool moving=distance>.001f;if(moving){FacingDirection next=walkFacing;if(std::abs(movement.x)>std::abs(movement.y))next=movement.x<0?FacingDirection::Left:FacingDirection::Right;else next=movement.y<0?FacingDirection::Up:FacingDirection::Down;if(next!=walkFacing){walkFacing=next;AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,static_cast<int>(walkFacing)*256},{256,256}});walkAnimation.setClip(std::move(clip));}walkAnimation.update(distance/230.f);}else walkAnimation.reset();if(const auto* frame=walkAnimation.currentFrame())playerShape.setTextureRect(*frame);applyWalkFrameGeometry();}
+    playerShape.setScale({1.f, 1.f});
 }
 
-void Player::useWalkSpriteSheet(const sf::Texture& texture){walkTexture=&texture;footAnchoredPresentation=true;playerShape.setTexture(walkTexture,true);const auto image=texture.copyToImage();constexpr float displayScale=86.f/256.f;for(int row=0;row<4;++row)for(int frame=0;frame<6;++frame){unsigned minX=256,maxX=0,maxY=0;bool found=false;for(unsigned y=0;y<256;++y)for(unsigned x=0;x<256;++x)if(image.getPixel({unsigned(frame*256)+x,unsigned(row*256)+y}).a>32){found=true;minX=std::min(minX,x);maxX=std::max(maxX,x);maxY=std::max(maxY,y);}walkFootOrigins[row][frame]=found?sf::Vector2f{(minX+maxX+1)*.5f*displayScale,(maxY+1)*displayScale}:sf::Vector2f{43,86};}AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,0},{256,256}});walkAnimation.setClip(std::move(clip));playerShape.setTextureRect({{0,0},{256,256}});playerShape.setSize({86.f,86.f});applyWalkFrameGeometry();playerShape.setPosition(position);}
+void Player::useWalkSpriteSheet(const sf::Texture& texture){walkTexture=&texture;footAnchoredPresentation=true;playerShape.setTexture(walkTexture,true);constexpr float scale=87.f/256.f;constexpr float anchorX[4][6]={{143.5f,130.f,118.f,105.5f,92.5f,76.f},{172.f,160.5f,148.5f,135.f,121.f,109.5f},{141.5f,131.f,120.f,110.5f,95.5f,82.5f},{144.f,132.f,121.5f,113.5f,99.5f,90.5f}};constexpr float baselineY[4]={248.f,231.f,256.f,208.f};for(int row=0;row<4;++row)for(int frame=0;frame<6;++frame)walkFootOrigins[row][frame]={anchorX[row][frame]*scale,baselineY[row]*scale};AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,0},{256,256}});walkAnimation.setClip(std::move(clip));playerShape.setTextureRect({{0,0},{256,256}});playerShape.setSize({87.f,87.f});applyWalkFrameGeometry();playerShape.setPosition(position);}
 
 void Player::applyWalkFrameGeometry(){if(!walkTexture)return;const auto rect=playerShape.getTextureRect();const int frame=std::clamp(rect.position.x/256,0,5),row=std::clamp(rect.position.y/256,0,3);playerShape.setOrigin(walkFootOrigins[row][frame]);}
 

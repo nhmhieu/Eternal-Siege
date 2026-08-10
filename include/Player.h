@@ -77,5 +77,8 @@ public:
     sf::FloatRect getHurtBox() const override;
     sf::Vector2f getFootPosition() const { return position; }
     sf::FloatRect getFootCollider() const { return KingdomFootModel::playerCollider(position); }
+    bool isKingdomVisuallyMoving() const { return visuallyMoving; }
+    std::size_t getKingdomFrameIndex() const { return walkAnimation.frameIndex(); }
+    sf::Vector2f getKingdomFrameOrigin() const { return playerShape.getOrigin(); }
     void setPresentationTint(sf::Color color) { playerShape.setFillColor(color); }
 };

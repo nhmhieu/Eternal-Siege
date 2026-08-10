@@ -7,6 +7,7 @@
 class KingdomRenderer {
 public:
  static constexpr std::size_t OCCLUDER_COUNT=10;
+ static constexpr std::size_t BRIDGE_FAR_INDEX=4,BRIDGE_NEAR_INDEX=5;
  explicit KingdomRenderer(TextureManager&);
  void drawBase(sf::RenderTarget&)const;
  void drawWater(sf::RenderTarget&,float,float)const;

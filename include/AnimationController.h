@@ -13,5 +13,6 @@ public:
     void update(float dt){if(clip.frames.empty())return;time+=std::max(0.f,dt);while(time>=clip.frameDuration){time-=clip.frameDuration;if(frame+1<clip.frames.size())++frame;else frame=clip.loop?0:clip.frames.size()-1;}}
     void reset(){time=0.f;frame=0;}
     const sf::IntRect* currentFrame()const{return clip.frames.empty()?nullptr:&clip.frames[frame];}
+    std::size_t frameIndex()const{return frame;}
 private: AnimationClip clip; float time=0.f; std::size_t frame=0;
 };
