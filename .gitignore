@@ -1,4 +1,4 @@
-﻿# === Visual Studio ===
+# === Visual Studio ===
 /.vs/
 *.sln
 *.suo
@@ -10,8 +10,7 @@
 *.vcxproj.vspscc
 
 # === CMake build outputs ===
-/build/
-/build-*/
+/build*/
 /cmake-build-*/
 /out/
 CMakeCache.txt

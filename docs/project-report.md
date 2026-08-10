@@ -78,7 +78,7 @@
 
 | Thành viên | Mã số sinh viên | Vai trò và nhiệm vụ cụ thể |
 |---|---:|---|
-| **Nguyễn Huỳnh Minh Hiếu** | 25127331 | **Trưởng nhóm**; phân tích và tổ chức kiến trúc; thiết kế HUD và các màn hình/trạng thái giao diện; phát triển và tích hợp core gameplay như combat, ally, wave, upgrade và state flow; merge/review các module; xử lý collision, cleanup và lỗi tích hợp; tích hợp và hoàn thiện khu vực Kingdom; xây dựng/duy trì test; kiểm tra build; tổng hợp tài liệu và báo cáo. |
+| **Nguyễn Huỳnh Minh Hiếu** | 25127331 | **Trưởng nhóm**; phân tích và tổ chức kiến trúc; thiết kế HUD và các màn hình/trạng thái giao diện; phát triển và tích hợp core gameplay như combat, ally, wave, upgrade và state flow; merge/review các module; xử lý collision, cleanup và lỗi tích hợp; tích hợp và hoàn thiện khu vực Kingdom; kiểm thử thủ công; kiểm tra build; tổng hợp tài liệu và báo cáo. |
 | **Nghiêm Đình Thuận** | 25127152 | Phát triển gameplay màn chiến đấu; tham gia xử lý các cơ chế Player, quái vật và tương tác chiến đấu theo phần code thực tế của thành viên. |
 | **Phan Huỳnh Minh Tuấn** | 25127168 | Thiết kế và triển khai UI; menu và  tích hợp phần hiển thị vào game. |
 | **Nguyễn Huỳnh Quốc Ngữ** | 25127103 | Phụ trách đồ họa và quản lý texture; xây dựng/hoàn thiện `TextureManager`; chuẩn bị và tích hợp texture vào các đối tượng trong game. |
