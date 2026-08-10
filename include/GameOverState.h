@@ -3,22 +3,29 @@
 #include "StateMachine.h"
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include "TextureManager.h"
+#include "AudioManager.h"
+#include "EndScreenView.h"
+#include "GameProgress.h"
+#include "LevelDefinition.h"
 
 class GameOverState : public State {
 private:
     StateMachine& stateMachine;
-    sf::Font font;
-    bool initialized = false;
+    sf::RenderWindow& window;
+    TextureManager& textureManager;
+    AudioManager& audioManager;
+    GameProgress& progress;
+    LevelId selectedLevelId;
 
-    std::unique_ptr<sf::Text> gameOverText;
-    std::unique_ptr<sf::Text> retryText;
-    std::unique_ptr<sf::Text> exitText;
-
-    sf::RectangleShape retryButton;
-    sf::RectangleShape exitButton;
+    EndScreenView view;
 
 public:
-    GameOverState(StateMachine& machine);
+    GameOverState(StateMachine& machine, sf::RenderWindow& window,
+                  TextureManager& textureManager, AudioManager& audioManager,
+                  GameProgress& progress, LevelId selectedLevelId);
+    ~GameOverState() override = default;
+
     void onEnter() override;
     void onExit() override;
     void handleEvent(const sf::Event& event) override;

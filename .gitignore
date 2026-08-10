@@ -1,5 +1,5 @@
-﻿# === Visual Studio ===
-.vs/
+# === Visual Studio ===
+/.vs/
 *.sln
 *.suo
 *.user
@@ -9,15 +9,16 @@
 *.vcxproj.user
 *.vcxproj.vspscc
 
-# === CMake ===
-build/
+# === CMake build outputs ===
+/build*/
+/cmake-build-*/
+/out/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
 CMakeUserPresets.json
 CMakePresets.json
-CMakeLists.txt        # <--- Bỏ qua CMakeLists.txt
 
 # === Biên dịch ===
 *.exe
@@ -49,8 +50,8 @@ CMakeLists.txt        # <--- Bỏ qua CMakeLists.txt
 Thumbs.db
 desktop.ini
 
-# === Thư mục riêng tư ===
-assets/
+# === Thư mục riêng tư / tạm ===
+tmp/
 *.log
 *.tmp
 .opencode

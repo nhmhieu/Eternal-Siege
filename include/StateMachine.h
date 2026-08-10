@@ -13,7 +13,13 @@ public:
     void handleEvent(const sf::Event& event);
     void update(float dt);
     void render(sf::RenderWindow& window);
+    bool consumeTransitionApplied();
 
 private:
     std::stack<std::unique_ptr<State>> states;
+    std::unique_ptr<State> pendingState;
+    bool isDispatching = false;
+    bool transitionApplied = false;
+
+    void applyPendingState();
 };
