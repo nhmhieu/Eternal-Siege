@@ -21,7 +21,8 @@ void KingdomState::onEnter() {
     position = returning ? KingdomMap::RETURN_SPAWN : KingdomMap::SPAWN;
     transitioning = false;
     transitionLatch.reset();
-    fade = 1.f;
+    fade = returning ? 0.f : 1.f;
+    entryRevealTimer = returning ? 2.5f : 0.f;
     elapsed = 0.f;
     promptAlpha = 0.f;
     titleBannerTimer = 0.f;
@@ -64,6 +65,16 @@ void KingdomState::onExit() {
 void KingdomState::handleEvent(const sf::Event& e) {
     if (transitioning) {
         return;
+    }
+
+    if (entryRevealTimer < 2.5f) {
+        if (const auto* k = e.getIf<sf::Event::KeyPressed>()) {
+            if (k->code == sf::Keyboard::Key::Space || k->code == sf::Keyboard::Key::Enter) {
+                entryRevealTimer = 2.5f;
+                fade = 0.f;
+                return;
+            }
+        }
     }
 
     if (const auto* k = e.getIf<sf::Event::KeyPressed>()) {
@@ -115,15 +126,13 @@ void KingdomState::update(float dt) {
     dayNight.update(dt);
     environment.update(dt);
 
-    titleBannerTimer += dt;
-    if (titleBannerTimer < 0.5f) {
-        titleBannerAlpha = titleBannerTimer / 0.5f;
-    } else if (titleBannerTimer < 2.2f) {
-        titleBannerAlpha = 1.f;
-    } else if (titleBannerTimer < 3.0f) {
-        titleBannerAlpha = 1.f - (titleBannerTimer - 2.2f) / 0.8f;
-    } else {
-        titleBannerAlpha = 0.f;
+    if (entryRevealTimer < 2.5f) {
+        entryRevealTimer += dt;
+        if (entryRevealTimer < 1.8f) {
+            fade = 1.0f;
+        } else {
+            fade = 1.0f - (entryRevealTimer - 1.8f) / 0.7f;
+        }
     }
 
     if (transitioning) {
@@ -138,14 +147,18 @@ void KingdomState::update(float dt) {
     if (gate.getState() == GateState::Open) {
         progress.castleGateOpen = true;
     }
-    fade = std::max(0.f, fade - dt / .32f);
+    if (entryRevealTimer >= 2.5f && !transitioning) {
+        fade = std::max(0.f, fade - dt / .32f);
+    }
 
     // Input & movement logic
     sf::Vector2f input;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) { input.y--; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { input.y++; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { input.x--; }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { input.x++; }
+    if (entryRevealTimer >= 1.8f) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) { input.y--; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { input.y++; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { input.x--; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) { input.x++; }
+    }
 
     const float len = std::hypot(input.x, input.y);
     const auto before = position;
@@ -202,7 +215,7 @@ void KingdomState::update(float dt) {
         n->setTint(tint(n->getPosition()));
     }
 
-    // Smooth responsive camera follow without large dead-zone
+    // Smooth responsive camera follow without dead-zone
     auto target = position;
     cameraCenter += (target - cameraCenter) * (1.f - std::exp(-12.f * dt));
     cameraCenter.x = std::clamp(cameraCenter.x, 640.f, 1032.f);
@@ -313,9 +326,33 @@ void KingdomState::render(sf::RenderWindow& w) {
         renderer->drawOccluder(*sceneTarget, KingdomRenderer::BRIDGE_NEAR_INDEX);
     }
 
+    // World-Space Objective Marker for Ruined Catacombs when gate is open
+    if (gate.getState() == GateState::Open) {
+        const float bobY = std::sin(elapsed * 3.5f) * 3.f;
+        const sf::Vector2f markerPos = KingdomMap::CAVE_CENTER + sf::Vector2f(0.f, -28.f + bobY);
+
+        sf::CircleShape glowRing(18.f);
+        glowRing.setOrigin({18.f, 18.f});
+        glowRing.setPosition(markerPos);
+        glowRing.setFillColor(sf::Color(255, 205, 50, 45));
+        sceneTarget->draw(glowRing, sf::BlendAdd);
+
+        sf::ConvexShape diamond(4);
+        diamond.setPoint(0, {0.f, -12.f});
+        diamond.setPoint(1, {10.f, 0.f});
+        diamond.setPoint(2, {0.f, 12.f});
+        diamond.setPoint(3, {-10.f, 0.f});
+        diamond.setPosition(markerPos);
+        diamond.setFillColor(sf::Color(255, 215, 70, 245));
+        diamond.setOutlineColor(sf::Color(20, 30, 40, 220));
+        diamond.setOutlineThickness(1.5f);
+        sceneTarget->draw(diamond);
+    }
+
     const sf::Vector2f targetPos = (gate.getState() == GateState::Closed) ? KingdomMap::GATE_CENTER : KingdomMap::CAVE_CENTER;
 
     if (navigationActive) {
+        // Find closest waypoint on GOLDEN_ROUTE to player position
         std::size_t startIndex = 0;
         float minDistance = 1e9f;
         for (std::size_t i = 0; i < KingdomMap::GOLDEN_ROUTE.size(); ++i) {
@@ -331,28 +368,70 @@ void KingdomState::render(sf::RenderWindow& w) {
             targetIndex = 1;
         }
 
+        // Build active path from player position -> forward route -> targetPos
+        std::vector<sf::Vector2f> activePath;
+        activePath.push_back(position);
         for (std::size_t i = startIndex; i <= targetIndex && i < KingdomMap::GOLDEN_ROUTE.size(); ++i) {
-            const sf::Vector2f pt = KingdomMap::GOLDEN_ROUTE[i];
-            sf::CircleShape dot(4.f);
-            dot.setOrigin({4.f, 4.f});
+            activePath.push_back(KingdomMap::GOLDEN_ROUTE[i]);
+        }
+        if (activePath.empty() || activePath.back() != targetPos) {
+            activePath.push_back(targetPos);
+        }
+
+        // Sample points along path at regular intervals (~70px)
+        std::vector<sf::Vector2f> sampledPoints;
+        constexpr float stepDistance = 70.f;
+        for (std::size_t i = 0; i + 1 < activePath.size(); ++i) {
+            sf::Vector2f p1 = activePath[i];
+            sf::Vector2f p2 = activePath[i + 1];
+            sf::Vector2f dir = p2 - p1;
+            float len = std::hypot(dir.x, dir.y);
+            if (len > 0.1f) {
+                int steps = std::max(1, static_cast<int>(len / stepDistance));
+                for (int s = 0; s < steps; ++s) {
+                    float t = static_cast<float>(s) / static_cast<float>(steps);
+                    sampledPoints.push_back(p1 + dir * t);
+                }
+            }
+        }
+        sampledPoints.push_back(targetPos);
+
+        // Render golden trail with pulse animation
+        for (std::size_t i = 0; i < sampledPoints.size(); ++i) {
+            const sf::Vector2f pt = sampledPoints[i];
+            const float pulse = 0.75f + 0.25f * std::sin(elapsed * 5.f - static_cast<float>(i) * 0.35f);
+
+            sf::CircleShape glow(10.f * pulse);
+            glow.setOrigin({10.f * pulse, 10.f * pulse});
+            glow.setPosition(pt);
+            glow.setFillColor(sf::Color(255, 200, 50, static_cast<std::uint8_t>(50.f * pulse)));
+            sceneTarget->draw(glow, sf::BlendAdd);
+
+            sf::CircleShape dot(5.f);
+            dot.setOrigin({5.f, 5.f});
             dot.setPosition(pt);
-            const float pulse = 0.8f + 0.2f * std::sin(elapsed * 4.f + i * 0.5f);
-            dot.setFillColor(sf::Color(255, 215, 80, static_cast<std::uint8_t>(210 * pulse)));
+            dot.setFillColor(sf::Color(255, 210, 60, static_cast<std::uint8_t>(220.f * pulse)));
             sceneTarget->draw(dot);
         }
 
-        const float beaconPulse = 0.85f + 0.15f * std::sin(elapsed * 5.f);
+        // Target Waypoint Beacon
+        const float beaconPulse = 0.85f + 0.15f * std::sin(elapsed * 4.5f);
         sf::CircleShape beaconGlow(24.f * beaconPulse);
         beaconGlow.setOrigin({24.f * beaconPulse, 24.f * beaconPulse});
         beaconGlow.setPosition(targetPos);
-        beaconGlow.setFillColor(sf::Color(255, 200, 60, 45));
+        beaconGlow.setFillColor(sf::Color(255, 210, 60, 55));
         sceneTarget->draw(beaconGlow, sf::BlendAdd);
 
-        sf::CircleShape beaconCore(7.f);
-        beaconCore.setOrigin({7.f, 7.f});
-        beaconCore.setPosition(targetPos);
-        beaconCore.setFillColor(sf::Color(255, 230, 110, 240));
-        sceneTarget->draw(beaconCore);
+        sf::ConvexShape diamond(4);
+        diamond.setPoint(0, {0.f, -10.f});
+        diamond.setPoint(1, {8.f, 0.f});
+        diamond.setPoint(2, {0.f, 10.f});
+        diamond.setPoint(3, {-8.f, 0.f});
+        diamond.setPosition(targetPos);
+        diamond.setFillColor(sf::Color(255, 225, 90, 245));
+        diamond.setOutlineColor(sf::Color(15, 25, 35, 220));
+        diamond.setOutlineThickness(1.5f);
+        sceneTarget->draw(diamond);
     }
 
     if (environment.getWeather() == KingdomWeather::LightRain) {
@@ -485,45 +564,56 @@ void KingdomState::render(sf::RenderWindow& w) {
         sf::FloatRect viewBounds{camCenter - viewHalf, worldView.getSize()};
         if (!viewBounds.contains(targetPos) && dist > 1.f) {
             const sf::Vector2f normDir = dir / dist;
-            sf::Vector2f screenCenter{640.f, 360.f};
-            const float margin = 50.f;
-            sf::Vector2f arrowPos = screenCenter + normDir * 280.f;
-            arrowPos.x = std::clamp(arrowPos.x, margin, 1280.f - margin);
-            arrowPos.y = std::clamp(arrowPos.y, margin + 90.f, 720.f - margin);
+            sf::Vector2f arrowPos{640.f + normDir.x * 320.f, 360.f + normDir.y * 220.f};
+            arrowPos.x = std::clamp(arrowPos.x, 60.f, 1220.f);
+            arrowPos.y = std::clamp(arrowPos.y, 100.f, 660.f);
 
             const float angleDeg = std::atan2(normDir.y, normDir.x) * 180.f / 3.14159265f;
+            const float arrowPulse = 0.85f + 0.15f * std::sin(elapsed * 5.f);
 
             sf::ConvexShape arrow(3);
-            arrow.setPoint(0, {14.f, 0.f});
+            arrow.setPoint(0, {15.f, 0.f});
             arrow.setPoint(1, {-10.f, -8.f});
             arrow.setPoint(2, {-10.f, 8.f});
-            arrow.setOrigin({0.f, 0.f});
             arrow.setPosition(arrowPos);
             arrow.setRotation(sf::degrees(angleDeg));
-            arrow.setFillColor(sf::Color(255, 215, 80, 230));
-            arrow.setOutlineColor(sf::Color(10, 20, 30, 200));
+            arrow.setFillColor(sf::Color(255, 210, 60, static_cast<std::uint8_t>(235.f * arrowPulse)));
+            arrow.setOutlineColor(sf::Color(10, 20, 30, 220));
             arrow.setOutlineThickness(1.5f);
             w.draw(arrow);
 
-            drawText(w, std::to_string(static_cast<int>(dist)) + "m", arrowPos + sf::Vector2f(0.f, 18.f), 13, sf::Color(255, 230, 140, 220), true);
+            drawText(w, std::to_string(static_cast<int>(dist)) + "m", arrowPos + sf::Vector2f(0.f, 18.f), 14, sf::Color(255, 225, 110, 230), true);
         }
     }
 
-    // Render Asterfall Kingdom location title banner
-    if (titleBannerAlpha > 0.01f) {
-        const std::uint8_t alpha = static_cast<std::uint8_t>(255.f * titleBannerAlpha);
-        sf::RectangleShape titleBg({420.f, 62.f});
-        titleBg.setOrigin({210.f, 31.f});
-        titleBg.setPosition({640.f, 90.f});
-        titleBg.setFillColor(sf::Color(6, 16, 26, static_cast<std::uint8_t>(180.f * titleBannerAlpha)));
-        titleBg.setOutlineColor(sf::Color(218, 175, 85, static_cast<std::uint8_t>(190.f * titleBannerAlpha)));
-        titleBg.setOutlineThickness(1.5f);
-        w.draw(titleBg);
+    // Render Asterfall Kingdom Entry Location Reveal
+    if (entryRevealTimer < 2.5f) {
+        float revealAlpha = 1.f;
+        if (entryRevealTimer < 0.45f) {
+            revealAlpha = entryRevealTimer / 0.45f;
+        } else if (entryRevealTimer < 1.8f) {
+            revealAlpha = 1.f;
+        } else {
+            revealAlpha = 1.f - (entryRevealTimer - 1.8f) / 0.7f;
+        }
+        revealAlpha = std::clamp(revealAlpha, 0.f, 1.f);
+        const std::uint8_t a = static_cast<std::uint8_t>(255.f * revealAlpha);
 
-        drawText(w, "ASTERFALL KINGDOM", {640.f, 78.f}, 20, sf::Color(245, 212, 115, alpha), true);
-        drawText(w, "The Last Bastion", {640.f, 104.f}, 14, sf::Color(165, 215, 225, alpha), true);
+        sf::RectangleShape darkOverlay({1280.f, 720.f});
+        darkOverlay.setFillColor(sf::Color(4, 7, 14, static_cast<std::uint8_t>(240.f * revealAlpha)));
+        w.draw(darkOverlay);
+
+        drawText(w, "ASTERFALL KINGDOM", {640.f, 320.f}, 52, sf::Color(245, 212, 115, a), true);
+        drawText(w, "The Last Bastion", {640.f, 382.f}, 22, sf::Color(185, 215, 225, a), true);
+
+        sf::RectangleShape goldenLine({220.f, 2.f});
+        goldenLine.setOrigin({110.f, 1.f});
+        goldenLine.setPosition({640.f, 416.f});
+        goldenLine.setFillColor(sf::Color(218, 175, 85, static_cast<std::uint8_t>(200.f * revealAlpha)));
+        w.draw(goldenLine);
     }
 
+    // Objective HUD (Top Left)
     sf::RectangleShape objective({370, 76});
     objective.setPosition({24, 24});
     objective.setFillColor({5, 14, 22, 205});
@@ -554,6 +644,10 @@ void KingdomState::render(sf::RenderWindow& w) {
         13,
         {180, 195, 200, 190}
     );
+
+    if (navigationActive) {
+        drawText(w, "NAVIGATION ACTIVE", {44, 108}, 13, sf::Color(255, 210, 60, 220));
+    }
 
     if (debugCollision) {
         drawText(

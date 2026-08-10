@@ -17,13 +17,12 @@ private:
     AudioManager& audioManager;
     GameProgress& progress;
 
-    // Dùng unique_ptr cho các đối tượng cần Font
     std::unique_ptr<sf::Text> titleText;
     std::unique_ptr<sf::Text> startText;
     std::unique_ptr<sf::Text> exitText;
+    std::unique_ptr<sf::Text> creditText;
     std::optional<sf::Sprite> logoSprite;
 
-    // Biến thông thường cho các đối tượng không cần Font
     std::unique_ptr<sf::RectangleShape> startButton;
     std::unique_ptr<sf::RectangleShape> exitButton;
 

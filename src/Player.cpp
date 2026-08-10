@@ -304,6 +304,7 @@ void Player::updateNonCombatPresentation(float deltaTime,
                                       : FacingDirection::Down;
             }
             if (next != walkFacing) {
+                const std::size_t currentIdx = walkAnimation.frameIndex();
                 walkFacing = next;
                 AnimationClip clip;
                 for (int i = 0; i < 6; ++i) {
@@ -312,10 +313,17 @@ void Player::updateNonCombatPresentation(float deltaTime,
                          {256, 256}});
                 }
                 walkAnimation.setClip(std::move(clip));
+                walkAnimation.setFrameIndex(currentIdx);
             }
-            walkAnimation.update(movedDistance / 230.f);
+            walkDistanceAccumulator += movedDistance;
+            constexpr float stridePx = 11.f;
+            while (walkDistanceAccumulator >= stridePx) {
+                walkDistanceAccumulator -= stridePx;
+                walkAnimation.stepFrame();
+            }
         } else {
-            walkAnimation.reset();
+            walkDistanceAccumulator = 0.f;
+            walkAnimation.setFrameIndex(0);
         }
         if (const auto* frame = walkAnimation.currentFrame()) {
             playerShape.setTextureRect(*frame);
@@ -328,9 +336,34 @@ void Player::updateNonCombatPresentation(float deltaTime,
     playerShape.setScale({1.f, 1.f});
 }
 
-void Player::useWalkSpriteSheet(const sf::Texture& texture){walkTexture=&texture;footAnchoredPresentation=true;playerShape.setTexture(walkTexture,true);constexpr float scale=87.f/256.f;constexpr float anchorX[4][6]={{143.5f,130.f,118.f,105.5f,92.5f,76.f},{172.f,160.5f,148.5f,135.f,121.f,109.5f},{141.5f,131.f,120.f,110.5f,95.5f,82.5f},{144.f,132.f,121.5f,113.5f,99.5f,90.5f}};constexpr float baselineY[4]={248.f,231.f,256.f,208.f};for(int row=0;row<4;++row)for(int frame=0;frame<6;++frame)walkFootOrigins[row][frame]={anchorX[row][frame]*scale,baselineY[row]*scale};AnimationClip clip;for(int i=0;i<6;++i)clip.frames.push_back({{i*256,0},{256,256}});walkAnimation.setClip(std::move(clip));playerShape.setTextureRect({{0,0},{256,256}});playerShape.setSize({87.f,87.f});applyWalkFrameGeometry();playerShape.setPosition(position);}
+void Player::useWalkSpriteSheet(const sf::Texture& texture) {
+    walkTexture = &texture;
+    footAnchoredPresentation = true;
+    playerShape.setTexture(walkTexture, true);
+    constexpr float scale = 87.f / 256.f;
+    for (int row = 0; row < 4; ++row) {
+        for (int frame = 0; frame < 6; ++frame) {
+            walkFootOrigins[row][frame] = {128.f * scale, 248.f * scale};
+        }
+    }
+    AnimationClip clip;
+    for (int i = 0; i < 6; ++i) {
+        clip.frames.push_back({{i * 256, 0}, {256, 256}});
+    }
+    walkAnimation.setClip(std::move(clip));
+    playerShape.setTextureRect({{0, 0}, {256, 256}});
+    playerShape.setSize({87.f, 87.f});
+    applyWalkFrameGeometry();
+    playerShape.setPosition(position);
+}
 
-void Player::applyWalkFrameGeometry(){if(!walkTexture)return;const auto rect=playerShape.getTextureRect();const int frame=std::clamp(rect.position.x/256,0,5),row=std::clamp(rect.position.y/256,0,3);playerShape.setOrigin(walkFootOrigins[row][frame]);}
+void Player::applyWalkFrameGeometry() {
+    if (!walkTexture) return;
+    const auto rect = playerShape.getTextureRect();
+    const int frame = std::clamp(rect.position.x / 256, 0, 5);
+    const int row = std::clamp(rect.position.y / 256, 0, 3);
+    playerShape.setOrigin(walkFootOrigins[row][frame]);
+}
 
 void Player::updatePresentation(Effects* effects) {
     const sf::Vector2f moved = position - previousPosition;

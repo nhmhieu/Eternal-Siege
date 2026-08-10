@@ -14,5 +14,7 @@ public:
     void reset(){time=0.f;frame=0;}
     const sf::IntRect* currentFrame()const{return clip.frames.empty()?nullptr:&clip.frames[frame];}
     std::size_t frameIndex()const{return frame;}
+    void setFrameIndex(std::size_t idx){if(!clip.frames.empty()){frame=idx%clip.frames.size();}}
+    void stepFrame(){if(!clip.frames.empty()){frame=(frame+1)%clip.frames.size();}}
 private: AnimationClip clip; float time=0.f; std::size_t frame=0;
 };

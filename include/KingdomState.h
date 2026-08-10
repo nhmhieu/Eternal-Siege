@@ -42,6 +42,7 @@ private:
     bool navigationActive=false;
     float titleBannerTimer=0.f;
     float titleBannerAlpha=0.f;
+    float entryRevealTimer=0.f;
     float lastFrameDt=0.f;
     DayNightSystem dayNight;
     EnvironmentSystem environment;

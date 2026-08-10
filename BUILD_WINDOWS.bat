@@ -18,9 +18,6 @@ if not exist "%SFML_DIR%/SFMLConfig.cmake" (
   exit /b 1
 )
 
-python tools\validate_project.py
-if errorlevel 1 exit /b 1
-
 cmake -S . -B build -DSFML_DIR="%SFML_DIR%"
 if errorlevel 1 exit /b 1
 

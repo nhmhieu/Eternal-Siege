@@ -68,6 +68,13 @@ void MenuState::onEnter() {
     exitButton->setOutlineColor(sf::Color(130, 111, 104));
     exitButton->setOutlineThickness(2.f);
     exitButton->setPosition({515.f, 440.f});
+
+    creditText = std::make_unique<sf::Text>(font, "Created by Ngo0Group", 16);
+    creditText->setFillColor(sf::Color(170, 160, 140));
+    bounds = creditText->getLocalBounds();
+    creditText->setOrigin({bounds.position.x + bounds.size.x / 2.f,
+                           bounds.position.y + bounds.size.y / 2.f});
+    creditText->setPosition({640.f, 675.f});
 }
 
 void MenuState::onExit() {
@@ -135,4 +142,5 @@ void MenuState::render(sf::RenderWindow& window) {
    if (startText) window.draw(*startText);
    if (exitButton) window.draw(*exitButton);
    if (exitText) window.draw(*exitText);
+   if (creditText) window.draw(*creditText);
 }

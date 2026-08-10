@@ -36,6 +36,7 @@ private:
     bool footAnchoredPresentation = false;
     FacingDirection walkFacing = FacingDirection::Down;
     std::array<std::array<sf::Vector2f, 6>, 4> walkFootOrigins{};
+    float walkDistanceAccumulator = 0.f;
     void applyWalkFrameGeometry();
 
     void updatePresentation(Effects* effects);
