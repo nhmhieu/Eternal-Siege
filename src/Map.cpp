@@ -1,4 +1,4 @@
-﻿#include "Map.h"
+#include "Map.h"
 #include "Constants.h"
 #include "TextureManager.h"
 
@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <queue>
+#include <random>
 #include <cstdint>
 #include <iostream>
 
@@ -191,8 +192,128 @@ void Map::loadTileTextures() {
 }
 
 void Map::generate() {
-    tiles.assign(height, std::vector<TileType>(width, TILE_GRASS));
+    constexpr int maxAttempts = 10;
+    std::random_device rd;
 
+    for (int attempt = 0; attempt < maxAttempts; ++attempt) {
+        std::mt19937 gen(rd());
+        tiles.assign(height, std::vector<TileType>(width, TILE_WALL));
+
+        int x = width / 2;
+        int y = height / 2;
+
+        std::uniform_int_distribution<> dir(0, 3);
+
+        const int totalSteps = width * height * 4;
+        for (int i = 0; i < totalSteps; ++i) {
+            if (i % 5 == 0) {
+                tiles[y][x] = TILE_PATH;
+            } else {
+                tiles[y][x] = TILE_GRASS;
+            }
+
+            switch (dir(gen)) {
+                case 0: ++x; break;
+                case 1: --x; break;
+                case 2: ++y; break;
+                case 3: --y; break;
+            }
+
+            if (x < 1) x = 1;
+            if (x > width - 2) x = width - 2;
+            if (y < 1) y = 1;
+            if (y > height - 2) y = height - 2;
+        }
+
+        sf::Vector2i startCell{width / 2, height / 2};
+        if (tiles[startCell.y][startCell.x] == TILE_WALL) {
+            startCell = nearestWalkable(startCell);
+        }
+
+        if (tiles[startCell.y][startCell.x] == TILE_WALL) {
+            continue;
+        }
+
+        std::vector<sf::Vector2i> connectedComponent;
+        std::vector<std::vector<bool>> visited(height, std::vector<bool>(width, false));
+        std::queue<sf::Vector2i> q;
+
+        q.push(startCell);
+        visited[startCell.y][startCell.x] = true;
+
+        while (!q.empty()) {
+            const auto current = q.front();
+            q.pop();
+            connectedComponent.push_back(current);
+
+            static constexpr std::array<sf::Vector2i, 4> dirs{{
+                {1, 0}, {-1, 0}, {0, 1}, {0, -1}
+            }};
+
+            for (const auto& d : dirs) {
+                const sf::Vector2i next{current.x + d.x, current.y + d.y};
+                if (isInside(next) && !visited[next.y][next.x] && tiles[next.y][next.x] != TILE_WALL) {
+                    visited[next.y][next.x] = true;
+                    q.push(next);
+                }
+            }
+        }
+
+        if (connectedComponent.size() < 16) {
+            continue;
+        }
+
+        const int centerX = width / 2;
+        const int centerY = height / 2;
+
+        std::array<sf::Vector2i, 4> candidates;
+        std::array<float, 4> maxDistances{-1.f, -1.f, -1.f, -1.f};
+        std::array<bool, 4> foundQuad{false, false, false, false};
+
+        for (const auto& cell : connectedComponent) {
+            int quad = 0;
+            if (cell.x >= centerX && cell.y < centerY) quad = 1;
+            else if (cell.x < centerX && cell.y >= centerY) quad = 2;
+            else if (cell.x >= centerX && cell.y >= centerY) quad = 3;
+
+            const float dist = std::hypot(cell.x - centerX, cell.y - centerY);
+            if (dist > maxDistances[quad]) {
+                maxDistances[quad] = dist;
+                candidates[quad] = cell;
+                foundQuad[quad] = true;
+            }
+        }
+
+        int foundCount = 0;
+        for (bool f : foundQuad) {
+            if (f) ++foundCount;
+        }
+
+        if (foundCount < 4) {
+            std::vector<sf::Vector2i> sortedComponent = connectedComponent;
+            std::sort(sortedComponent.begin(), sortedComponent.end(), [&](sf::Vector2i a, sf::Vector2i b) {
+                return std::hypot(a.x - centerX, a.y - centerY) > std::hypot(b.x - centerX, b.y - centerY);
+            });
+            if (sortedComponent.size() >= 4) {
+                candidates[0] = sortedComponent[0];
+                candidates[1] = sortedComponent[sortedComponent.size() / 4];
+                candidates[2] = sortedComponent[sortedComponent.size() / 2];
+                candidates[3] = sortedComponent[sortedComponent.size() * 3 / 4];
+                foundCount = 4;
+            }
+        }
+
+        if (foundCount == 4) {
+            enemySpawnCells = {candidates[0], candidates[1], candidates[2], candidates[3]};
+            for (const auto cell : enemySpawnCells) {
+                tiles[cell.y][cell.x] = TILE_SPAWN;
+            }
+            return;
+        }
+    }
+
+    // Fallback static border layout if all attempts fail
+    tiles.assign(height, std::vector<TileType>(width, TILE_GRASS));
     for (int x = 0; x < width; ++x) {
         tiles.front()[x] = TILE_WALL;
         tiles.back()[x] = TILE_WALL;
@@ -201,29 +322,7 @@ void Map::generate() {
         tiles[y].front() = TILE_WALL;
         tiles[y].back() = TILE_WALL;
     }
-
-    // Hai dải tường có cổng tạo mê cung đơn giản nhưng luôn có đường đi.
-    if (width >= 12 && height >= 12) {
-        for (int y = 2; y < height - 2; ++y) {
-            if (y != 4 && y != 10) tiles[y][4] = TILE_WALL;
-        }
-        for (int y = 2; y < height - 2; ++y) {
-            if (y != 6 && y != 11) tiles[y][9] = TILE_WALL;
-        }
-    }
-
-    // Đường chính giúp người chơi nhìn được tuyến phòng thủ.
-    const int middleY = height / 2;
-    for (int x = 1; x < width - 1; ++x) {
-        if (tiles[middleY][x] != TILE_WALL) tiles[middleY][x] = TILE_PATH;
-    }
-
-    enemySpawnCells = {
-        {1, 1},
-        {width - 2, 1},
-        {1, height - 2},
-        {width - 2, height - 2}
-    };
+    enemySpawnCells = {{1, 1}, {width - 2, 1}, {1, height - 2}, {width - 2, height - 2}};
     for (const auto cell : enemySpawnCells) {
         tiles[cell.y][cell.x] = TILE_SPAWN;
     }

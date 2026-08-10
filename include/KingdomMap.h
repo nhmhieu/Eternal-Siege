@@ -12,7 +12,7 @@ struct KingdomWalkableRegion { sf::FloatRect bounds; std::string_view name; };
 class KingdomMap {
 public:
  static constexpr sf::Vector2f WORLD_SIZE{1672,941},SPAWN{224,884},RETURN_SPAWN{1350,355},CAVE_CENTER{1435,238},GATE_CENTER{224,850};
- static constexpr float INTERACTION_RADIUS=92,GATE_INTERACTION_RADIUS=88;
+ static constexpr float INTERACTION_RADIUS=92, CAVE_INTERACTION_RADIUS=120.f, GATE_INTERACTION_RADIUS=88;
  static constexpr int CELL_SIZE=32,GRID_WIDTH=53,GRID_HEIGHT=30;
  static constexpr sf::FloatRect GATE_BLOCKER{{164,815},{112,34}};
  static constexpr std::array<sf::Vector2f,14> GOLDEN_ROUTE{{{224,884},{224,780},{430,680},{650,650},{900,600},{1020,520},{1060,355},{1210,355},{1250,350},{1350,355},{1350,375},{1435,375},{1435,300},{1435,238}}};

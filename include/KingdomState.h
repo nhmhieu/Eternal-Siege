@@ -39,11 +39,14 @@ private:
     float elapsed=0.f, fade=1.f, promptAlpha=0.f;
     bool debugCollision=false;
     bool debugPerformance=false;
+    bool navigationActive=false;
+    float titleBannerTimer=0.f;
+    float titleBannerAlpha=0.f;
     float lastFrameDt=0.f;
     DayNightSystem dayNight;
     EnvironmentSystem environment;
     KingdomTransitionLatch transitionLatch;
     std::unique_ptr<KingdomCompositor> compositor;
     sf::RenderTexture* sceneTarget=nullptr;
-    void drawText(sf::RenderWindow&, const std::string&, sf::Vector2f, unsigned, sf::Color) const;
+    void drawText(sf::RenderWindow&, const std::string&, sf::Vector2f, unsigned, sf::Color, bool centered=false) const;
 };

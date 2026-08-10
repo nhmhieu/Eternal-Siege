@@ -269,7 +269,7 @@ void GameplayState::handleEvent(const sf::Event& event) {
 
         if (tutorialController.blocksGameplayInput()) return;
 
-        if (key->code == sf::Keyboard::Key::P) {
+        if (key->code == sf::Keyboard::Key::P || key->code == sf::Keyboard::Key::Escape) {
             paused = !paused;
             context.paused = paused;
             if (paused) {

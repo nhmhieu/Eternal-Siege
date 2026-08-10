@@ -27,20 +27,11 @@ Projectiles::Projectiles(
       shooterTeam(team),
       style(projectileStyle) {
     // Viết logic khởi tạo các thuộc tính của projectile ở đây (nếu có)
-    // Ví dụ:
-    // 1. Khởi tạo kích thước hình chữ nhật (Dài x Rộng)
     shape.setSize(sf::Vector2f(24.f, 6.f));
-    
-    // 2. Đặt tâm xoay về giữa mũi tên
     shape.setOrigin(sf::Vector2f(12.f, 3.f));
-    
-    // 3. Màu sắc hiển thị thử
     shape.setFillColor(sf::Color::Yellow);
-    
-    // 4. Đặt vị trí xuất phát
     shape.setPosition(position);
     
-    // 5. Chuẩn hóa vector hướng đi
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     if (length != 0.f) {
         velocity = (direction / length) * speed;
@@ -48,11 +39,10 @@ Projectiles::Projectiles(
         velocity = sf::Vector2f(0.f, 0.f);
     }
 
-    // 6. Xoay mũi tên theo hướng bay (ĐIỂM KHÁC BIỆT QUAN TRỌNG TRONG SFML 3)
+    // Rotate projectile to match velocity angle
     float angleRad = std::atan2(velocity.y, velocity.x);
     float angleDeg = angleRad * 180.f / 3.14159265358979323846f;
     
-    // Trong SFML 3, bắt buộc phải dùng sf::degrees() thay vì truyền số float đơn thuần
     shape.setRotation(sf::degrees(angleDeg));
     trailPositions.push_back(position);
 }

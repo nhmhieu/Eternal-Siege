@@ -31,6 +31,5 @@ portable asset loading, corrected ally roles, and the final boss presentation.
 - the four official ally configurations;
 - the SFML Audio CMake link.
 
-The release candidate registers 15 CTest targets. A clean C++ build requires
-CMake and SFML 3.0.2. Visual presentation still requires a manual playtest on a
-machine that can open an SFML window; automated tests do not prove visual quality.
+The standalone release target builds directly with CMake and SFML 3.0.2. Visual presentation requires a manual playtest on a
+machine that can open an SFML window.

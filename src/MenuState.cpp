@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iostream>
 
-// Constructor bây giờ rất sạch sẽ, không gọi font rỗng nữa
 MenuState::MenuState(StateMachine& machine, sf::RenderWindow& window,
                      TextureManager& textureManager, AudioManager& audioManager,
                      GameProgress& gameProgress)
@@ -23,8 +22,6 @@ void MenuState::onEnter() {
         return;
     }
 
-    
-    // BƯỚC 2: Font đã nạp xong, giờ mới an toàn tạo các đối tượng sf::Text
     titleText = std::make_unique<sf::Text>(font, "ETERNAL SIEGE", 98);
     titleText->setFillColor(sf::Color::Yellow);
     titleText->setPosition({ 300.f, 150.f });
@@ -78,6 +75,12 @@ void MenuState::onExit() {
 }
 
 void MenuState::handleEvent(const sf::Event& event) {
+    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
+        if (key->code == sf::Keyboard::Key::Escape) {
+            window.close();
+            return;
+        }
+    }
 
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {

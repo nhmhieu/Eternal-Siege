@@ -4,6 +4,7 @@
 #include "AssetLocator.h"
 #include "Constants.h"
 #include "GameplayState.h"
+#include "LevelSelectState.h"
 
 #include <algorithm>
 #include <cmath>
@@ -105,7 +106,7 @@ void SetupState::createTextUi() {
     controlsText = std::make_unique<sf::Text>(
         font,
         "LEFT CLICK     Select / Deploy / Move\n"
-        "RIGHT CLICK    Remove placed hero     R    Reset formation",
+        "RIGHT CLICK    Remove placed hero     R    Reset     ESC    Back",
         12);
     controlsText->setFillColor({145, 163, 173});
     controlsText->setLineSpacing(1.25f);
@@ -138,15 +139,12 @@ void SetupState::onEnter() {
     selectedAlly = AllyType::Damian;
     inputArmed = false;
     transitionRequested = false;
-    feedbackRemaining = 0.f;
     loadResources();
     createTextUi();
-    updateLayout();
     refreshUi();
 }
 
-void SetupState::onExit() {
-}
+void SetupState::onExit() {}
 
 void SetupState::updateLayout() {
     const sf::View& view = window.getView();
@@ -349,6 +347,12 @@ void SetupState::startBattle() {
 
 void SetupState::handleEvent(const sf::Event& event) {
     if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
+        if (key->code == sf::Keyboard::Key::Escape) {
+            audioManager.playSound("ui_click");
+            stateMachine.changeState(std::make_unique<LevelSelectState>(
+                stateMachine, window, textureManager, audioManager, progress));
+            return;
+        }
         if (key->code == sf::Keyboard::Key::R) resetFormation();
         return;
     }
@@ -405,7 +409,7 @@ void SetupState::drawPlacementHints(sf::RenderWindow& target) const {
             sf::RectangleShape hint({GameConfig::TILE_SIZE - 4.f,
                                      GameConfig::TILE_SIZE - 4.f});
             hint.setPosition({x * GameConfig::TILE_SIZE + 2.f,
-                              y * GameConfig::TILE_SIZE + 2.f});
+                               y * GameConfig::TILE_SIZE + 2.f});
             hint.setFillColor({70, 220, 205, 13});
             target.draw(hint);
         }
@@ -458,70 +462,71 @@ void SetupState::drawPlacementHints(sf::RenderWindow& target) const {
         ghost.setOrigin(size * 0.5f);
         ghost.setPosition(*previewCenter);
         ghost.setTexture(heroTextures[index], true);
-        if (heroVisibleBounds[index].size.x > 0) {
+        if (heroVisibleBounds[index].size.x > 0 &&
+            heroVisibleBounds[index].size.y > 0) {
             ghost.setTextureRect(heroVisibleBounds[index]);
         }
-        ghost.setFillColor({255, 255, 255, 125});
+        ghost.setFillColor({255, 255, 255, 175});
         target.draw(ghost);
     }
 }
 
-void SetupState::drawPlacedHeroes(sf::RenderWindow& target) const {
-    for (std::size_t index = 0;
-         index < AllyPlacementModel::ALLY_ORDER.size(); ++index) {
-        const AllyType type = AllyPlacementModel::ALLY_ORDER[index];
-        const auto& placement = placements.placement(type);
-        if (!placement) continue;
-        const sf::Vector2f center = map.gridToWorld(*placement);
-        const bool selected = selectedAlly && *selectedAlly == type;
+void SetupState::render(sf::RenderWindow& target) {
+    updateLayout();
+    target.setView(target.getDefaultView());
+    target.clear(sf::Color(5, 12, 19));
 
-        sf::CircleShape ring(selected ? 23.f : 21.f);
-        const float radius = ring.getRadius();
-        ring.setOrigin({radius, radius});
-        ring.setPosition(center);
-        ring.setFillColor({8, 20, 28, 185});
-        ring.setOutlineColor(selected ? sf::Color::White : allyColor(type));
-        ring.setOutlineThickness(selected ? 4.f : 3.f);
-        target.draw(ring);
+    map.draw(target);
+    drawPlacementHints(target);
 
-        sf::RectangleShape portrait;
-        const sf::Vector2f size = fittedSize(heroVisibleBounds[index], 35.f);
-        portrait.setSize(size);
-        portrait.setOrigin(size * 0.5f);
-        portrait.setPosition(center);
-        portrait.setTexture(heroTextures[index], true);
-        if (heroVisibleBounds[index].size.x > 0) {
-            portrait.setTextureRect(heroVisibleBounds[index]);
+    for (const AllyType type : AllyPlacementModel::ALLY_ORDER) {
+        const auto cell = placements.placement(type);
+        if (!cell) continue;
+
+        const std::size_t index = allyIndex(type);
+        const sf::Vector2f center = map.gridToWorld(*cell);
+
+        sf::CircleShape shadow(14.f);
+        shadow.setOrigin({14.f, 14.f});
+        shadow.setScale({1.2f, 0.5f});
+        shadow.setPosition({center.x, center.y + 12.f});
+        shadow.setFillColor({4, 8, 12, 135});
+        target.draw(shadow);
+
+        sf::RectangleShape sprite;
+        const sf::Vector2f size = fittedSize(heroVisibleBounds[index], 42.f);
+        sprite.setSize(size);
+        sprite.setOrigin(size * 0.5f);
+        sprite.setPosition(center);
+        sprite.setTexture(heroTextures[index], true);
+        if (heroVisibleBounds[index].size.x > 0 &&
+            heroVisibleBounds[index].size.y > 0) {
+            sprite.setTextureRect(heroVisibleBounds[index]);
         }
-        portrait.setFillColor(heroTextures[index]
-            ? sf::Color::White : allyColor(type));
-        target.draw(portrait);
+        target.draw(sprite);
+
+        sf::CircleShape badge(10.f);
+        badge.setOrigin({10.f, 10.f});
+        badge.setPosition({center.x - 14.f, center.y - 14.f});
+        badge.setFillColor(allyColor(type));
+        badge.setOutlineColor(sf::Color(10, 20, 28));
+        badge.setOutlineThickness(1.5f);
+        target.draw(badge);
 
         if (fontLoaded) {
-            sf::Text label(font, std::to_string(index + 1), 11);
-            label.setFillColor(sf::Color::White);
-            label.setOutlineColor(sf::Color::Black);
-            label.setOutlineThickness(1.5f);
-            centerText(label, center + sf::Vector2f{17.f, 17.f});
-            target.draw(label);
+            sf::Text number(font, std::to_string(index + 1), 11);
+            number.setFillColor(sf::Color(10, 20, 28));
+            centerText(number, badge.getPosition());
+            target.draw(number);
         }
     }
-}
 
-void SetupState::drawPanel(sf::RenderWindow& target) {
     target.draw(sidePanel);
-    const sf::Vector2f mouse = window.mapPixelToCoords(
-        sf::Mouse::getPosition(window));
-    for (std::size_t index = 0; index < heroCards.size(); ++index) {
-        HeroCardUi& card = heroCards[index];
-        const AllyType type = AllyPlacementModel::ALLY_ORDER[index];
-        const bool selected = selectedAlly && *selectedAlly == type;
-        const bool hovered = card.panel.getGlobalBounds().contains(mouse);
-        if (hovered && !selected) {
-            card.panel.setFillColor({23, 45, 56, 250});
-        } else if (!selected) {
-            card.panel.setFillColor(CARD_COLOR);
-        }
+    if (titleText) target.draw(*titleText);
+    if (instructionText) target.draw(*instructionText);
+    if (deployedText) target.draw(*deployedText);
+
+    for (const HeroCardUi& card : heroCards) {
         target.draw(card.panel);
         target.draw(card.portrait);
         if (card.name) target.draw(*card.name);
@@ -529,19 +534,10 @@ void SetupState::drawPanel(sf::RenderWindow& target) {
         if (card.status) target.draw(*card.status);
     }
 
-    target.draw(startButton);
-    if (titleText) target.draw(*titleText);
-    if (instructionText) target.draw(*instructionText);
-    if (deployedText) target.draw(*deployedText);
     if (controlsText) target.draw(*controlsText);
-    if (feedbackText) target.draw(*feedbackText);
+    if (feedbackRemaining > 0.f && feedbackText) target.draw(*feedbackText);
+
+    target.draw(startButton);
     if (startHintText) target.draw(*startHintText);
     if (startText) target.draw(*startText);
-}
-
-void SetupState::render(sf::RenderWindow& target) {
-    map.draw(target);
-    drawPlacementHints(target);
-    drawPlacedHeroes(target);
-    drawPanel(target);
 }

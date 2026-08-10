@@ -1,7 +1,68 @@
 #include "KingdomCompositor.h"
 #include <cmath>
-bool KingdomCompositor::ensure(sf::Vector2u s){if(target&&s==currentSize)return true;if(!target){target=std::make_unique<sf::RenderTexture>(s);++initializations;}else{if(!target->resize(s))return false;++recreations;}currentSize=s;return true;}
-sf::RenderTexture&KingdomCompositor::begin(const sf::View&v,sf::Color c){target->clear(c);target->setView(v);return*target;}
-void KingdomCompositor::applyAmbient(sf::Color c){const auto v=target->getView();sf::RectangleShape q(v.getSize());q.setPosition(v.getCenter()-v.getSize()/2.f);q.setFillColor(c);target->draw(q);}
-void KingdomCompositor::finish(){target->display();}void KingdomCompositor::drawWorld(sf::RenderTarget&o)const{sf::Sprite s(target->getTexture());o.draw(s);}
-void KingdomCompositor::drawWeather(sf::RenderTarget&o,KingdomWeather w,float t)const{if(w==KingdomWeather::LightRain){sf::VertexArray a(sf::PrimitiveType::Lines,72);for(std::size_t i=0;i<36;++i){float x=std::fmod(i*97+t*180,currentSize.x),y=std::fmod(i*53+t*310,currentSize.y);a[i*2].position={x,y};a[i*2+1].position={x-7,y+19};a[i*2].color=a[i*2+1].color={160,205,225,85};}o.draw(a);}else if(w==KingdomWeather::Mist){sf::VertexArray a(sf::PrimitiveType::TriangleStrip,10);for(std::size_t i=0;i<5;++i){float x=i*currentSize.x/4.f;a[i*2].position={x,currentSize.y*.12f+25*std::sin(t*.12f+i)};a[i*2+1].position={x,currentSize.y*.9f+20*std::sin(t*.1f+i)};a[i*2].color={175,190,185,0};a[i*2+1].color={175,190,185,38};}o.draw(a);}}
+
+bool KingdomCompositor::ensure(sf::Vector2u s) {
+    if (target && s == currentSize) {
+        return true;
+    }
+
+    if (!target) {
+        target = std::make_unique<sf::RenderTexture>(s);
+        ++initializations;
+    } else {
+        if (!target->resize(s)) {
+            return false;
+        }
+        ++recreations;
+    }
+
+    currentSize = s;
+    return true;
+}
+
+sf::RenderTexture& KingdomCompositor::begin(const sf::View& v, sf::Color c) {
+    target->clear(c);
+    target->setView(v);
+    return *target;
+}
+
+void KingdomCompositor::applyAmbient(sf::Color c) {
+    const auto v = target->getView();
+    sf::RectangleShape q(v.getSize());
+    q.setPosition(v.getCenter() - v.getSize() / 2.f);
+    q.setFillColor(c);
+    target->draw(q);
+}
+
+void KingdomCompositor::finish() {
+    target->display();
+}
+
+void KingdomCompositor::drawWorld(sf::RenderTarget& o) const {
+    sf::Sprite s(target->getTexture());
+    o.draw(s);
+}
+
+void KingdomCompositor::drawWeather(sf::RenderTarget& o, KingdomWeather w, float t) const {
+    if (w == KingdomWeather::LightRain) {
+        sf::VertexArray a(sf::PrimitiveType::Lines, 72);
+        for (std::size_t i = 0; i < 36; ++i) {
+            float x = std::fmod(i * 97 + t * 180, currentSize.x);
+            float y = std::fmod(i * 53 + t * 310, currentSize.y);
+            a[i * 2].position = {x, y};
+            a[i * 2 + 1].position = {x - 7, y + 19};
+            a[i * 2].color = a[i * 2 + 1].color = {160, 205, 225, 85};
+        }
+        o.draw(a);
+    } else if (w == KingdomWeather::Mist) {
+        sf::VertexArray a(sf::PrimitiveType::TriangleStrip, 10);
+        for (std::size_t i = 0; i < 5; ++i) {
+            float x = i * currentSize.x / 4.f;
+            a[i * 2].position = {x, currentSize.y * .12f + 25 * std::sin(t * .12f + i)};
+            a[i * 2 + 1].position = {x, currentSize.y * .9f + 20 * std::sin(t * .1f + i)};
+            a[i * 2].color = {175, 190, 185, 0};
+            a[i * 2 + 1].color = {175, 190, 185, 38};
+        }
+        o.draw(a);
+    }
+}

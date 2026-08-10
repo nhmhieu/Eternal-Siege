@@ -1,147 +1,109 @@
-# Báo cáo đồ án Eternal Siege
-
-> Đây là bản thảo kỹ thuật dựa trên mã nguồn hiện tại. Trước khi xuất PDF để
-> nộp, nhóm phải bổ sung thông tin thành viên, phân công, ảnh chụp màn hình và
-> kết quả playtest thủ công. Không nên nộp nguyên bản có placeholder.
+# Báo Cáo Đồ Án Eternal Siege
 
 ## 1. Giới thiệu đề tài
 
-### 1.1. Ý tưởng
-
-Eternal Siege là trò chơi phòng thủ thời gian thực 2D. Người chơi điều khiển
-một pháp sư hỗ trợ dùng Spirit Staff và bố trí bốn đồng minh trước khi trận đấu bắt đầu. Đội hình phải
-vượt qua bốn wave gồm Normal, Elite và Boss.
+### 1.1. Ý tưởng trò chơi
+**Eternal Siege** là trò chơi phòng thủ tháp / nhập vai hành động 2D thời gian thực (Real-Time Action RPG / Tower Defense) phát triển bằng ngôn ngữ C++17 và thư viện đồ họa SFML 3. Người chơi hóa thân thành một pháp sư bảo vệ vương quốc, di chuyển tự do trong khu vực vương quốc (**Kingdom**) để nhận nhiệm vụ, mở cổng thành và tiến vào khu vực chiến đấu (**Ruined Catacombs**). Trong màn chiến đấu, người chơi điều khiển nhân vật sử dụng Gậy Phép (Spirit Staff), bắn đạn linh hồn (Spirit Bolt / Heavy Spirit Bolt) và dùng kỹ năng hồi máu (Radiant Pulse) để hỗ trợ 4 đồng minh (**Damian**, **Evangeline**, **Junior**, **Lucas**) đẩy lùi 4 đợt tấn công của quái vật.
 
 ### 1.2. Mục tiêu và luật chơi
+- **Di chuyển & Thao tác**:
+  - Trong Kingdom: Di chuyển bằng phím `WASD`, tương tác với Cổng Thành hoặc Cửa Cực bằng phím `E`, bật/tắt hiển thị va chạm F3 (`F3 Navigation Overlay`), đổi buổi trong ngày (`F4`), đổi thời tiết (`F5`), hiển thị hiệu năng (`F6`).
+  - Trong màn chiến đấu: Di chuyển bằng `WASD`, ngắm và bắn bằng Chuột trái, giữ Chuột trái để tích lực bắn đạn nặng (`Heavy Spirit Bolt`), phím `Space` để lướt né đạn (`Dash`), phím `Q` để tung kỹ năng hồi máu (`Radiant Pulse`). Tạm dừng bằng `P`, xem hướng dẫn bằng `H`, bật/tắt âm thanh bằng `M`.
+- **Đồng minh & Đội hình**: Trước khi bắt đầu chiến đấu (Setup State), người chơi bố trí 4 vị trí đồng minh trên bản đồ. Các đồng minh tự động tìm kiếm quái vật gần nhất trong tầm đánh để tấn công.
+- **Tiến trình Wave**: Màn chiến đấu gồm 4 Wave quái vật (Normal Monster, Elite Monster, Boss). Mỗi đợt có nhiều batch quái vật, batch tiếp theo chỉ xuất hiện khi batch hiện tại bị tiêu diệt. Sau mỗi wave có khoảng thời gian nghỉ (**Intermission**), người chơi dùng Gold tích lũy để nâng cấp chỉ số (Sát thương, HP, Tốc độ đánh) hoặc hoàn tác (**Undo**).
+- **Điều kiện Thắng / Thua**:
+  - **Thua (Game Over)**: HP của Player giảm về 0.
+  - **Thắng (Victory)**: Tiêu diệt Boss ở cuối Wave 4.
 
-- Người chơi di chuyển bằng WASD và bắn bằng chuột trái.
-- Phím Q kích hoạt Radiant Pulse để hồi máu cho đồng minh hợp lệ; P tạm dừng,
-  H mở hướng dẫn và M bật/tắt âm thanh.
-- Đồng minh tự chọn Monster sống ở gần để tấn công.
-- Batch sau chỉ xuất hiện khi batch hiện tại đã bị tiêu diệt.
-- Sau mỗi wave, người chơi có thể dùng gold để nâng cấp.
-- Player hết HP dẫn đến Game Over.
-- Tiêu diệt Boss cuối Wave 4 dẫn đến chiến thắng.
+---
 
-## 2. Phân tích hệ thống
+## 2. Phân tích chức năng hệ thống
 
-### 2.1. Yêu cầu chức năng
+### 2.1. Bảng phân tích chức năng
 
-| Chức năng | Đầu vào | Xử lý | Kết quả |
+| Chức năng | Đầu vào (Input) | Xử lý (Processing) | Kết quả (Output) |
 |---|---|---|---|
-| Menu | Click Bắt đầu/Thoát | `MenuState` kiểm tra vùng nút | Sang Setup hoặc đóng game |
-| Bố trí Ally | Chọn Hero Card, click trái/phải hoặc R | `AllyPlacementModel` giữ slot riêng theo `AllyType`; `Map` chỉ xác thực tile | Bốn Ally được tạo đúng identity/vị trí khi bắt đầu |
-| Điều khiển Player | WASD, chuột trái, Q | Movement collision, Spirit Staff/Spirit Bolt và Radiant Pulse | Player di chuyển, bắn và hỗ trợ Ally |
-| Wave | `deltaTime`, số quái sống | `WaveManager` chạy batch | Normal/Elite/Boss xuất hiện |
-| Combat | Hitbox và team | `CombatManager` áp damage | HP giảm, entity chết logic |
-| Nâng cấp | Phím 1/2/3 | `UpgradeManager` trừ gold | Tăng damage/HP/fire rate |
-| Hoàn tác | Backspace | Lấy giao dịch cuối | Hoàn chỉ số và gold |
-| Kết thúc | HP Player hoặc Wave 4 | `GameplayState` kiểm tra | Game Over hoặc Win |
+| **Chuyển State / Menu** | Mouse click trên nút Menu / phím Escape | `StateMachine` chuyển giữa `IntroState`, `MenuState`, `KingdomState`, `SetupState`, `GameplayState`, `WinState`, `GameOverState` | Màn hình tương ứng được render |
+| **Di chuyển Kingdom & Va chạm** | Phím `WASD` | `KingdomMap::resolveMovementWithActors` kiểm tra vùng đi được (walkable regions), va chạm footprint của cổng, gốc cây, công trình, bờ sông, lan can cầu và chân NPC | Player di chuyển mượt mà, trượt dọc vật cản, tự chuyển Idle khi bị chặn hoàn toàn |
+| **Bố trí Ally (Setup)** | Click chọn Hero Card, click tile trên map, phím `R` | `AllyPlacementModel` xác thực vị trí tile, gán slot cho từng `AllyType` | 4 Ally được khởi tạo đúng vị trí khi bắt đầu trận |
+| **Tấn công & Tích lực** | Click / Giữ Chuột trái | `Player` tính vector ngắm, bắn `SpiritBolt` hoặc nạp năng lượng sinh `HeavySpiritBolt` kèm hiệu ứng màn hình | Đạn bay về phía mục tiêu, gây sát thương lên quái vật |
+| **Kỹ năng Hồi máu (Radiant Pulse)** | Phím `Q` | `RadiantPulse` kiểm tra cooldown và tầm ảnh hưởng, hồi HP cho Player và Ally trong vùng | Vòng sóng ánh sáng lan tỏa, HP các nhân vật thân thiện tăng |
+| **Xử lý Chiến đấu & Sát thương** | Vị trí đạn & hitbox nhân vật | `CombatManager` kiểm tra va chạm hitbox giữa đạn/đòn đánh và Entity khác Team | Giảm HP target, kích hoạt hurt flash, xóa entity khi HP <= 0 |
+| **Wave Quái vật & Boss** | `deltaTime`, số quái sống | `WaveManager` quản lý timer spawn batch, kích hoạt Boss Enrage và kỹ năng Boss Beam | Quái xuất hiện đúng đợt, hiển thị thanh HP Boss và thông báo nộ chiến |
+| **Nâng cấp & Hoàn tác** | Phím `1`, `2`, `3` / `Backspace` | `UpgradeManager` trừ Gold, tăng chỉ số nhân vật; lưu lịch sử giao dịch để hoàn tác | Chỉ số chiến đấu tăng, hiển thị thông báo trên HUD |
 
-### 2.2. Mô hình lớp
+---
 
-Sơ đồ lớp và giải thích ownership nằm trong
-[`architecture.md`](architecture.md).
 
-## 3. Thiết kế hệ thống
 
-### 3.1. UML
+## 4. Cài đặt hệ thống & Bốn nguyên lý OOP
 
-- Sơ đồ lớp: xem `docs/architecture.md`.
-- Sơ đồ trình tự người chơi bắn Monster: xem `docs/architecture.md`.
+### 4.1. Vận dụng 4 nguyên lý Hướng đối tượng (OOP)
+1. **Tính Đóng gói (Encapsulation)**:
+   - Tất cả thuộc tính quan trọng như máu (`health`), chỉ số tấn công, tọa độ, danh sách collider đều được đặt ở phạm vi `private`/`protected`.
+   - Quyền truy cập và chỉnh sửa được thực hiện qua các getter/setter hợp lệ (`getPosition()`, `getFootCollider()`, `takeDamage()`, `canStandAt()`).
+2. **Tính Kế thừa (Inheritance)**:
+   - Lớp `State` làm lớp cơ sở cho tất cả trạng thái game (`KingdomState`, `GameplayState`, `SetupState`, ...).
+   - Lớp `Entity` làm lớp cơ sở cho toàn bộ đối tượng động (`Player`, `Ally`, `Monster`, `Elite`, `Boss`).
+   - Lớp `Weapon` làm lớp cơ sở cho các vũ khí (`Bow`, `Sword`, `Wand`, `SpiritStaff`).
+3. **Tính Đa hình (Polymorphic Behavior)**:
+   - Các hàm virtual như `update()`, `draw()`, `takeDamage()`, `handleInput()` được ghi đè (override) ở các lớp con. Lớp quản lý `StateMachine` và `CombatManager` làm việc hoàn toàn qua con trỏ/tham chiếu lớp cơ sở.
+4. **Tính Trừu tượng (Abstraction)**:
+   - Các module cung cấp giao diện đơn giản, che giấu độ phức tạp bên trong. Ví dụ: `KingdomMap::resolveMovementWithActors()` giấu toàn bộ thuật toán kiểm tra 9 probe điểm và va chạm đa giác cầu; `WaveManager` giấu chi tiết spawn ngẫu nhiên và timer batch.
 
-### 3.2. Thiết kế giao diện
+---
 
-- Intro: giới thiệu nhóm và chuyển sang menu.
-- Menu: tên game, nút Bắt đầu và Thoát.
-- Setup: bản đồ tile và vùng chọn bốn Ally.
-- Gameplay: bản đồ bên trái; HUD bên phải hiển thị HP, gold, wave, số quái,
-  nâng cấp và hướng dẫn phím.
-- Win/Game Over: thông báo kết quả, nút Chơi lại và Về menu.
+## 5. Kiểm thử và Báo cáo Đánh giá
 
-> Cần chèn ảnh chụp thực tế của năm nhóm màn hình trên trước khi nộp.
+### 5.1. Kết quả kiểm thử tự động (CTest / Automated Unit & Integration Tests)
+Toàn bộ **16 bộ test** trong hệ thống tự động đã vượt qua (PASS 100%):
+- `state_machine_tests`: Kiểm tra chuyển state và vòng đời state.
+- `core_logic_tests`: Kiểm tra logic sát thương, HP, tiêu diệt entity.
+- `ally_combat_tests`: Kiểm tra AI tìm mục tiêu và xả skill của đồng minh.
+- `combat_regression_tests`: Kiểm tra không bị crash khi xoay vòng projectile và hiệu ứng.
+- `ally_skill_tests`: Kiểm tra khiên Evangeline, khiêu khích Damian, bẫy Junior, buff Lucas.
+- `presentation_tests`: Kiểm tra load asset và kết cấu màn hình kết thúc.
+- `gameplay_balance_tests`: Kiểm tra thông số chỉ số nhân vật và quái vật.
+- `support_presentation_tests`: Kiểm tra hiệu ứng nạp đạn nặng và hồi máu.
+- `tutorial_tests`: Kiểm tra lớp phủ hướng dẫn chơi.
+- `intermission_tests`: Kiểm tra mua nâng cấp và hoàn tác undo.
+- `boss_enrage_tests`: Kiểm tra pha nộ của Boss và Beam laser.
+- `full_game_integration_tests`: Kiểm tra luồng chơi hoàn chỉnh từ Setup đến Victory.
+- `setup_placement_tests`: Kiểm tra logic thả đặt vị trí Ally.
+- `player_action_tests`: Kiểm tra bộ điều khiển hành động Player.
+- `kingdom_flow_tests`: Kiểm tra luồng Kingdom, mở cổng, chuyển màn.
+- `kingdom_qa_tests`: Kiểm tra chi tiết 21 mốc visual landmark va chạm, lan can cầu, Y-sorting không bị nhảy `+1000`, vùng nước, và va chạm chân NPC.
 
-## 4. Cài đặt
+### 5.2. Kết quả Đánh giá Thủ công (Manual Visual QA)
+- **Cổng thành**: Đi qua chính giữa cổng khi mở thành công; hai cột đá và tường thành chặn chính xác khi đóng hoặc khi đâm vào cột.
+- **Cây cối & Công trình**: Thân cây/gốc cây chặn chân Player; tán cây che đè lên Player khi đi phía sau. Công trình (Tavern, Guildhall, Cottage, Fountain, Catacomb) chặn đúng footprint móng.
+- **Cầu & Nước**: Player chỉ di chuyển trên mặt cầu (Bridge Deck). Đi sau lan can xa (`BridgeFar`) và đi trước lan can gần (`BridgeNear`) tạo độ sâu tự nhiên, chân không lơ lửng, shadow nằm đúng mặt cầu. Nước hai bên chặn tuyệt đối.
+- **Phản hồi di chuyển**: Khi ép vào tường/vật cản nhưng tiếp tục giữ phím `WASD`, Player trượt dọc cạnh vật thể mượt mà hoặc chuyển về trạng thái Idle, không xảy ra hiện tượng chạy tại chỗ.
 
-### 4.1. Cấu trúc thư mục
-
-- `include/`: khai báo lớp.
-- `src/`: cài đặt game.
-- `assets/`: font và texture nhân vật.
-- `tests/`: test logic và state machine.
-- `docs/`: tài liệu kiến trúc và báo cáo.
-- `build/`: kết quả sinh bởi CMake, không đưa vào Git.
-
-### 4.2. Các module chính
-
-- State: `IntroState`, `MenuState`, `SetupState`, `GameplayState`,
-  `WinState`, `GameOverState`.
-- Entity: `Player`, `Ally`, `Monster`, `Elite`, `Boss`.
-- Combat: `Weapon`, `Bow`, `Sword`, `Wand`, `SpiritStaff`, `Projectiles`,
-  `MagicBolt`, `SpiritBolt`, `CombatManager`.
-- Game rules: `WaveManager`, `UpgradeManager`.
-- Support/Boss: `RadiantPulse`, Ally Skills, `BossHealthBar`,
-  `BossEnrageNotice`, Boss Beam và `GameplayTransitionGate`.
-- An toàn gameplay: `Map`, `EntityCollision`, `EntityLifecycle`.
-- Giao diện/tài nguyên: `HUD`, `Effects`, `TextureManager`, `AssetLocator`,
-  `AudioManager`.
-
-### 4.3. Vận dụng OOP
-
-- Đóng gói: HP, cooldown, target và dữ liệu wave nằm trong lớp quản lý.
-- Kế thừa: state kế thừa `State`; nhân vật kế thừa `Entity`; Elite/Boss kế
-  thừa `Monster`; Bow/Sword kế thừa `Weapon`.
-- Đa hình: game gọi `update`, `draw` và `triggerAction` qua kiểu cơ sở.
-- Trừu tượng hóa: `State`, `Entity` và `Weapon` quy định giao diện chung.
-- RAII: owner dùng `std::unique_ptr`, không gọi `delete` thủ công.
-
-## 5. Kiểm thử và đánh giá
-
-### 5.1. Kiểm thử tự động
-
-```powershell
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build -j 4
-ctest --test-dir build --output-on-failure
-```
-
-Release candidate đăng ký 12 bộ test: `state_machine_tests`, `core_logic_tests`,
-`ally_combat_tests`, `combat_regression_tests`, `ally_skill_tests`,
-`presentation_tests`, `gameplay_balance_tests`, `support_presentation_tests`,
-`tutorial_tests`, `intermission_tests`, `boss_enrage_tests` và
-`full_game_integration_tests`. Các test bao phủ state transition, map/collision,
-projectile safety, Ally Skill, balance, UI logic, pause, upgrade/undo, Boss
-Beam/Enrage, reward và restart.
-
-### 5.2. Kiểm thử thủ công cần ghi vào báo cáo
-
-- Menu Bắt đầu/Thoát.
-- Chọn và bỏ chọn Ally trong Setup.
-- Di chuyển/bắn, pause/resume.
-- Chuyển batch, intermission, mua và undo nâng cấp.
-- Game Over, Boss, Win, Chơi lại và Về menu.
-
-> Cần điền ngày kiểm thử, người kiểm thử, kết quả và ảnh minh họa thực tế.
+---
 
 ## 6. Phân công công việc nhóm
 
-| Thành viên | Mã số sinh viên | Vai trò | Công việc cụ thể |
-|---|---|---|---|
-| [Điền tên] | [Điền MSSV] | [Vai trò] | [Công việc] |
-| [Điền tên] | [Điền MSSV] | [Vai trò] | [Công việc] |
-| [Điền tên] | [Điền MSSV] | [Vai trò] | [Công việc] |
-| [Điền nếu nhóm có 4 người] | [Điền MSSV] | [Vai trò] | [Công việc] |
+| Thành viên | Mã số sinh viên | Vai trò và nhiệm vụ cụ thể |
+|---|---:|---|
+| **Nguyễn Huỳnh Minh Hiếu** | 25127331 | **Trưởng nhóm**; phân tích và tổ chức kiến trúc; thiết kế HUD và các màn hình/trạng thái giao diện; phát triển và tích hợp core gameplay như combat, ally, wave, upgrade và state flow; merge/review các module; xử lý collision, cleanup và lỗi tích hợp; tích hợp và hoàn thiện khu vực Kingdom; xây dựng/duy trì test; kiểm tra build; tổng hợp tài liệu và báo cáo. |
+| **Nghiêm Đình Thuận** | 25127152 | Phát triển gameplay màn chiến đấu; tham gia xử lý các cơ chế Player, quái vật và tương tác chiến đấu theo phần code thực tế của thành viên. |
+| **Phan Huỳnh Minh Tuấn** | 25127168 | Thiết kế và triển khai UI; menu và  tích hợp phần hiển thị vào game. |
+| **Nguyễn Huỳnh Quốc Ngữ** | 25127103 | Phụ trách đồ họa và quản lý texture; xây dựng/hoàn thiện `TextureManager`; chuẩn bị và tích hợp texture vào các đối tượng trong game. |
+| **Phạm Hoàng Xuân Vy** | 25127173 | Thiết kế map màn chiến đấu; cài đặt sinh map bằng thuật toán Drunkard Walk; tham gia kiểm tra bố cục và khả năng di chuyển trên map trong trận. |
+
+
+
+---
 
 ## 7. Hướng phát triển tương lai
+1. Bổ sung thêm các chương bản đồ mới và hệ thống nhân vật / quái vật đa dạng nhờ kiến trúc hướng đối tượng mở rộng dễ dàng.
+2. Tách toàn bộ chỉ số cân bằng sang file cấu hình JSON/YAML external để tinh chỉnh không cần biên dịch lại.
+3. Hỗ trợ chơi đa người chơi (Co-op Multiplayer) thông qua SFML Network.
 
-- Bổ sung thêm map hoặc kiểu Monster mà không thay đổi giao diện `Entity`.
-- Tách cấu hình gameplay ra file dữ liệu để dễ cân bằng.
-- Hoàn thiện attribution/license cho mọi asset trước khi phân phối công khai.
-- Bổ sung automation cho luồng giao diện khi có test harness cửa sổ phù hợp.
+---
 
 ## 8. Phụ lục và tài liệu tham khảo
-
 - Mã nguồn C++17 trong repository Eternal Siege.
-- SFML 3 documentation.
-- CMake documentation.
-- Tài liệu yêu cầu đồ án lớp 25C08.
+- Thư viện SFML 3 (Simple and Fast Multimedia Library).
+- Công cụ biên dịch CMake 3.21+ và GCC / Clang / MSVC.
