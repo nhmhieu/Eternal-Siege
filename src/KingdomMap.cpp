@@ -209,15 +209,16 @@ sf::Vector2f KingdomMap::resolveMovementWithActors(
     sf::Vector2f p, sf::Vector2f d, const std::vector<sf::Vector2f>& actors,
     float r, float actorRadius, bool gateOpen) const
 {
-    const int steps = std::max(1, int(std::ceil(std::hypot(d.x, d.y) / 10)));
+    const float effR = std::min(r, 11.5f);
+    const int steps = std::max(1, int(std::ceil(std::hypot(d.x, d.y) / 8.f)));
     const auto step = d / float(steps);
 
     auto clear = [&](sf::Vector2f candidate) {
-        if (blocked(candidate, r, gateOpen)) {
+        if (blocked(candidate, effR, gateOpen)) {
             return false;
         }
         for (const auto& a : actors) {
-            if (std::hypot(candidate.x - a.x, candidate.y - a.y) < r + actorRadius) {
+            if (std::hypot(candidate.x - a.x, candidate.y - a.y) < effR + actorRadius) {
                 return false;
             }
         }
@@ -225,13 +226,33 @@ sf::Vector2f KingdomMap::resolveMovementWithActors(
     };
 
     for (int i = 0; i < steps; ++i) {
-        const sf::Vector2f x{p.x + step.x, p.y};
-        if (clear(x)) {
-            p.x = x.x;
+        const sf::Vector2f fullCandidate{p.x + step.x, p.y + step.y};
+        if (clear(fullCandidate)) {
+            p = fullCandidate;
+            continue;
         }
-        const sf::Vector2f y{p.x, p.y + step.y};
-        if (clear(y)) {
-            p.y = y.y;
+
+        const sf::Vector2f candX{p.x + step.x, p.y};
+        const bool clearX = clear(candX);
+
+        const sf::Vector2f candY{p.x, p.y + step.y};
+        const bool clearY = clear(candY);
+
+        if (clearX) {
+            p.x = candX.x;
+        }
+        if (clearY) {
+            p.y = candY.y;
+        }
+
+        // Corner sliding assist if blocked on both direct axes
+        if (!clearX && !clearY && (step.x != 0.f || step.y != 0.f)) {
+            const float nudge = 0.35f;
+            if (step.x != 0.f && clear({p.x, p.y + (step.x > 0 ? nudge : -nudge)})) {
+                p.y += (step.x > 0 ? nudge : -nudge);
+            } else if (step.y != 0.f && clear({p.x + (step.y > 0 ? nudge : -nudge), p.y})) {
+                p.x += (step.y > 0 ? nudge : -nudge);
+            }
         }
     }
     return p;

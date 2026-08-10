@@ -128,10 +128,11 @@ void KingdomState::update(float dt) {
 
     if (entryRevealTimer < 2.5f) {
         entryRevealTimer += dt;
-        if (entryRevealTimer < 1.8f) {
+        if (entryRevealTimer < 0.3f) {
             fade = 1.0f;
         } else {
-            fade = 1.0f - (entryRevealTimer - 1.8f) / 0.7f;
+            const float progress = std::clamp((entryRevealTimer - 0.3f) / 2.2f, 0.f, 1.f);
+            fade = 1.0f - (progress * progress * (3.f - 2.f * progress));
         }
     }
 
@@ -148,12 +149,12 @@ void KingdomState::update(float dt) {
         progress.castleGateOpen = true;
     }
     if (entryRevealTimer >= 2.5f && !transitioning) {
-        fade = std::max(0.f, fade - dt / .32f);
+        fade = 0.f;
     }
 
     // Input & movement logic
     sf::Vector2f input;
-    if (entryRevealTimer >= 1.8f) {
+    if (entryRevealTimer >= 0.8f) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) { input.y--; }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) { input.y++; }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) { input.x--; }

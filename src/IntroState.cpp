@@ -253,8 +253,27 @@ void IntroState::render(sf::RenderWindow& target) {
     if (emphasisText && emphasisText->getString().getSize() > 0) target.draw(*emphasisText);
 
     if (frameIndex == 0) {
-        if (createdByText) target.draw(*createdByText);
-        if (groupNameText) target.draw(*groupNameText);
+        const float creditAlphaProgress = std::min(1.f, std::max(0.f, frameTimer / 0.65f));
+        const std::uint8_t alphaByte = static_cast<std::uint8_t>(255.f * creditAlphaProgress);
+
+        sf::RectangleShape creditBox({350.f, 96.f});
+        creditBox.setOrigin({175.f, 48.f});
+        creditBox.setPosition({640.f, 448.f});
+        creditBox.setFillColor(sf::Color(8, 14, 24, static_cast<std::uint8_t>(230.f * creditAlphaProgress)));
+        creditBox.setOutlineColor(sf::Color(215, 175, 85, static_cast<std::uint8_t>(160.f * creditAlphaProgress)));
+        creditBox.setOutlineThickness(1.5f);
+        target.draw(creditBox);
+
+        if (createdByText) {
+            auto cbText = *createdByText;
+            cbText.setFillColor(sf::Color(185, 190, 195, alphaByte));
+            target.draw(cbText);
+        }
+        if (groupNameText) {
+            auto gnText = *groupNameText;
+            gnText.setFillColor(sf::Color(245, 205, 105, alphaByte));
+            target.draw(gnText);
+        }
     }
 
     // 5 Progress Dots at bottom

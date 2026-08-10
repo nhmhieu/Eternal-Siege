@@ -272,17 +272,41 @@ void Player::draw(sf::RenderWindow& window) {
 }
 
 void Player::drawShadow(sf::RenderWindow& window) const {
-    const float shadowRadius = std::max(14.f, playerShape.getSize().x * 0.24f);
-    sf::CircleShape shadow(shadowRadius);
-    shadow.setOrigin({shadowRadius, shadowRadius});
-    shadow.setScale({1.25f, 0.36f});
-    shadow.setPosition({position.x, position.y + 2.f});
-    shadow.setFillColor(sf::Color(8, 5, 15, isDying ? 30 : 65));
-    window.draw(shadow);
+    const float outerRadius = std::max(16.f, playerShape.getSize().x * 0.26f);
+    sf::CircleShape ambient(outerRadius);
+    ambient.setOrigin({outerRadius, outerRadius});
+    ambient.setScale({1.35f, 0.42f});
+    ambient.setPosition({position.x, position.y + 1.f});
+    ambient.setFillColor(sf::Color(6, 10, 16, isDying ? 25 : 85));
+    window.draw(ambient);
+
+    const float innerRadius = outerRadius * 0.65f;
+    sf::CircleShape contact(innerRadius);
+    contact.setOrigin({innerRadius, innerRadius});
+    contact.setScale({1.15f, 0.32f});
+    contact.setPosition({position.x, position.y + 2.f});
+    contact.setFillColor(sf::Color(2, 4, 8, isDying ? 45 : 140));
+    window.draw(contact);
 }
 
 void Player::draw(sf::RenderTexture& target){target.draw(playerShape);}
-void Player::drawShadow(sf::RenderTexture& target)const{const float r=std::max(14.f,playerShape.getSize().x*.24f);sf::CircleShape s(r);s.setOrigin({r,r});s.setScale({1.25f,.36f});s.setPosition({position.x,position.y+2});s.setFillColor({8,5,15,58});target.draw(s);}
+void Player::drawShadow(sf::RenderTexture& target) const {
+    const float outerRadius = std::max(16.f, playerShape.getSize().x * 0.26f);
+    sf::CircleShape ambient(outerRadius);
+    ambient.setOrigin({outerRadius, outerRadius});
+    ambient.setScale({1.35f, 0.42f});
+    ambient.setPosition({position.x, position.y + 1.f});
+    ambient.setFillColor(sf::Color(6, 10, 16, isDying ? 25 : 85));
+    target.draw(ambient);
+
+    const float innerRadius = outerRadius * 0.65f;
+    sf::CircleShape contact(innerRadius);
+    contact.setOrigin({innerRadius, innerRadius});
+    contact.setScale({1.15f, 0.32f});
+    contact.setPosition({position.x, position.y + 2.f});
+    contact.setFillColor(sf::Color(2, 4, 8, isDying ? 45 : 140));
+    target.draw(contact);
+}
 
 void Player::updateNonCombatPresentation(float deltaTime,
                                          sf::Vector2f movement) {
