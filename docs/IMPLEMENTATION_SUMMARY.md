@@ -10,7 +10,7 @@ portable asset loading, corrected ally roles, and the final boss presentation.
 - A real `Wand` weapon and purple `MagicBolt` projectile for Junior.
 - PlayerMage, SpiritStaff, four Ally textures and normal/elite/boss monster textures.
 - Menu background and transparent emblem with safe color fallbacks.
-- Four-frame timed story intro, window icon, and six deterministic map tile textures.
+- Five-frame timed story intro, window icon, and six deterministic map tile textures.
 - `AudioManager` for streamed music and the registered buffered SFX set.
 - Three-phase Boss: phase-2 radial beam at 50% HP and one-shot Enraged transition at 25% HP.
 - Spirit Staff/Spirit Bolt, Radiant Pulse, Ally Skills, presentation effects,
@@ -19,17 +19,8 @@ portable asset loading, corrected ally roles, and the final boss presentation.
 - Functional `P` pause that freezes gameplay/boss timers and pauses music.
 - Relative `AssetLocator`; the former hard-coded Windows font path is removed.
 - CMake linking for SFML Audio and automatic asset copying.
-- A deterministic asset validator and Windows build helper.
+- MSYS2 UCRT64 / MinGW build helper scripts (`BUILD_WINDOWS.bat` and `RUN_GAME.bat`).
 
-## Automated validation in this package
+## Release Validation
 
-`tools/validate_project.py` verifies:
-
-- required character, staff, monster and map PNGs are readable and have the expected dimensions;
-- the menu background and logo formats;
-- required OGG music and WAV SFX files;
-- the four official ally configurations;
-- the SFML Audio CMake link.
-
-The standalone release target builds directly with CMake and SFML 3.0.2. Visual presentation requires a manual playtest on a
-machine that can open an SFML window.
+The standalone release target builds directly with CMake and SFML 3.0.2. Visual presentation and gameplay flows are validated through manual testing.

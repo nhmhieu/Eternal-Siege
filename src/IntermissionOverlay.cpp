@@ -255,6 +255,6 @@ void IntermissionOverlay::draw(
     drawText("Undo Last Upgrade", {panelPosition.x + 455.f, footerY}, 14, body);
     drawText("ENTER", {panelPosition.x + 670.f, footerY}, 14, teal, true);
     drawText("Begin Next Wave", {panelPosition.x + 738.f, footerY}, 14, body);
-    drawText("H  Show Guide", {panelPosition.x + 34.f, footerY + 28.f},
+    drawText("R  Show Guide", {panelPosition.x + 34.f, footerY + 28.f},
              13, muted);
 }

@@ -19,9 +19,3 @@ Run `BUILD_WINDOWS.bat`, then complete this checklist before submitting:
     every frame.
 12. Finish the Boss and remaining enemies; the Win screen and sound appear.
 13. Restart and intentionally lose; the Game Over screen and sound appear.
-
-The portable asset validator can be re-run at any time:
-
-```powershell
-python tools/validate_project.py
-```

@@ -7,15 +7,15 @@
 ## 1. Danh Mục Các Thành Phần Bắt Buộc
 
 - [x] **Source code C++ đầy đủ & Biên dịch thành công**:
-  - Mã nguồn trong các thư mục `include/`, `src/`, `assets/`, `tests/`, `tools/`.
+  - Mã nguồn trong các thư mục `include/`, `src/`, `assets/`.
   - Cấu hình biên dịch bằng `CMakeLists.txt`.
-  - Kết quả biên dịch Release mode và chạy thành công trên 16 bộ test CTest.
+  - Kết quả biên dịch Release mode và chạy thành công trên môi trường Windows.
 - [x] **Báo cáo kỹ thuật chi tiết (`docs/project-report.md`)**:
   - Giới thiệu game, mục tiêu, luật chơi.
   - Bảng phân tích chức năng hệ thống.
   - Sơ đồ lớp (Class Diagram) & Sơ đồ trình tự (Sequence Diagram).
   - Cấu trúc thư mục & phân tích 4 nguyên lý Hướng đối tượng (OOP).
-  - Kết quả kiểm thử tự động (16 test) & Đánh giá thủ công (Visual QA).
+  - Kết quả kiểm thử thủ công (Manual Testing) & Đánh giá thủ công (Visual QA).
   - Bảng phân công thành viên 5 người chính xác.
   - Hướng phát triển & Phụ lục tham khảo.
 - [x] **Kịch bản Video thuyết minh (`docs/video-script.md`)**:
@@ -49,11 +49,11 @@ Eternal-Siege-Submission/
 ├── Demo_Video_Eternal_Siege.mp4 (hoặc file link)
 ├── CMakeLists.txt
 ├── README.md
+├── BUILD_WINDOWS.bat
+├── RUN_GAME.bat
 ├── include/
 ├── src/
 ├── assets/
-├── tests/
-├── tools/
 └── docs/
 ```
 

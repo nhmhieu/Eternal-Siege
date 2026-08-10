@@ -8,7 +8,7 @@
 ### 1.2. Mục tiêu và luật chơi
 - **Di chuyển & Thao tác**:
   - Trong Kingdom: Di chuyển bằng phím `WASD`, tương tác với Cổng Thành hoặc Cửa Cực bằng phím `E`, bật/tắt hiển thị va chạm F3 (`F3 Navigation Overlay`), đổi buổi trong ngày (`F4`), đổi thời tiết (`F5`), hiển thị hiệu năng (`F6`).
-  - Trong màn chiến đấu: Di chuyển bằng `WASD`, ngắm và bắn bằng Chuột trái, giữ Chuột trái để tích lực bắn đạn nặng (`Heavy Spirit Bolt`), phím `Space` để lướt né đạn (`Dash`), phím `Q` để tung kỹ năng hồi máu (`Radiant Pulse`). Tạm dừng bằng `P`, xem hướng dẫn bằng `H`, bật/tắt âm thanh bằng `M`.
+  - Trong màn chiến đấu: Di chuyển bằng `WASD`, ngắm và bắn bằng Chuột trái, giữ Chuột trái để tích lực bắn đạn nặng (`Heavy Spirit Bolt`), phím `Shift` hoặc Chuột phải (`RMB`) để lướt né đạn (`Dash`), phím `Q` để tung kỹ năng hồi máu (`Radiant Pulse` hồi máu cho các đồng minh Ally trong phạm vi). Tạm dừng bằng `P`, xem hướng dẫn bằng `R`, bật/tắt âm thanh bằng `M`.
 - **Đồng minh & Đội hình**: Trước khi bắt đầu chiến đấu (Setup State), người chơi bố trí 4 vị trí đồng minh trên bản đồ. Các đồng minh tự động tìm kiếm quái vật gần nhất trong tầm đánh để tấn công.
 - **Tiến trình Wave**: Màn chiến đấu gồm 4 Wave quái vật (Normal Monster, Elite Monster, Boss). Mỗi đợt có nhiều batch quái vật, batch tiếp theo chỉ xuất hiện khi batch hiện tại bị tiêu diệt. Sau mỗi wave có khoảng thời gian nghỉ (**Intermission**), người chơi dùng Gold tích lũy để nâng cấp chỉ số (Sát thương, HP, Tốc độ đánh) hoặc hoàn tác (**Undo**).
 - **Điều kiện Thắng / Thua**:
@@ -27,7 +27,7 @@
 | **Di chuyển Kingdom & Va chạm** | Phím `WASD` | `KingdomMap::resolveMovementWithActors` kiểm tra vùng đi được (walkable regions), va chạm footprint của cổng, gốc cây, công trình, bờ sông, lan can cầu và chân NPC | Player di chuyển mượt mà, trượt dọc vật cản, tự chuyển Idle khi bị chặn hoàn toàn |
 | **Bố trí Ally (Setup)** | Click chọn Hero Card, click tile trên map, phím `R` | `AllyPlacementModel` xác thực vị trí tile, gán slot cho từng `AllyType` | 4 Ally được khởi tạo đúng vị trí khi bắt đầu trận |
 | **Tấn công & Tích lực** | Click / Giữ Chuột trái | `Player` tính vector ngắm, bắn `SpiritBolt` hoặc nạp năng lượng sinh `HeavySpiritBolt` kèm hiệu ứng màn hình | Đạn bay về phía mục tiêu, gây sát thương lên quái vật |
-| **Kỹ năng Hồi máu (Radiant Pulse)** | Phím `Q` | `RadiantPulse` kiểm tra cooldown và tầm ảnh hưởng, hồi HP cho Player và Ally trong vùng | Vòng sóng ánh sáng lan tỏa, HP các nhân vật thân thiện tăng |
+| **Kỹ năng Hồi máu (Radiant Pulse)** | Phím `Q` | `RadiantPulse` kiểm tra cooldown và tầm ảnh hưởng, hồi HP cho các Ally trong vùng | Vòng sóng ánh sáng lan tỏa, HP các Ally thân thiện tăng |
 | **Xử lý Chiến đấu & Sát thương** | Vị trí đạn & hitbox nhân vật | `CombatManager` kiểm tra va chạm hitbox giữa đạn/đòn đánh và Entity khác Team | Giảm HP target, kích hoạt hurt flash, xóa entity khi HP <= 0 |
 | **Wave Quái vật & Boss** | `deltaTime`, số quái sống | `WaveManager` quản lý timer spawn batch, kích hoạt Boss Enrage và kỹ năng Boss Beam | Quái xuất hiện đúng đợt, hiển thị thanh HP Boss và thông báo nộ chiến |
 | **Nâng cấp & Hoàn tác** | Phím `1`, `2`, `3` / `Backspace` | `UpgradeManager` trừ Gold, tăng chỉ số nhân vật; lưu lịch sử giao dịch để hoàn tác | Chỉ số chiến đấu tăng, hiển thị thông báo trên HUD |
@@ -55,24 +55,16 @@
 
 ## 5. Kiểm thử và Báo cáo Đánh giá
 
-### 5.1. Kết quả kiểm thử tự động (CTest / Automated Unit & Integration Tests)
-Toàn bộ **16 bộ test** trong hệ thống tự động đã vượt qua (PASS 100%):
-- `state_machine_tests`: Kiểm tra chuyển state và vòng đời state.
-- `core_logic_tests`: Kiểm tra logic sát thương, HP, tiêu diệt entity.
-- `ally_combat_tests`: Kiểm tra AI tìm mục tiêu và xả skill của đồng minh.
-- `combat_regression_tests`: Kiểm tra không bị crash khi xoay vòng projectile và hiệu ứng.
-- `ally_skill_tests`: Kiểm tra khiên Evangeline, khiêu khích Damian, bẫy Junior, buff Lucas.
-- `presentation_tests`: Kiểm tra load asset và kết cấu màn hình kết thúc.
-- `gameplay_balance_tests`: Kiểm tra thông số chỉ số nhân vật và quái vật.
-- `support_presentation_tests`: Kiểm tra hiệu ứng nạp đạn nặng và hồi máu.
-- `tutorial_tests`: Kiểm tra lớp phủ hướng dẫn chơi.
-- `intermission_tests`: Kiểm tra mua nâng cấp và hoàn tác undo.
-- `boss_enrage_tests`: Kiểm tra pha nộ của Boss và Beam laser.
-- `full_game_integration_tests`: Kiểm tra luồng chơi hoàn chỉnh từ Setup đến Victory.
-- `setup_placement_tests`: Kiểm tra logic thả đặt vị trí Ally.
-- `player_action_tests`: Kiểm tra bộ điều khiển hành động Player.
-- `kingdom_flow_tests`: Kiểm tra luồng Kingdom, mở cổng, chuyển màn.
-- `kingdom_qa_tests`: Kiểm tra chi tiết 21 mốc visual landmark va chạm, lan can cầu, Y-sorting không bị nhảy `+1000`, vùng nước, và va chạm chân NPC.
+### 5.1. Kết quả kiểm thử thủ công (Manual Functional Verification & Visual QA)
+Đã thực hiện kiểm thử thủ công toàn bộ các tính năng của trò chơi cho bản phát hành chính thức:
+- **Intro & Presentation**: Màn hình Intro hiển thị đúng 5 frame story theo tiến trình, Frame 1 hiển thị credit `Created by Ngo0Group` với khung chứa tối sang trọng và hiệu ứng xuất hiện mượt mà.
+- **Main Menu**: Menu phản hồi chính xác phím Escape, click nút Start / Exit, âm thanh SFX ui_click.
+- **Vương quốc Asterfall (Kingdom Hub)**: Nhân vật di chuyển WASD mượt mà kèm hiệu ứng trượt góc tường (corner sliding), bám đất với bóng chân đôi (dual-layer grounding shadow); chỉ đường `V` định hướng đúng Cổng thành và Cửa Cực; phím `E` tương tác mở cổng; phím `F3`-`F6` hỗ trợ debug.
+- **Bố trí Đội hình (Setup State)**: Bố trí đủ 4 Ally (Damian, Evangeline, Junior, Lucas) trên bản đồ tile; phím `R` reset đội hình; chuột phải thu hồi Ally; xác nhận bắt đầu trận.
+- **Procedural Combat Map**: Sinh địa hình ngẫu nhiên liên thông bằng thuật toán Drunkard Walk; tự động phân bổ 4 vị trí xuất hiện quái hợp lệ.
+- **Chiến đấu & Kỹ năng**: `Spirit Bolt` (LMB tap), `Heavy Spirit Bolt` (LMB hold), `Dash` (`Shift`/RMB), `Radiant Pulse` (`Q` hồi máu cho các Ally trong vùng).
+- **Wave & Intermission**: Quản lý 4 wave dồn dập, khoảng nghỉ Intermission cho phép mua nâng cấp (`1`/`2`/`3`), hoàn tác (`Backspace`), xem hướng dẫn (`R`), và sang wave tiếp (`Enter`).
+- **Trận đấu Boss & Kết thúc**: Boss chuyển Phase 2 Beam Laser ở 50% HP, kích hoạt Enrage ở 25% HP; màn hình Victory và GameOver chuyển đổi đúng luồng.
 
 ### 5.2. Kết quả Đánh giá Thủ công (Manual Visual QA)
 - **Cổng thành**: Đi qua chính giữa cổng khi mở thành công; hai cột đá và tường thành chặn chính xác khi đóng hoặc khi đâm vào cột.
