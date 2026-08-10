@@ -106,7 +106,12 @@ bool AudioManager::playResolved(std::string_view key,
 }
 
 bool AudioManager::playMusic(const std::string& relativePath) {
-    if (muted || !playbackEnabled) return false;
+    if (muted || !playbackEnabled) {
+        if (muted) {
+            musicBeforeMute = relativePath;
+        }
+        return false;
+    }
     if (currentMusic == relativePath &&
         music.getStatus() == sf::SoundSource::Status::Playing) {
         return true;
@@ -121,6 +126,7 @@ bool AudioManager::playMusic(const std::string& relativePath) {
         return false;
     }
     currentMusic = relativePath;
+    musicBeforeMute.clear();
     music.setLooping(true);
     music.play();
     return true;
@@ -143,6 +149,7 @@ void AudioManager::removeStoppedVoices() {
 void AudioManager::stopMusic() {
     if (playbackEnabled) music.stop();
     currentMusic.clear();
+    musicBeforeMute.clear();
 }
 
 void AudioManager::pauseMusic() {
@@ -167,12 +174,19 @@ void AudioManager::setMuted(bool value) {
     if (muted == value) return;
     muted = value;
     if (muted) {
+        musicBeforeMute = currentMusic;
         if (playbackEnabled) {
             for (sf::Sound& voice : voices) voice.stop();
             music.stop();
         }
         voices.clear();
         currentMusic.clear();
+    } else {
+        if (!musicBeforeMute.empty()) {
+            std::string restoreTrack = std::move(musicBeforeMute);
+            musicBeforeMute.clear();
+            playMusic(restoreTrack);
+        }
     }
 }
 

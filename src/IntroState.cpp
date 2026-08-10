@@ -68,6 +68,18 @@ void IntroState::onEnter() {
     bodyText.emplace(font, "", 23);
     emphasisText.emplace(font, "", 21);
 
+    createdByText.emplace(font, "Created by", 24);
+    createdByText->setFillColor(sf::Color(185, 190, 195));
+    const sf::FloatRect cb = createdByText->getLocalBounds();
+    createdByText->setOrigin({cb.position.x + cb.size.x / 2.f, cb.position.y + cb.size.y / 2.f});
+    createdByText->setPosition({640.f, 420.f});
+
+    groupNameText.emplace(font, "Ngo0Group", 52);
+    groupNameText->setFillColor(sf::Color(245, 205, 105));
+    const sf::FloatRect gb = groupNameText->getLocalBounds();
+    groupNameText->setOrigin({gb.position.x + gb.size.x / 2.f, gb.position.y + gb.size.y / 2.f});
+    groupNameText->setPosition({640.f, 475.f});
+
     hintText.emplace(font, "ENTER / SPACE  Continue        ESC  Skip", 16);
     hintText->setFillColor(sf::Color(150, 155, 165));
     const auto hintBounds = hintText->getLocalBounds();
@@ -80,11 +92,11 @@ void IntroState::onEnter() {
             logoSprite.emplace(*logo);
             const sf::Vector2u size = logo->getSize();
             const float scale = std::min(500.f / static_cast<float>(size.x),
-                                         180.f / static_cast<float>(size.y));
+                                         150.f / static_cast<float>(size.y));
             logoSprite->setScale({scale, scale});
             logoSprite->setOrigin({static_cast<float>(size.x) / 2.f,
                                    static_cast<float>(size.y) / 2.f});
-            logoSprite->setPosition({640.f, 220.f});
+            logoSprite->setPosition({640.f, 200.f});
         }
     }
     showFrame(0);
@@ -126,11 +138,11 @@ void IntroState::showFrame(int targetFrame) {
 
     if (headingText) {
         headingText->setString(data.heading);
-        headingText->setCharacterSize(frameIndex == 0 ? 46u : 36u);
+        headingText->setCharacterSize(frameIndex == 0 ? 42u : 36u);
         headingText->setFillColor(sf::Color(245, 215, 130));
         const sf::FloatRect b = headingText->getLocalBounds();
         headingText->setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
-        headingText->setPosition({640.f, frameIndex == 0 && logoSprite ? 350.f : 210.f});
+        headingText->setPosition({640.f, frameIndex == 0 && logoSprite ? 290.f : 210.f});
     }
 
     if (subtitleText) {
@@ -139,7 +151,7 @@ void IntroState::showFrame(int targetFrame) {
             subtitleText->setFillColor(sf::Color(185, 215, 225));
             const sf::FloatRect b = subtitleText->getLocalBounds();
             subtitleText->setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
-            subtitleText->setPosition({640.f, 400.f});
+            subtitleText->setPosition({640.f, frameIndex == 0 ? 355.f : 400.f});
         } else {
             subtitleText->setString("");
         }
@@ -230,7 +242,7 @@ void IntroState::render(sf::RenderWindow& target) {
     // Decorative inner gold line under heading
     sf::RectangleShape line({280.f, 2.f});
     line.setOrigin({140.f, 1.f});
-    line.setPosition({640.f, frameIndex == 0 && logoSprite ? 382.f : 248.f});
+    line.setPosition({640.f, frameIndex == 0 && logoSprite ? 325.f : 248.f});
     line.setFillColor(sf::Color(218, 175, 85, 180));
     target.draw(line);
 
@@ -239,6 +251,11 @@ void IntroState::render(sf::RenderWindow& target) {
     if (subtitleText && subtitleText->getString().getSize() > 0) target.draw(*subtitleText);
     if (bodyText && bodyText->getString().getSize() > 0) target.draw(*bodyText);
     if (emphasisText && emphasisText->getString().getSize() > 0) target.draw(*emphasisText);
+
+    if (frameIndex == 0) {
+        if (createdByText) target.draw(*createdByText);
+        if (groupNameText) target.draw(*groupNameText);
+    }
 
     // 5 Progress Dots at bottom
     for (int i = 0; i < 5; ++i) {

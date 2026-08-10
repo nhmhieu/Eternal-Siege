@@ -96,8 +96,10 @@ Eternal-Siege/
 ├── include/            # Các file header (.h) định nghĩa lớp và giao diện
 ├── src/                # Mã nguồn thực thi (.cpp)
 ├── BUILD_WINDOWS.bat   # Script build nhanh trên Windows
+├── RUN_GAME.bat        # Script chạy trò chơi
 ├── CMakeLists.txt      # File cấu hình build CMake
-└── README.md           # Tài liệu hướng dẫn project
+├── README.md           # Tài liệu hướng dẫn project
+└── .gitignore          # File cấu hình bỏ qua git
 ```
 
 ## 8. Kiến trúc OOP

@@ -26,7 +26,6 @@ Projectiles::Projectiles(
       damage(projectileDamage),
       shooterTeam(team),
       style(projectileStyle) {
-    // Viết logic khởi tạo các thuộc tính của projectile ở đây (nếu có)
     shape.setSize(sf::Vector2f(24.f, 6.f));
     shape.setOrigin(sf::Vector2f(12.f, 3.f));
     shape.setFillColor(sf::Color::Yellow);
@@ -67,26 +66,22 @@ void Projectiles :: update(const GameContext& context){
         }
     }
 
-    // Dan khong duoc bay xuyen tuong.
+    // Projectiles stop when hitting a solid map tile
     if (context.map && !context.map->isWalkableWorld(position, 3.f)) {
         active = false;
         return;
     }
 
-    //bay ra khoi tam toi da roi thi tat active
+    // Disable projectile when maximum range is reached
     distanceTraveled += speed * context.deltaTime ; 
     if(distanceTraveled >= maxRange){
         active = false ; 
         return  ; 
     }
 
-    //dong bo vi tri voi sprite 
+    // Synchronize shape position and rotation with velocity direction
     shape.setPosition(position) ; 
-
-    //tinh toan goc cua sprite se huong toi (bay huong ve dau thi quay mat ve do)
     shape.setRotation(sf::radians(std::atan2(direction.y, direction.x)));
-
-
 }
 
 bool Projectiles :: isHitting(Entity* target){

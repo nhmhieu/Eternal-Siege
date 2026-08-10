@@ -53,6 +53,7 @@ private:
     bool muteKeyHeld = false;
     sf::Music music;
     std::string currentMusic;
+    std::string musicBeforeMute;
     std::unordered_map<std::string, sf::SoundBuffer> soundBuffers;
     std::list<sf::Sound> voices;
     std::unordered_map<std::string, float> cooldowns;

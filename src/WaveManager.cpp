@@ -189,6 +189,12 @@ std::unique_ptr<Monster> WaveManager::update(
     }
 
     const EnemyType enemyType = getCurrentBatch().enemyType;
+    auto monster = createMonster(enemyType, map);
+
+    if (!monster) {
+        return nullptr;
+    }
+
     ++spawnedInCurrentBatch;
     spawnTimer = 0.f;
 
@@ -196,7 +202,7 @@ std::unique_ptr<Monster> WaveManager::update(
         batchPhase = BatchPhase::WaitingForClear;
     }
 
-    return createMonster(enemyType, map);
+    return monster;
 }
 
 void WaveManager::startNextWave() {

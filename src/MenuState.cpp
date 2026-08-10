@@ -54,7 +54,6 @@ void MenuState::onEnter() {
                          bounds.position.y + bounds.size.y / 2.f});
     exitText->setPosition({640.f, 473.f});
 
-    // Các nút bấm hình chữ nhật không cần font
     startButton = std::make_unique<sf::RectangleShape>();
     startButton->setSize(sf::Vector2f(250.f, 64.f));
     startButton->setFillColor(sf::Color(18, 31, 43, 238));
@@ -78,7 +77,6 @@ void MenuState::onEnter() {
 }
 
 void MenuState::onExit() {
-    // Các unique_ptr sẽ tự động dọn dẹp một cách an toàn
 }
 
 void MenuState::handleEvent(const sf::Event& event) {
@@ -93,7 +91,6 @@ void MenuState::handleEvent(const sf::Event& event) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
             sf::Vector2i mousePos = mousePressed->position;
 
-            // Dùng dấu -> vì startButton giờ là biến thông thường
             if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
                 audioManager.playSound("ui_click");
                 stateMachine.changeState(std::make_unique<KingdomState>(
@@ -135,7 +132,6 @@ void MenuState::render(sf::RenderWindow& window) {
    panel.setOutlineThickness(1.5f);
    window.draw(panel);
 
-    // Dùng dấu * để giải băm unique_ptr khi vẽ
    if (logoSprite) window.draw(*logoSprite);
    if (titleText) window.draw(*titleText);
    if (startButton) window.draw(*startButton);

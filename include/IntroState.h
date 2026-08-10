@@ -43,6 +43,8 @@ private:
     std::optional<sf::Text> bodyText;
     std::optional<sf::Text> emphasisText;
     std::optional<sf::Text> hintText;
+    std::optional<sf::Text> createdByText;
+    std::optional<sf::Text> groupNameText;
     std::optional<sf::Sprite> logoSprite;
 
     int frameIndex = 0;
