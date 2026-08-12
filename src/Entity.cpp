@@ -276,7 +276,11 @@ void Entity::drawHealthBar(
     );
 
     if (team == Team::Enemy) {
-        healthBar.setFillColor(sf::Color::Red);
+        if (isElite()) {
+            healthBar.setFillColor(sf::Color(245, 155, 40));
+        } else {
+            healthBar.setFillColor(sf::Color::Red);
+        }
     } else {
         healthBar.setFillColor(sf::Color::Green);
     }

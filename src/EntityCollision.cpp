@@ -8,63 +8,22 @@
 #include <cmath>
 
 namespace {
-constexpr float EPSILON = 0.01f;
-constexpr int SEPARATION_ITERATIONS = 4;
+constexpr float EPSILON = 0.001f;
+constexpr float MAX_SEPARATION_SPEED = 28.f;
 
 float radiusOf(const Entity& entity) {
     const sf::Vector2f size = entity.getCollisionBox().size;
     return std::max(1.f, std::min(size.x, size.y) * 0.5f);
 }
 
-bool canPlace(const Map& map, const Monster& monster, sf::Vector2f center) {
-    const sf::Vector2f size = monster.getCollisionBox().size;
-    return !map.collidesWithSolid({center - size / 2.f, size});
-}
-
-bool placeMonster(
-    const Map& map,
-    Monster& monster,
-    sf::Vector2f desiredCorrection
-) {
-    const sf::Vector2f current = monster.getPosition();
-    const sf::Vector2f candidates[] = {
-        current + desiredCorrection,
-        current + sf::Vector2f(desiredCorrection.x, 0.f),
-        current + sf::Vector2f(0.f, desiredCorrection.y),
-        current + sf::Vector2f(-desiredCorrection.y, desiredCorrection.x),
-        current + sf::Vector2f(desiredCorrection.y, -desiredCorrection.x),
-        current - desiredCorrection
-    };
-    for (const sf::Vector2f candidate : candidates) {
-        const sf::Vector2f applied = candidate - current;
-        if (std::abs(applied.x) <= EPSILON &&
-            std::abs(applied.y) <= EPSILON) {
-            continue;
-        }
-        if (canPlace(map, monster, candidate)) {
-            monster.setPosition(candidate.x, candidate.y);
-            return true;
-        }
+float weightOf(const Entity& entity) {
+    if (dynamic_cast<const Ally*>(&entity)) return 10.0f;
+    if (const auto* m = dynamic_cast<const Monster*>(&entity)) {
+        if (m->isBoss()) return 3.0f;
+        if (m->isElite()) return 1.5f;
+        return 1.0f;
     }
-    return false;
-}
-
-sf::Vector2f separationDirection(
-    sf::Vector2f delta,
-    std::size_t firstIndex,
-    std::size_t secondIndex
-) {
-    const float distanceSquared =
-        delta.x * delta.x + delta.y * delta.y;
-    if (distanceSquared > EPSILON * EPSILON) {
-        return delta / std::sqrt(distanceSquared);
-    }
-
-    // Stable direction for coincident centers: no random loop, division by
-    // zero or NaN. Pair order makes the choice deterministic.
-    return ((firstIndex + secondIndex) % 2 == 0)
-        ? sf::Vector2f{1.f, 0.f}
-        : sf::Vector2f{0.f, 1.f};
+    return 1.0f;
 }
 }
 
@@ -73,75 +32,106 @@ namespace EntityCollision {
 void separateLivingEntities(
     const Map& map,
     const std::vector<Monster*>& monsters,
-    const std::vector<Ally*>& allies
+    const std::vector<Ally*>& allies,
+    float dt
 ) {
-    for (int iteration = 0;
-         iteration < SEPARATION_ITERATIONS;
-         ++iteration) {
-        for (std::size_t first = 0; first < monsters.size(); ++first) {
-            Monster* a = monsters[first];
-            if (!a || a->isDead()) continue;
+    if (monsters.empty() || dt <= 0.f) return;
 
-            for (std::size_t second = first + 1;
-                 second < monsters.size();
-                 ++second) {
-                Monster* b = monsters[second];
-                if (!b || b->isDead()) continue;
+    std::vector<Monster*> activeMonsters;
+    activeMonsters.reserve(monsters.size());
+    for (Monster* m : monsters) {
+        if (m && !m->isDead()) {
+            activeMonsters.push_back(m);
+        }
+    }
+    if (activeMonsters.empty()) return;
 
-                const sf::Vector2f delta =
-                    b->getPosition() - a->getPosition();
-                const sf::Vector2f direction =
-                    separationDirection(delta, first, second);
-                const float distance = std::sqrt(
-                    delta.x * delta.x + delta.y * delta.y);
-                const float overlap =
-                    radiusOf(*a) + radiusOf(*b) - distance;
-                if (overlap <= EPSILON) continue;
+    std::vector<Ally*> activeAllies;
+    activeAllies.reserve(allies.size());
+    for (Ally* a : allies) {
+        if (a && !a->isDead()) {
+            activeAllies.push_back(a);
+        }
+    }
 
-                const sf::Vector2f halfCorrection =
-                    direction * ((overlap + EPSILON) * 0.5f);
-                const bool movedA =
-                    placeMonster(map, *a, -halfCorrection);
-                const bool movedB =
-                    placeMonster(map, *b, halfCorrection);
+    const std::size_t count = activeMonsters.size();
+    std::vector<sf::Vector2f> separationNudges(count, sf::Vector2f{0.f, 0.f});
 
-                if (!movedA && movedB) {
-                    placeMonster(map, *b, halfCorrection);
-                } else if (movedA && !movedB) {
-                    placeMonster(map, *a, -halfCorrection);
+    for (std::size_t i = 0; i < count; ++i) {
+        Monster* a = activeMonsters[i];
+        const sf::Vector2f posA = a->getPosition();
+        const float radiusA = radiusOf(*a);
+        const float weightA = weightOf(*a);
+
+        for (std::size_t j = i + 1; j < count; ++j) {
+            Monster* b = activeMonsters[j];
+            const sf::Vector2f posB = b->getPosition();
+            const float radiusB = radiusOf(*b);
+            const float weightB = weightOf(*b);
+
+            const sf::Vector2f delta = posA - posB;
+            float dist = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+            const float combinedRadius = radiusA + radiusB;
+
+            if (dist < combinedRadius) {
+                sf::Vector2f dir;
+                if (dist > EPSILON) {
+                    dir = delta / dist;
+                } else {
+                    const float angle = static_cast<float>((i + j) % 8) * 0.785398f;
+                    dir = {std::cos(angle), std::sin(angle)};
+                    dist = EPSILON;
                 }
+
+                const float overlap = combinedRadius - dist;
+                const float totalWeight = weightA + weightB;
+                const float ratioA = weightB / totalWeight;
+                const float ratioB = weightA / totalWeight;
+
+                separationNudges[i] += dir * (overlap * ratioA);
+                separationNudges[j] -= dir * (ratioB * overlap);
             }
         }
 
-        // Allies are fixed formation anchors; only the Monster is corrected.
-        for (std::size_t monsterIndex = 0;
-             monsterIndex < monsters.size();
-             ++monsterIndex) {
-            Monster* monster = monsters[monsterIndex];
-            if (!monster || monster->isDead()) continue;
+        for (std::size_t k = 0; k < activeAllies.size(); ++k) {
+            Ally* ally = activeAllies[k];
+            const sf::Vector2f posAlly = ally->getPosition();
+            const float radiusAlly = radiusOf(*ally);
 
-            for (std::size_t allyIndex = 0;
-                 allyIndex < allies.size();
-                 ++allyIndex) {
-                Ally* ally = allies[allyIndex];
-                if (!ally || ally->isDead()) continue;
+            const sf::Vector2f delta = posA - posAlly;
+            float dist = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+            const float combinedRadius = radiusA + radiusAlly;
 
-                const sf::Vector2f delta =
-                    monster->getPosition() - ally->getPosition();
-                const sf::Vector2f direction = separationDirection(
-                    delta, monsterIndex, allyIndex);
-                const float distance = std::sqrt(
-                    delta.x * delta.x + delta.y * delta.y);
-                const float overlap =
-                    radiusOf(*monster) + radiusOf(*ally) - distance;
-                if (overlap <= EPSILON) continue;
-
-                placeMonster(
-                    map,
-                    *monster,
-                    direction * (overlap + EPSILON)
-                );
+            if (dist < combinedRadius) {
+                sf::Vector2f dir;
+                if (dist > EPSILON) {
+                    dir = delta / dist;
+                } else {
+                    dir = {1.f, 0.f};
+                    dist = EPSILON;
+                }
+                const float overlap = combinedRadius - dist;
+                separationNudges[i] += dir * overlap;
             }
+        }
+    }
+
+    const float maxStep = MAX_SEPARATION_SPEED * dt;
+    for (std::size_t i = 0; i < count; ++i) {
+        Monster* monster = activeMonsters[i];
+        const sf::Vector2f nudge = separationNudges[i];
+        const float nudgeLen = std::sqrt(nudge.x * nudge.x + nudge.y * nudge.y);
+        if (nudgeLen > EPSILON) {
+            sf::Vector2f displacement = nudge * 0.35f;
+            const float dispLen = std::sqrt(displacement.x * displacement.x + displacement.y * displacement.y);
+            if (dispLen > maxStep) {
+                displacement = (displacement / dispLen) * maxStep;
+            }
+
+            const sf::Vector2f halfExtents = monster->getCollisionBox().size / 2.f;
+            const sf::Vector2f resolved = map.resolveMovement(
+                monster->getPosition(), halfExtents, displacement);
+            monster->setPosition(resolved.x, resolved.y);
         }
     }
 }

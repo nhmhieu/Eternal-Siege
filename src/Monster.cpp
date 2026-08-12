@@ -103,23 +103,34 @@ void Monster::followPath(float dt, const Map& map) {
     if (path.empty() || waypointIndex >= path.size()) rebuildPath(map);
     if (path.empty()) return;
 
+    constexpr float WAYPOINT_TOLERANCE = 14.f;
     sf::Vector2f waypoint = map.gridToWorld(path[waypointIndex]);
     sf::Vector2f toWaypoint = waypoint - position;
     float waypointDistance = std::sqrt(lengthSquared(toWaypoint));
-    if (waypointDistance <= 4.f) {
+
+    while (waypointDistance <= WAYPOINT_TOLERANCE && waypointIndex < path.size()) {
         ++waypointIndex;
-        if (waypointIndex >= path.size()) return;
+        if (waypointIndex >= path.size()) break;
         waypoint = map.gridToWorld(path[waypointIndex]);
         toWaypoint = waypoint - position;
         waypointDistance = std::sqrt(lengthSquared(toWaypoint));
     }
 
-    const sf::Vector2f moveDirection = normalized(toWaypoint);
-    const float step = std::min(moveSpeed * dt, waypointDistance);
+    sf::Vector2f moveDirection;
+    if (waypointIndex < path.size()) {
+        moveDirection = normalized(toWaypoint);
+    } else {
+        moveDirection = normalized(toTarget);
+    }
+
+    const float step = moveSpeed * dt;
+    if (step <= 0.f) return;
+
     const sf::Vector2f before = position;
     moveWithCollision(moveDirection * step, map);
-    if (position == before && step > 0.f) {
+    if (position == before) {
         path.clear();
+        waypointIndex = 0;
     }
 }
 
@@ -142,9 +153,8 @@ void Monster::update(GameContext& context) {
 
     pathRefreshTimer -= context.deltaTime;
     const auto goalCell = context.map->worldToGrid(currentTarget->getPosition());
-    if (pathRefreshTimer <= 0.f || goalCell != lastGoalCell) {
-        pathRefreshTimer = 0.35f;
-        path.clear();
+    if (path.empty() || waypointIndex >= path.size() || goalCell != lastGoalCell || pathRefreshTimer <= 0.f) {
+        pathRefreshTimer = 0.30f;
         rebuildPath(*context.map);
     }
     followPath(context.deltaTime, *context.map);
@@ -167,6 +177,17 @@ void Monster::draw(sf::RenderWindow& window) {
 }
 
 void Monster::drawShadow(sf::RenderWindow& window) const {
+    if (isElite()) {
+        const float auraRadius = visualSize.x * 0.45f;
+        sf::CircleShape auraRing(auraRadius);
+        auraRing.setOrigin({auraRadius, auraRadius});
+        auraRing.setScale({1.4f, 0.42f});
+        auraRing.setPosition({position.x, position.y + collisionSize.y * 0.42f});
+        auraRing.setFillColor(sf::Color(255, 160, 40, 50));
+        auraRing.setOutlineColor(sf::Color(255, 200, 80, 140));
+        auraRing.setOutlineThickness(1.5f);
+        window.draw(auraRing);
+    }
     const float shadowRadius = std::max(10.f, visualSize.x * 0.28f);
     sf::CircleShape shadow(shadowRadius);
     shadow.setOrigin({shadowRadius, shadowRadius});
@@ -183,7 +204,18 @@ void Monster::setPresentationTexture(
     monsterTexture = texture;
     presentationTint = tint;
     monsterShape.setTexture(texture, true);
-    if (visibleBounds.size.x > 0 && visibleBounds.size.y > 0) {
+
+    const sf::Vector2u texSize = texture->getSize();
+    if (texSize.x == 1024 && texSize.y == 1536) {
+        isSpriteSheet = true;
+        frameSize = {256, 384};
+        const float aspect = static_cast<float>(frameSize.x) / static_cast<float>(frameSize.y);
+        visualSize = {desiredHeight * aspect, desiredHeight};
+        monsterShape.setSize(visualSize);
+        monsterShape.setOrigin(visualSize / 2.f);
+        monsterShape.setTextureRect({{0, 0}, frameSize});
+    } else if (visibleBounds.size.x > 0 && visibleBounds.size.y > 0) {
+        isSpriteSheet = false;
         monsterShape.setTextureRect(visibleBounds);
         const float aspect = static_cast<float>(visibleBounds.size.x) /
                              static_cast<float>(visibleBounds.size.y);
@@ -201,13 +233,18 @@ void Monster::setPresentationTexture(
 
 void Monster::updatePresentation(Effects* effects) {
     const sf::Vector2f moved = position - previousPosition;
-    visuallyMoving = lengthSquared(moved) > 0.001f;
+    const float movedDistance = std::hypot(moved.x, moved.y);
+    visuallyMoving = movedDistance > 0.001f;
     previousPosition = position;
+
+    const float strideDistance = isBoss() ? 24.f : (isElite() ? 18.f : 14.f);
+
     if (visuallyMoving && !isDying) {
-        footstepDistance += std::sqrt(lengthSquared(moved));
-        const float spacing = isBoss() ? 40.f : (isElite() ? 29.f : 20.f);
-        if (footstepDistance >= spacing) {
-            footstepDistance = std::fmod(footstepDistance, spacing);
+        walkDistanceAccumulator += movedDistance;
+        footstepDistance += movedDistance;
+
+        if (footstepDistance >= strideDistance * 2.f) {
+            footstepDistance = std::fmod(footstepDistance, strideDistance * 2.f);
             if (effects) {
                 const FootstepStyle style = isBoss()
                     ? FootstepStyle::Boss
@@ -217,36 +254,53 @@ void Monster::updatePresentation(Effects* effects) {
                     {position.x, position.y + collisionSize.y * 0.42f}, style);
             }
         }
+    } else {
+        walkDistanceAccumulator = 0.f;
     }
 
-    const float cadence = eliteVisual ? 8.f : 11.f;
-    const float bob = visuallyMoving
-        ? std::abs(std::sin(visualTime * cadence)) * 3.2f
-        : std::sin(visualTime * 3.4f) * 0.8f;
-    float rotation = visuallyMoving
-        ? std::sin(visualTime * cadence) * 2.4f
-        : std::sin(visualTime * 2.2f) * 0.7f;
-    float stretchX = 1.f;
-    float stretchY = 1.f;
-    sf::Vector2f visualPosition = position - sf::Vector2f(0.f, bob);
+    // Direction selection from actual movement displacement
+    if (visuallyMoving) {
+        if (std::abs(moved.x) > std::abs(moved.y)) {
+            animDirectionRow = moved.x < 0.f ? 1 : 2; // 1: Left, 2: Right
+        } else {
+            animDirectionRow = moved.y < 0.f ? 3 : 0; // 3: Up, 0: Down
+        }
+    } else if (std::abs(attackDirection.x) > 0.05f || std::abs(attackDirection.y) > 0.05f) {
+        if (std::abs(attackDirection.x) > std::abs(attackDirection.y)) {
+            animDirectionRow = attackDirection.x < 0.f ? 1 : 2;
+        } else {
+            animDirectionRow = attackDirection.y < 0.f ? 3 : 0;
+        }
+    }
+
+    if (isSpriteSheet) {
+        if (visuallyMoving && !isDying) {
+            const int totalSteps = static_cast<int>(walkDistanceAccumulator / strideDistance);
+            animFrameIndex = totalSteps % 4; // Cycles through walk frames 0, 1, 2, 3
+        } else {
+            animFrameIndex = 0; // Clean neutral idle stance
+        }
+
+        const int frameX = animFrameIndex * frameSize.x;
+        const int frameY = animDirectionRow * frameSize.y;
+        monsterShape.setTextureRect({{frameX, frameY}, frameSize});
+    }
+
+    float rotation = 0.f;
+    sf::Vector2f visualPosition = position;
 
     if (isAttacking) {
         const float pulse = std::sin(
             getAttackAnimationProgress() * 3.14159265358979323846f);
-        visualPosition += attackDirection * (eliteVisual ? 7.f : 5.f) * pulse;
-        stretchX += 0.08f * pulse;
-        stretchY -= 0.07f * pulse;
-        rotation += attackDirection.x * 7.f * pulse;
+        visualPosition += attackDirection * (isBoss() ? 9.f : (isElite() ? 7.f : 5.f)) * pulse;
+        rotation += attackDirection.x * 6.f * pulse;
     }
 
-    const float facing = attackDirection.x < -0.05f ? -1.f : 1.f;
     sf::Color tint = presentationTint;
     if (isDying) {
         const float progress = std::clamp(
             deadTimer / std::max(0.01f, deadAnimationDuration), 0.f, 1.f);
-        rotation += facing * 78.f * progress;
-        stretchX *= 1.f - progress * 0.28f;
-        stretchY *= 1.f - progress * 0.45f;
+        rotation += (animDirectionRow == 1 ? -1.f : 1.f) * 78.f * progress;
         tint.a = static_cast<std::uint8_t>(255.f * (1.f - progress));
     } else if (healingFlashTimer > 0.f) {
         tint = sf::Color(135, 255, 195);
@@ -255,7 +309,7 @@ void Monster::updatePresentation(Effects* effects) {
     }
 
     monsterShape.setPosition(visualPosition);
-    monsterShape.setScale({facing * stretchX, stretchY});
+    monsterShape.setScale({1.f, 1.f});
     monsterShape.setRotation(sf::degrees(rotation));
     monsterShape.setFillColor(tint);
 }

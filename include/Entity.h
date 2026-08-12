@@ -138,6 +138,9 @@ public:
         return !isAlive;
     }
 
+    virtual bool isElite() const { return false; }
+    virtual bool isBoss() const { return false; }
+
     float heal(float amount) {
         if (amount <= 0.f || isDead()) {
             return 0.f;

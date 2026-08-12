@@ -19,6 +19,12 @@ protected:
     sf::Vector2f visualSize{32.f, 32.f};
     sf::Vector2f previousPosition;
     float footstepDistance = 0.f;
+    float walkDistanceAccumulator = 0.f;
+    float facingDirection = 1.f;
+    int animDirectionRow = 0;
+    int animFrameIndex = 0;
+    bool isSpriteSheet = false;
+    sf::Vector2i frameSize{256, 384};
     bool visuallyMoving = false;
     bool eliteVisual = false;
     sf::Color presentationTint{205, 65, 65};

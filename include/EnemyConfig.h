@@ -13,36 +13,36 @@ namespace EnemyConfig {
 
     inline Stats normalStats(int waveNumber) {
         return {
-            85.f + static_cast<float>(waveNumber) * 25.f,
+            108.f + static_cast<float>(waveNumber) * 30.f,
             50.f,
             std::max(
                 0.7f,
                 1.3f - static_cast<float>(waveNumber) * 0.08f
             ),
             72.f + static_cast<float>(waveNumber) * 5.f,
-            7 + waveNumber * 2
+            8 + static_cast<int>(static_cast<float>(waveNumber) * 2.2f)
         };
     }
 
     inline Stats bossStats(int waveNumber) {
         return {
-            700.f + static_cast<float>(waveNumber) * 80.f,
+            830.f + static_cast<float>(waveNumber) * 95.f,
             62.f,
             0.8f,
             62.f,
-            28
+            30
         };
     }
 
     inline Stats eliteStats(int waveNumber) {
         const Stats boss = bossStats(waveNumber);
         return {
-            boss.maxHealth * 0.5f,
+            boss.maxHealth * 0.55f,
             boss.attackRange,
             boss.cooldown,
-            boss.speed,
+            boss.speed * 1.07f,
             static_cast<int>(
-                static_cast<float>(boss.effectiveDamage) * 0.5f
+                static_cast<float>(boss.effectiveDamage) * 0.58f
             )
         };
     }

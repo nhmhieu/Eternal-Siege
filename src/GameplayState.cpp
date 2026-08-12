@@ -458,7 +458,7 @@ void GameplayState::update(float dt) {
     }
 
     EntityCollision::separateLivingEntities(
-        map, context.monsters, context.allies);
+        map, context.monsters, context.allies, context.deltaTime);
 
     combatManager.processProjectiles(context, context.allEntity);
 

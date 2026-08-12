@@ -11,7 +11,8 @@ namespace EntityCollision {
 void separateLivingEntities(
     const Map& map,
     const std::vector<Monster*>& monsters,
-    const std::vector<Ally*>& allies
+    const std::vector<Ally*>& allies,
+    float dt = 0.016f
 );
 
 }

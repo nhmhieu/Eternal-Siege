@@ -20,8 +20,7 @@ Elite::Elite(float x, float y, const EnemyConfig::Stats& stats)
     monsterShape.setOrigin({eliteSize * 0.5f, eliteSize * 0.5f});
     monsterShape.setFillColor(sf::Color(235, 145, 45));
     presentationTint = sf::Color(235, 145, 45);
-    monsterShape.setOutlineColor(sf::Color(255, 220, 105));
-    monsterShape.setOutlineThickness(2.f);
+    monsterShape.setOutlineThickness(0.f);
     collisionSize = {eliteSize, eliteSize};
     hurtBoxSize = {eliteSize, eliteSize};
     visualSize = {eliteSize, eliteSize};
