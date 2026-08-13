@@ -11,6 +11,7 @@ struct KingdomWalkableRegion { sf::FloatRect bounds; std::string_view name; };
 
 class KingdomMap {
 public:
+ enum class MaskSurface { Walkable, Solid, Water, Bridge };
  static constexpr sf::Vector2f WORLD_SIZE{1672,941},SPAWN{224,884},RETURN_SPAWN{1350,355},CAVE_CENTER{1435,238},GATE_CENTER{224,850};
  static constexpr float INTERACTION_RADIUS=92, CAVE_INTERACTION_RADIUS=120.f, GATE_INTERACTION_RADIUS=88;
  static constexpr int CELL_SIZE=32,GRID_WIDTH=53,GRID_HEIGHT=30;
@@ -31,10 +32,14 @@ public:
  const std::vector<KingdomSolidFootprint>& getSolidFootprints()const{return solidFootprints;}
  const std::vector<KingdomWalkableRegion>& getWalkableRegions()const{return walkableRegions;}
  const std::vector<sf::FloatRect>& getWaterZones()const{return waterZones;}
+ bool isMaskLoaded()const{return maskLoaded;}
+ MaskSurface surfaceAtPixel(int x,int y)const;
 private:
  std::vector<KingdomSolidFootprint> solidFootprints;
  std::vector<KingdomWalkableRegion> walkableRegions;
  std::vector<sf::FloatRect> obstacles,waterZones;std::vector<KingdomCell> cells;
+ sf::Image collisionMaskImage;
+ bool maskLoaded = false;
  bool blocked(sf::Vector2f,float,bool)const;
  bool blocked(sf::FloatRect,bool)const;
  bool inWalkableRegion(sf::Vector2f)const;

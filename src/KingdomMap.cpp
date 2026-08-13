@@ -1,6 +1,8 @@
 #include "KingdomMap.h"
+#include "AssetLocator.h"
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 KingdomMap::KingdomMap() {
     walkableRegions = {
@@ -16,8 +18,6 @@ KingdomMap::KingdomMap() {
         {{{1360, 790}, {180, 127}}, "east bridge approach"}
     };
 
-    // All authored values are artwork pixels in the same 1672x941 world space.
-    // Only ground-contact footprints are solid; roofs and tree crowns are depth layers.
     solidFootprints = {
         {{{0, 0}, {26, 941}}, "west world edge"}, {{{1646, 0}, {26, 941}}, "east world edge"},
         {{{0, 0}, {1672, 24}}, "north world edge"}, {{{0, 917}, {1672, 24}}, "south world edge"},
@@ -52,23 +52,78 @@ KingdomMap::KingdomMap() {
         {{1390, 410}, {256, 507}}
     };
 
+    const auto maskPath = AssetLocator::find("assets/images/kingdom/kingdom_collision_mask.png");
+    if (maskPath && collisionMaskImage.loadFromFile(*maskPath)) {
+        if (collisionMaskImage.getSize().x == 1672 && collisionMaskImage.getSize().y == 941) {
+            maskLoaded = true;
+            std::cout << "[KingdomMap] Loaded PNG collision mask ("
+                      << collisionMaskImage.getSize().x << "x" << collisionMaskImage.getSize().y << ")\n";
+        } else {
+            std::cerr << "[KingdomMap] Collision mask dimension mismatch! Expected 1672x941, got "
+                      << collisionMaskImage.getSize().x << "x" << collisionMaskImage.getSize().y
+                      << ". Using rectangle fallback.\n";
+            maskLoaded = false;
+        }
+    } else {
+        std::cerr << "[KingdomMap] Failed to load assets/images/kingdom/kingdom_collision_mask.png! Using rectangle fallback.\n";
+        maskLoaded = false;
+    }
+
     cells.resize(GRID_WIDTH * GRID_HEIGHT);
     for (int y = 0; y < GRID_HEIGHT; ++y) {
         for (int x = 0; x < GRID_WIDTH; ++x) {
             const sf::Vector2f p{(x + .5f) * CELL_SIZE, (y + .5f) * CELL_SIZE};
             auto& c = cells[y * GRID_WIDTH + x];
-            if (isOnBridge(p)) {
-                c.surface = KingdomSurface::Bridge;
-                c.heightLevel = 1;
-                c.playerWalkable = c.npcWalkable = true;
-            } else if (blocked(p, 8, true)) {
-                c.playerWalkable = c.npcWalkable = false;
-                c.surface = isWater(p) ? KingdomSurface::Water : KingdomSurface::Blocked;
+            if (maskLoaded) {
+                const MaskSurface s = surfaceAtPixel(int(p.x), int(p.y));
+                if (s == MaskSurface::Bridge) {
+                    c.surface = KingdomSurface::Bridge;
+                    c.heightLevel = 1;
+                    c.playerWalkable = c.npcWalkable = true;
+                } else if (s == MaskSurface::Water) {
+                    c.surface = KingdomSurface::Water;
+                    c.playerWalkable = c.npcWalkable = false;
+                } else if (s == MaskSurface::Solid) {
+                    c.surface = KingdomSurface::Blocked;
+                    c.playerWalkable = c.npcWalkable = false;
+                } else {
+                    c.surface = KingdomSurface::Road;
+                    c.playerWalkable = c.npcWalkable = true;
+                }
             } else {
-                c.surface = KingdomSurface::Road;
+                if (isOnBridge(p)) {
+                    c.surface = KingdomSurface::Bridge;
+                    c.heightLevel = 1;
+                    c.playerWalkable = c.npcWalkable = true;
+                } else if (blocked(p, 8, true)) {
+                    c.playerWalkable = c.npcWalkable = false;
+                    c.surface = isWater(p) ? KingdomSurface::Water : KingdomSurface::Blocked;
+                } else {
+                    c.surface = KingdomSurface::Road;
+                }
             }
         }
     }
+}
+
+KingdomMap::MaskSurface KingdomMap::surfaceAtPixel(int x, int y) const {
+    if (x < 0 || y < 0 || x >= 1672 || y >= 941) {
+        return MaskSurface::Solid;
+    }
+    if (!maskLoaded) {
+        return MaskSurface::Walkable;
+    }
+    const sf::Color c = collisionMaskImage.getPixel(sf::Vector2u(x, y));
+    if (c.r == 0 && c.g == 255 && c.b == 0) {
+        return MaskSurface::Bridge;
+    }
+    if (c.r == 0 && c.g == 0 && c.b == 255) {
+        return MaskSurface::Water;
+    }
+    if (c.r == 255 && c.g == 255 && c.b == 255) {
+        return MaskSurface::Walkable;
+    }
+    return MaskSurface::Solid;
 }
 
 const KingdomCell& KingdomMap::cellAt(int x, int y) const {
@@ -88,6 +143,9 @@ bool KingdomMap::isNpcWalkable(sf::Vector2f p) const {
 }
 
 bool KingdomMap::isWater(sf::Vector2f p) const {
+    if (maskLoaded) {
+        return surfaceAtPixel(int(p.x), int(p.y)) == MaskSurface::Water;
+    }
     if (isOnBridge(p)) {
         return false;
     }
@@ -107,6 +165,9 @@ float KingdomMap::heightAt(sf::Vector2f p) const {
 }
 
 bool KingdomMap::isOnBridge(sf::Vector2f p, float r) const {
+    if (maskLoaded) {
+        return surfaceAtPixel(int(p.x), int(p.y)) == MaskSurface::Bridge;
+    }
     const sf::Vector2f a{1030, 655}, b{1390, 880}, ab = b - a, ap = p - a;
     const float t = std::clamp((ap.x * ab.x + ap.y * ab.y) / (ab.x * ab.x + ab.y * ab.y), 0.f, 1.f);
     const auto d = p - (a + ab * t);
@@ -114,6 +175,10 @@ bool KingdomMap::isOnBridge(sf::Vector2f p, float r) const {
 }
 
 bool KingdomMap::inWalkableRegion(sf::Vector2f p) const {
+    if (maskLoaded) {
+        const MaskSurface s = surfaceAtPixel(int(p.x), int(p.y));
+        return s == MaskSurface::Walkable || s == MaskSurface::Bridge;
+    }
     if (isOnBridge(p)) {
         return true;
     }
@@ -126,10 +191,50 @@ bool KingdomMap::inWalkableRegion(sf::Vector2f p) const {
 }
 
 bool KingdomMap::blocked(sf::Vector2f p, float r, bool gateOpen) const {
+    if (maskLoaded) {
+        const float effR = std::min(r, 11.5f);
+        const float diag = effR * 0.70710678f;
+
+        const sf::Vector2f probes[9] = {
+            {p.x, p.y},
+            {p.x + effR, p.y},
+            {p.x - effR, p.y},
+            {p.x, p.y + effR},
+            {p.x, p.y - effR},
+            {p.x + diag, p.y + diag},
+            {p.x + diag, p.y - diag},
+            {p.x - diag, p.y + diag},
+            {p.x - diag, p.y - diag}
+        };
+
+        for (const auto& probe : probes) {
+            const int px = static_cast<int>(std::floor(probe.x));
+            const int py = static_cast<int>(std::floor(probe.y));
+            const MaskSurface s = surfaceAtPixel(px, py);
+            if (s == MaskSurface::Solid || s == MaskSurface::Water) {
+                return true;
+            }
+        }
+
+        const sf::FloatRect footBox{{p.x - effR, p.y - effR}, {2.f * effR, 2.f * effR}};
+        if (!gateOpen && footBox.findIntersection(GATE_BLOCKER).has_value()) {
+            return true;
+        }
+
+        return false;
+    }
+
     return blocked(sf::FloatRect{{p.x - r, p.y - r}, {2 * r, 2 * r}}, gateOpen);
 }
 
 bool KingdomMap::blocked(sf::FloatRect footprint, bool gateOpen) const {
+    if (maskLoaded) {
+        const sf::Vector2f center = footprint.position + footprint.size * 0.5f;
+        const float r = std::min(footprint.size.x, footprint.size.y) * 0.5f;
+        return blocked(center, r, gateOpen);
+    }
+
+    // --- FALLBACK RECTANGLE COLLISION SYSTEM ---
     const auto samplePoint = [&](std::size_t x, std::size_t y) {
         return sf::Vector2f{
             footprint.position.x + footprint.size.x * (float(x) / 2.f),
@@ -189,20 +294,8 @@ bool KingdomMap::blocked(sf::FloatRect footprint, bool gateOpen) const {
 }
 
 sf::Vector2f KingdomMap::resolveMovement(sf::Vector2f p, sf::Vector2f d, float r, bool gateOpen) const {
-    const int steps = std::max(1, int(std::ceil(std::hypot(d.x, d.y) / 10)));
-    const auto step = d / float(steps);
-
-    for (int i = 0; i < steps; ++i) {
-        const sf::Vector2f x{p.x + step.x, p.y};
-        if (!blocked(x, r, gateOpen)) {
-            p.x = x.x;
-        }
-        const sf::Vector2f y{p.x, p.y + step.y};
-        if (!blocked(y, r, gateOpen)) {
-            p.y = y.y;
-        }
-    }
-    return p;
+    std::vector<sf::Vector2f> emptyActors;
+    return resolveMovementWithActors(p, d, emptyActors, r, 0.f, gateOpen);
 }
 
 sf::Vector2f KingdomMap::resolveMovementWithActors(
@@ -210,7 +303,7 @@ sf::Vector2f KingdomMap::resolveMovementWithActors(
     float r, float actorRadius, bool gateOpen) const
 {
     const float effR = std::min(r, 11.5f);
-    const int steps = std::max(1, int(std::ceil(std::hypot(d.x, d.y) / 8.f)));
+    const int steps = std::max(1, int(std::ceil(std::hypot(d.x, d.y) / 4.f)));
     const auto step = d / float(steps);
 
     auto clear = [&](sf::Vector2f candidate) {
@@ -233,25 +326,20 @@ sf::Vector2f KingdomMap::resolveMovementWithActors(
         }
 
         const sf::Vector2f candX{p.x + step.x, p.y};
-        const bool clearX = clear(candX);
+        const bool clearX = (step.x != 0.f) && clear(candX);
 
         const sf::Vector2f candY{p.x, p.y + step.y};
-        const bool clearY = clear(candY);
+        const bool clearY = (step.y != 0.f) && clear(candY);
 
-        if (clearX) {
-            p.x = candX.x;
-        }
-        if (clearY) {
-            p.y = candY.y;
-        }
-
-        // Corner sliding assist if blocked on both direct axes
-        if (!clearX && !clearY && (step.x != 0.f || step.y != 0.f)) {
-            const float nudge = 0.35f;
-            if (step.x != 0.f && clear({p.x, p.y + (step.x > 0 ? nudge : -nudge)})) {
-                p.y += (step.x > 0 ? nudge : -nudge);
-            } else if (step.y != 0.f && clear({p.x + (step.y > 0 ? nudge : -nudge), p.y})) {
-                p.x += (step.y > 0 ? nudge : -nudge);
+        if (clearX && !clearY) {
+            p = candX;
+        } else if (clearY && !clearX) {
+            p = candY;
+        } else if (clearX && clearY) {
+            if (std::abs(step.x) >= std::abs(step.y)) {
+                p = candX;
+            } else {
+                p = candY;
             }
         }
     }

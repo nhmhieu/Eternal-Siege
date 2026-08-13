@@ -9,4 +9,4 @@ inline bool kingdomRenderBefore(const KingdomRenderKey&a,const KingdomRenderKey&
 inline bool kingdomUiAffectedBy(KingdomRenderPass pass){return pass==KingdomRenderPass::Ui;}
 inline bool kingdomRainRippleAllowed(const KingdomMap&map,sf::Vector2f p){return map.isWater(p);}
 inline bool kingdomActuallyMoving(sf::Vector2f d){return std::hypot(d.x,d.y)>.001f;}
-inline constexpr std::array<float,10>KINGDOM_OCCLUDER_KEYS{{882,886,830,414,725,825,320,285,650,690}};
+inline constexpr std::array<float,10>KINGDOM_OCCLUDER_KEYS{{882,886,830,443,725,825,354,289,672,720}};

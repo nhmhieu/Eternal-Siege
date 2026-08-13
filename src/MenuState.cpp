@@ -89,16 +89,16 @@ void MenuState::handleEvent(const sf::Event& event) {
 
     if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mousePressed->button == sf::Mouse::Button::Left) {
-            sf::Vector2i mousePos = mousePressed->position;
+            const sf::Vector2f mousePos = window.mapPixelToCoords(mousePressed->position);
 
-            if (startButton && startButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
+            if (startButton && startButton->getGlobalBounds().contains(mousePos)) {
                 audioManager.playSound("ui_click");
                 stateMachine.changeState(std::make_unique<KingdomState>(
                     stateMachine, window, textureManager, audioManager, progress));
                 return;
             }
 
-            if (exitButton && exitButton->getGlobalBounds().contains(sf::Vector2f(mousePos))) {
+            if (exitButton && exitButton->getGlobalBounds().contains(mousePos)) {
                 audioManager.playSound("ui_click");
                 window.close();
             }

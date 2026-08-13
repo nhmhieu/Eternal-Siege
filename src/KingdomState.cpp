@@ -304,9 +304,9 @@ void KingdomState::render(sf::RenderWindow& w) {
         if (const auto* t = textures.findTexture("KingdomContactShadow")) {
             sf::Sprite s(*t);
             s.setOrigin({64, 32});
-            s.setPosition(p);
-            s.setScale({scale, scale * .72f});
-            s.setColor({255, 255, 255, std::uint8_t(245 - 75 * dayNight.nightStrength())});
+            s.setPosition({p.x, p.y + 3.f});
+            s.setScale({scale * 0.95f, scale * 0.58f});
+            s.setColor({255, 255, 255, std::uint8_t(210 - 55 * dayNight.nightStrength())});
             sceneTarget->draw(s);
         }
     };
